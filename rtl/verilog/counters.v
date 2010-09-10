@@ -40,3 +40,42 @@
 ////                                                              ////
 //////////////////////////////////////////////////////////////////////
 
+module cnt_shreg_ce ( cke, q, rst, clk);
+
+   parameter length = 4;
+   input cke;
+   output reg [0:length-1] q;
+   input rst;
+   input clk;
+
+    always @ (posedge clk or posedge rst)
+    if (rst)
+        q <= {1'b1,{length-1{1'b0}}};
+    else
+        if (cke)
+            q <= q >> 1;
+            
+endmodule
+
+module cnt_shreg_ce_clear ( cke, clear, q, rst, clk);
+
+   parameter length = 4;
+   input cke;
+   input clear;
+   output reg [0:length-1] q;
+   input rst;
+   input clk;
+
+    always @ (posedge clk or posedge rst)
+    if (rst)
+        q <= {1'b1,{length-1{1'b0}}};
+    else
+        if (cke)
+            if (clear)
+                q <= {1'b1,{length-1{1'b0}}};
+            else
+                q <= q >> 1;
+            
+endmodule
+
+

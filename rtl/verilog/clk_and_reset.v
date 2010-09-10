@@ -40,12 +40,9 @@
 ////                                                              ////
 //////////////////////////////////////////////////////////////////////
 
-`define EXPAND_TO_IFDEF `ifdef
-`define EXPAND_TO_ELSE `else
-`define EXPAND_TO_ENDIF `endif
 // Global buffer
 // usage:
-// use to enable global buffers for high fan out signal such as clock and reset
+// use to enable global buffers for high fan out signals such as clock and reset
 
 `ifdef ACTEL
 
@@ -66,14 +63,18 @@ endmodule
 module vl_gbuf ( i, o);
 input i;
 output o;
+//E2_ifdef SIM_GBUF
+assign o=i;
+//E2_else
 gbuf gbuf_i0 ( .CLK(i), .GL(o));
+//E2_endif
 endmodule
 `else
 `ifdef ALTERA 
 altera
 `else
 
-`timescale 1 ns/1 ns
+`timescale 1 ns/100 ps
 module vl_gbuf ( i, o);
 input i;
 output o;
@@ -85,7 +86,7 @@ endmodule
 // sync reset
 // input active lo async reset, normally from external reset generetaor and/or switch
 // output active high global reset sync with two DFFs 
-`timescale 1 ns/1 ns
+`timescale 1 ns/100 ps
 module vl_sync_rst ( rst_n_i, rst_o, clk);
 input rst_n_i, clk;
 output rst_o;
@@ -100,13 +101,14 @@ endmodule
 
 // vl_pll
 `ifdef ACTEL
+`timescale 1 ns/100 ps
 module vl_pll ( clk_i, rst_n_i, lock, clk_o, rst_o);
 parameter index = 0;
-parameter number_of_clk = 3;
-parameter clk_i_period_time = 20;
-parameter [0:number_of_clk-1] mult = {32'd1,32'd2,32'd2};
-parameter [0:number_of_clk-1] div  = {32'd1,32'd3,32'd3};
-parameter lock_delay = 200;
+parameter number_of_clk = 1;
+parameter period_time_0 = 20;
+parameter period_time_1 = 20;
+parameter period_time_2 = 20;
+parameter lock_delay = 2000;
 input clk_i, rst_n_i;
 output lock;
 output reg [0:number_of_clk-1] clk_o;
@@ -114,16 +116,27 @@ output [0:number_of_clk-1] rst_o;
 
 //E2_ifdef SIM_PLL
 
+always
+     #((period_time_0)/2) clk_o[0] <=  (!rst_n_i) ? 0 : ~clk_o[0];
+
+generate if (number_of_clk > 1)
+always
+     #((period_time_1)/2) clk_o[1] <=  (!rst_n_i) ? 0 : ~clk_o[1];
+endgenerate
+
+generate if (number_of_clk > 2)
+always
+     #((period_time_2)/2) clk_o[2] <=  (!rst_n_i) ? 0 : ~clk_o[2];
+endgenerate
+
 genvar i;
 generate for (i=0;i<number_of_clk;i=i+1) begin: clock
-always
-     #((clk_i_period_time*div[i]/mult[i])/2) clk_o[i] <=  (!rst_n_i) ? 0 : ~clk_o[i];
      vl_sync_rst rst_i0 ( .rst_n_i(rst_n_i | lock), .rst_o(rst_o[i]), .clk(clk_o[i]));
 end
 endgenerate
 
 assign #lock_delay lock = rst_n_i;
-
+	
 endmodule
 //E2_else
 generate if (number_of_clk==1 & index==0) begin
@@ -192,26 +205,34 @@ endmodule
 `else
 
 // generic PLL
+`timescale 1 ns/100 ps
 module vl_pll ( clk_i, rst_n_i, lock, clk_o, rst_o);
 parameter index = 0;
-parameter number_of_clk = 3;
-parameter clk_i_period_time = 20;
-parameter clk0_feedthrough = 0;
-parameter mult = 1;
-parameter div  = 1;
-parameter [0:number_of_clk-1] post_div  = {32'd1,32'd3,32'd3};
+parameter number_of_clk = 1;
+parameter period_time_0 = 20;
+parameter period_time_1 = 20;
+parameter period_time_2 = 20;
 parameter lock_delay = 2000;
 input clk_i, rst_n_i;
 output lock;
 output reg [0:number_of_clk-1] clk_o;
 output [0:number_of_clk-1] rst_o;
 
-genvar i;
-generate if (clk0_feedthrough==1) begin: clk0_feedthrough
-	always #(clk_i_period_time/2+0.200) clk_o[0] <= (!rst_n_i) ? 0 : ~clk_o[0];
-generate for (i=clk0_feedthrough;i<number_of_clk;i=i+1) begin: clock
 always
-     #((clk_i_period_time*div/mult*post_div[i])/2) clk_o[i] <=  (!rst_n_i) ? 0 : ~clk_o[i];
+     #((period_time_0)/2) clk_o[0] <=  (!rst_n_i) ? 0 : ~clk_o[0];
+
+generate if (number_of_clk > 1)
+always
+     #((period_time_1)/2) clk_o[1] <=  (!rst_n_i) ? 0 : ~clk_o[1];
+endgenerate
+
+generate if (number_of_clk > 2)
+always
+     #((period_time_2)/2) clk_o[2] <=  (!rst_n_i) ? 0 : ~clk_o[2];
+endgenerate
+
+genvar i;
+generate for (i=0;i<number_of_clk;i=i+1) begin: clock
      vl_sync_rst rst_i0 ( .rst_n_i(rst_n_i | lock), .rst_o(rst_o[i]), .clk(clk_o[i]));
 end
 endgenerate
