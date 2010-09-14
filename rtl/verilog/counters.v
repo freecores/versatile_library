@@ -40,7 +40,22 @@
 ////                                                              ////
 //////////////////////////////////////////////////////////////////////
 
-module cnt_shreg_ce ( cke, q, rst, clk);
+module cnt_shreg_wrap ( q, rst, clk);
+
+   parameter length = 4;
+   output reg [0:length-1] q;
+   input rst;
+   input clk;
+
+    always @ (posedge clk or posedge rst)
+    if (rst)
+        q <= {1'b1,{length-1{1'b0}}};
+    else
+        q <= {q[length-1],q[0:length-2]};
+            
+endmodule
+
+module cnt_shreg_ce_wrap ( cke, q, rst, clk);
 
    parameter length = 4;
    input cke;
@@ -53,15 +68,14 @@ module cnt_shreg_ce ( cke, q, rst, clk);
         q <= {1'b1,{length-1{1'b0}}};
     else
         if (cke)
-            q <= q >> 1;
+            q <= {q[length-1],q[0:length-2]};
             
 endmodule
 
 module cnt_shreg_ce_clear ( cke, clear, q, rst, clk);
 
    parameter length = 4;
-   input cke;
-   input clear;
+   input cke, clear;
    output reg [0:length-1] q;
    input rst;
    input clk;
@@ -78,4 +92,22 @@ module cnt_shreg_ce_clear ( cke, clear, q, rst, clk);
             
 endmodule
 
+module cnt_shreg_ce_clear_wrap ( cke, clear, q, rst, clk);
 
+   parameter length = 4;
+   input cke, clear;
+   output reg [0:length-1] q;
+   input rst;
+   input clk;
+
+    always @ (posedge clk or posedge rst)
+    if (rst)
+        q <= {1'b1,{length-1{1'b0}}};
+    else
+        if (cke)
+            if (clear)
+                q <= {1'b1,{length-1{1'b0}}};
+            else
+            q <= {q[length-1],q[0:length-2]};
+            
+endmodule

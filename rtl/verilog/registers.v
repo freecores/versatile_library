@@ -57,6 +57,31 @@ module dff ( d, q, clk, rst);
 
 endmodule
 
+module dff_array ( d, q, clk, rst);
+
+	parameter width = 1;
+        parameter depth = 2;
+	parameter reset_value = 1'b0;
+
+	input [width-1:0] d; 
+	input clk, rst;
+	output [width-1:0] q;
+        reg  [0:depth-1] q_tmp [width-1:0];
+	integer i;
+	always @ (posedge clk or posedge rst)
+	if (rst) begin
+            for (i=0;i<depth;i=i+1)
+		q_tmp[i] <= {width{reset_value}};
+	end else begin
+            q_tmp[0] <= d;
+            for (i=1;i<depth;i=i+1)
+		q_tmp[i] <= q_tmp[i-1];
+        end
+        
+    assign q = q_tmp[depth-1];
+    
+endmodule
+
 module dff_ce ( d, ce, q, clk, rst);
 
 	parameter width = 1;	
@@ -217,4 +242,26 @@ module dff_sr ( aclr, aset, clock, data, q);
 
 endmodule
 
+`endif
+
+// LATCH
+// For targtes not supporting LATCH use dff_sr with clk=1 and data=1
+`ifdef ALTERA
+module latch ( d, le, q, clk);
+input d, le;
+output q;
+input clk;
+dff_sr i0 (.aclr(), .aset(), .clock(1'b1), .data(1'b1), .q(q));
+endmodule
+`else
+module latch ( d, le, q, clk);
+input d, le;
+output q;
+input clk;/*
+   always @ (posedge direction_set or posedge direction_clr)
+     if (direction_clr)
+       direction <= going_empty;
+     else
+       direction <= going_full;*/
+endmodule
 `endif
