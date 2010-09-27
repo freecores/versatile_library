@@ -1263,7 +1263,22 @@ endmodule
 ////                                                              ////
 //////////////////////////////////////////////////////////////////////
 /// ROM
-module vl_rom ( a, q, clk);
+module vl_rom_init ( adr, q, clk);
+   parameter data_width = 32;
+   parameter addr_width = 8;
+   input [(addr_width-1):0] 	 adr;
+   output reg [(data_width-1):0] q;
+   input 			 clk;
+   reg [data_width-1:0] rom [(1<<addr_width)-1:0];
+   parameter memory_file = "vl_rom.vmem";
+   initial
+     begin
+	$readmemh(memory_file, rom);
+     end
+   always @ (posedge clk)
+     q <= rom[adr];
+endmodule
+module vl_rom ( adr, q, clk);
 parameter data_width = 32;
 parameter addr_width = 4;
 parameter [0:1>>addr_width-1] data [data_width-1:0] = {
@@ -1283,11 +1298,11 @@ parameter [0:1>>addr_width-1] data [data_width-1:0] = {
     {32'h15000000},
     {32'h15000000},
     {32'h15000000}};
-input [addr_width-1:0] a;
+input [addr_width-1:0] adr;
 output reg [data_width-1:0] q;
 input clk;
 always @ (posedge clk)
-    q <= data[a];
+    q <= data[adr];
 endmodule
 // Single port RAM
 module vl_ram ( d, adr, we, q, clk);
@@ -1296,9 +1311,18 @@ module vl_ram ( d, adr, we, q, clk);
    input [(data_width-1):0]      d;
    input [(addr_width-1):0] 	 adr;
    input 			 we;
-   output reg [(data_width-1):0] 	 q;
+   output reg [(data_width-1):0] q;
    input 			 clk;
    reg [data_width-1:0] ram [(1<<addr_width)-1:0];
+   parameter init = 0;
+   parameter memory_file = "vl_ram.vmem";
+   generate if (init) begin : init_mem
+   initial
+     begin
+	$readmemh(memory_file, ram);
+     end
+   end
+   endgenerate 
    always @ (posedge clk)
    begin
    if (we)
@@ -1306,9 +1330,38 @@ module vl_ram ( d, adr, we, q, clk);
    q <= ram[adr];
    end
 endmodule
+module vl_ram_be ( d, adr, be, we, q, clk);
+   parameter data_width = 32;
+   parameter addr_width = 8;
+   input [(data_width-1):0]      d;
+   input [(addr_width-1):0] 	 adr;
+   input [(addr_width/4)-1:0]    be;
+   input 			 we;
+   output reg [(data_width-1):0] q;
+   input 			 clk;
+   reg [data_width-1:0] ram [(1<<addr_width)-1:0];
+   parameter init = 0;
+   parameter memory_file = "vl_ram.vmem";
+   generate if (init) begin : init_mem
+   initial
+     begin
+	$readmemh(memory_file, ram);
+     end
+   end
+   endgenerate 
+   genvar i;
+   generate for (i=0;i<addr_width/4;i=i+1) begin : be_ram
+      always @ (posedge clk)
+      if (we & be[i])
+        ram[adr][(i+1)*8-1:i*8] <= d[(i+1)*8-1:i*8];
+   end
+   endgenerate
+   always @ (posedge clk)
+      q <= ram[adr];
+endmodule
 // Dual port RAM
 // ACTEL FPGA should not use logic to handle rw collision
-module vl_dual_port_ram_1r1w ( d_a, adr_a, we_a, clk_a, q_b, adr_b, clk_b );
+module vl_dpram_1r1w ( d_a, adr_a, we_a, clk_a, q_b, adr_b, clk_b );
    parameter data_width = 32;
    parameter addr_width = 8;
    input [(data_width-1):0]      d_a;
@@ -1319,6 +1372,15 @@ module vl_dual_port_ram_1r1w ( d_a, adr_a, we_a, clk_a, q_b, adr_b, clk_b );
    input 			 clk_a, clk_b;
    reg [(addr_width-1):0] 	 adr_b_reg;
    reg [data_width-1:0] ram [(1<<addr_width)-1:0] ;
+   parameter init = 0;
+   parameter memory_file = "vl_ram.vmem";
+   generate if (init) begin : init_mem
+   initial
+     begin
+	$readmemh(memory_file, ram);
+     end
+   end
+   endgenerate 
    always @ (posedge clk_a)
    if (we_a)
      ram[adr_a] <= d_a;
@@ -1326,7 +1388,7 @@ module vl_dual_port_ram_1r1w ( d_a, adr_a, we_a, clk_a, q_b, adr_b, clk_b );
    adr_b_reg <= adr_b;   
    assign q_b = ram[adr_b_reg];
 endmodule
-module vl_dual_port_ram_2r1w ( d_a, q_a, adr_a, we_a, clk_a, q_b, adr_b, clk_b );
+module vl_dpram_2r1w ( d_a, q_a, adr_a, we_a, clk_a, q_b, adr_b, clk_b );
    parameter data_width = 32;
    parameter addr_width = 8;
    input [(data_width-1):0]      d_a;
@@ -1338,6 +1400,15 @@ module vl_dual_port_ram_2r1w ( d_a, q_a, adr_a, we_a, clk_a, q_b, adr_b, clk_b )
    input 			 clk_a, clk_b;
    reg [(data_width-1):0] 	 q_b;   
    reg [data_width-1:0] ram [(1<<addr_width)-1:0] ;
+   parameter init = 0;
+   parameter memory_file = "vl_ram.vmem";
+   generate if (init) begin : init_mem
+   initial
+     begin
+	$readmemh(memory_file, ram);
+     end
+   end
+   endgenerate 
    always @ (posedge clk_a)
      begin 
 	q_a <= ram[adr_a];
@@ -1347,7 +1418,7 @@ module vl_dual_port_ram_2r1w ( d_a, q_a, adr_a, we_a, clk_a, q_b, adr_b, clk_b )
    always @ (posedge clk_b)
 	  q_b <= ram[adr_b];
 endmodule
-module vl_dual_port_ram_2r2w ( d_a, q_a, adr_a, we_a, clk_a, q_b, adr_b, d_b, we_b, clk_b );
+module vl_dpram_2r2w ( d_a, q_a, adr_a, we_a, clk_a, d_b, q_b, adr_b, we_b, clk_b );
    parameter data_width = 32;
    parameter addr_width = 8;
    input [(data_width-1):0]      d_a;
@@ -1361,6 +1432,15 @@ module vl_dual_port_ram_2r2w ( d_a, q_a, adr_a, we_a, clk_a, q_b, adr_b, d_b, we
    input 			 clk_a, clk_b;
    reg [(data_width-1):0] 	 q_b;   
    reg [data_width-1:0] ram [(1<<addr_width)-1:0] ;
+   parameter init = 0;
+   parameter memory_file = "vl_ram.vmem";
+   generate if (init) begin : init_mem
+   initial
+     begin
+	$readmemh(memory_file, ram);
+     end
+   end
+   endgenerate 
    always @ (posedge clk_a)
      begin 
 	q_a <= ram[adr_a];
@@ -1458,13 +1538,13 @@ vl_fifo_1r1w_async (
     d, wr, fifo_full, wr_clk, wr_rst,
     q, rd, fifo_empty, rd_clk, rd_rst
     );
-adr_gen
+cnt_gray_ce_bin
     # ( .length(addr_width))
     fifo_wr_adr( .cke(wr), .q(wadr), .q_bin(wadr_bin), .rst(wr_rst), .clk(wr_clk));
-adr_gen
+cnt_gray_ce_bin
     # (.length(addr_width))
     fifo_rd_adr( .cke(wr), .q(radr), .q_bin(radr_bin), .rst(rd_rst), .clk(rd_rst));
-vl_dual_port_ram_1r1w
+vl_dpram_1r1w
     # (.data_width(data_width), .addr_width(addr_width))
     dpram ( .d_a(d), .adr_a(wadr_bin), .we_a(wr), .clk_a(wr_clk), .q_b(q), .adr_b(radr_bin), .clk_b(rd_clk));
 vl_fifo_cmp_async
@@ -1547,29 +1627,29 @@ wire [addr_width:1] a_wadr, a_wadr_bin, a_radr, a_radr_bin;
 wire [addr_width:1] b_wadr, b_wadr_bin, b_radr, b_radr_bin;
 // dpram
 wire [addr_width:0] a_dpram_adr, b_dpram_adr;
-adr_gen
+cnt_gray_ce_bin
     # ( .length(addr_width))
     fifo_a_wr_adr( .cke(a_wr), .q(a_wadr), .q_bin(a_wadr_bin), .rst(a_rst), .clk(a_clk));
-adr_gen
+cnt_gray_ce_bin
     # (.length(addr_width))
     fifo_a_rd_adr( .cke(a_rd), .q(a_radr), .q_bin(a_radr_bin), .rst(a_rst), .clk(a_clk));
-adr_gen
+cnt_gray_ce_bin
     # ( .length(addr_width))
     fifo_b_wr_adr( .cke(b_wr), .q(b_wadr), .q_bin(b_wadr_bin), .rst(b_rst), .clk(b_clk));
-adr_gen
+cnt_gray_ce_bin
     # (.length(addr_width))
     fifo_b_rd_adr( .cke(b_rd), .q(b_radr), .q_bin(b_radr_bin), .rst(b_rst), .clk(b_clk));
 // mux read or write adr to DPRAM
 assign a_dpram_adr = (a_wr) ? {1'b0,a_wadr_bin} : {1'b1,a_radr_bin};
 assign b_dpram_adr = (b_wr) ? {1'b1,b_wadr_bin} : {1'b0,b_radr_bin};
-vfifo_dual_port_ram_dc_dw
+vl_dp_ram_2r2w
     # (.data_width(data_width), .addr_width(addr_width+1))
     dpram ( .d_a(a_d), .q_a(a_q), .adr_a(a_dpram_adr), .we_a(a_wr), .clk_a(a_clk), 
             .d_b(b_d), .q_b(b_q), .adr_b(b_dpram_adr), .we_b(b_wr), .clk_b(b_clk));
 vl_fifo_async_cmp
     # (.addr_width(addr_width))
     cmp1 ( .wptr(a_wadr), .rptr(b_radr), .fifo_empty(b_fifo_empty), .fifo_full(a_fifo_full), .wclk(a_clk), .rclk(b_clk), .rst(a_rst) );
-versatile_fifo_async_cmp
+vl_fifo_async_cmp
     # (.addr_width(addr_width))
     cmp2 ( .wptr(b_wadr), .rptr(a_radr), .fifo_empty(a_fifo_empty), .fifo_full(b_fifo_full), .wclk(b_clk), .rclk(a_clk), .rst(b_rst) );
 endmodule
