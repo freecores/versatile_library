@@ -153,7 +153,7 @@ module dff_ce_clear ( d, ce, clear, q, clk, rst);
 	parameter width = 1;	
 	parameter reset_value = 0;
 	input [width-1:0] d; 
-	input ce, clk, rst;
+	input ce, clear, clk, rst;
 	output reg [width-1:0] q;
 	always @ (posedge clk or posedge rst)
 	if (rst)
