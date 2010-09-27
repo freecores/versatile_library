@@ -149,6 +149,22 @@ module dff_ce ( d, ce, q, clk, rst);
 		if (ce)
 			q <= d;
 endmodule
+module dff_ce_clear ( d, ce, clear, q, clk, rst);
+	parameter width = 1;	
+	parameter reset_value = 0;
+	input [width-1:0] d; 
+	input ce, clk, rst;
+	output reg [width-1:0] q;
+	always @ (posedge clk or posedge rst)
+	if (rst)
+	    q <= reset_value;
+	else
+            if (ce)
+                if (clear)
+                    q <= {width{1'b0}};
+                else
+                    q <= d;
+endmodule
 // megafunction wizard: %LPM_FF%
 // GENERATION: STANDARD
 // VERSION: WM1.0
@@ -1551,7 +1567,7 @@ vl_fifo_cmp_async
     # (.addr_width(addr_width))
     cmp ( .wptr(wadr), .rptr(radr), .fifo_empty(fifo_empty), .fifo_full(fifo_full), .wclk(wr_clk), .rclk(rd_clk), .rst(wr_rst) );
 endmodule
-module vl_fifo_2r2w (
+module vl_fifo_2r2w_async (
     // a side
     a_d, a_wr, a_fifo_full,
     a_q, a_rd, a_fifo_empty, 
@@ -1592,7 +1608,7 @@ vl_fifo_1r1w_async_b (
     .q(a_q), .rd(a_rd), .fifo_empty(a_fifo_empty), .rd_clk(a_clk), .rd_rst(a_rst)
     );
 endmodule
-module vl_fifo_2r2w_simplex (
+module vl_fifo_2r2w_async_simplex (
     // a side
     a_d, a_wr, a_fifo_full,
     a_q, a_rd, a_fifo_empty, 

@@ -344,6 +344,27 @@ module dff_ce ( d, ce, q, clk, rst);
 
 endmodule
 
+module dff_ce_clear ( d, ce, clear, q, clk, rst);
+
+	parameter width = 1;	
+	parameter reset_value = 0;
+	
+	input [width-1:0] d; 
+	input ce, clk, rst;
+	output reg [width-1:0] q;
+
+	always @ (posedge clk or posedge rst)
+	if (rst)
+	    q <= reset_value;
+	else
+            if (ce)
+                if (clear)
+                    q <= {width{1'b0}};
+                else
+                    q <= d;
+
+endmodule
+
 `ifdef ALTERA
 // megafunction wizard: %LPM_FF%
 // GENERATION: STANDARD
@@ -1968,7 +1989,7 @@ vl_fifo_cmp_async
 
 endmodule
 
-module vl_fifo_2r2w (
+module vl_fifo_2r2w_async (
     // a side
     a_d, a_wr, a_fifo_full,
     a_q, a_rd, a_fifo_empty, 
@@ -2016,7 +2037,7 @@ vl_fifo_1r1w_async_b (
     
 endmodule
 
-module vl_fifo_2r2w_simplex (
+module vl_fifo_2r2w_async_simplex (
     // a side
     a_d, a_wr, a_fifo_full,
     a_q, a_rd, a_fifo_empty, 

@@ -100,6 +100,27 @@ module dff_ce ( d, ce, q, clk, rst);
 
 endmodule
 
+module dff_ce_clear ( d, ce, clear, q, clk, rst);
+
+	parameter width = 1;	
+	parameter reset_value = 0;
+	
+	input [width-1:0] d; 
+	input ce, clk, rst;
+	output reg [width-1:0] q;
+
+	always @ (posedge clk or posedge rst)
+	if (rst)
+	    q <= reset_value;
+	else
+            if (ce)
+                if (clear)
+                    q <= {width{1'b0}};
+                else
+                    q <= d;
+
+endmodule
+
 `ifdef ALTERA
 // megafunction wizard: %LPM_FF%
 // GENERATION: STANDARD
