@@ -1487,8 +1487,8 @@ endmodule
 // Content addresable memory, CAM
 // FIFO
 module vl_fifo_cmp_async ( wptr, rptr, fifo_empty, fifo_full, wclk, rclk, rst );
-   parameter ADDR_WIDTH = 4;   
-   parameter N = ADDR_WIDTH-1;
+   parameter addr_width = 4;   
+   parameter N = addr_width-1;
    parameter Q1 = 2'b00;
    parameter Q2 = 2'b01;
    parameter Q3 = 2'b11;
@@ -1672,14 +1672,14 @@ cnt_gray_ce_bin
 // mux read or write adr to DPRAM
 assign a_dpram_adr = (a_wr) ? {1'b0,a_wadr_bin} : {1'b1,a_radr_bin};
 assign b_dpram_adr = (b_wr) ? {1'b1,b_wadr_bin} : {1'b0,b_radr_bin};
-vl_dp_ram_2r2w
+vl_dpram_2r2w
     # (.data_width(data_width), .addr_width(addr_width+1))
     dpram ( .d_a(a_d), .q_a(a_q), .adr_a(a_dpram_adr), .we_a(a_wr), .clk_a(a_clk), 
             .d_b(b_d), .q_b(b_q), .adr_b(b_dpram_adr), .we_b(b_wr), .clk_b(b_clk));
-vl_fifo_async_cmp
+vl_fifo_cmp_async
     # (.addr_width(addr_width))
     cmp1 ( .wptr(a_wadr), .rptr(b_radr), .fifo_empty(b_fifo_empty), .fifo_full(a_fifo_full), .wclk(a_clk), .rclk(b_clk), .rst(a_rst) );
-vl_fifo_async_cmp
+vl_fifo_cmp_async
     # (.addr_width(addr_width))
     cmp2 ( .wptr(b_wadr), .rptr(a_radr), .fifo_empty(a_fifo_empty), .fifo_full(b_fifo_full), .wclk(b_clk), .rclk(a_clk), .rst(b_rst) );
 endmodule
