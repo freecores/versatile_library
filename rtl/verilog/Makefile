@@ -15,6 +15,7 @@ VERILOG_FILES_CNT += cnt_gray_ce_bin.v
 VERILOG_FILES += $(VERILOG_FILES_CNT)
 VERILOG_FILES += counters.v
 VERILOG_FILES += memories.v
+VERILOG_FILES += wb.v
 
 VERSATILE_LIBRARIES = versatile_library.v
 VERSATILE_LIBRARIES += versatile_library_actel.v
