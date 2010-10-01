@@ -294,6 +294,19 @@ input clk;/*
      else
        direction <= going_full;*/
 endmodule
+module delay ( d, q, clk, rst);
+parameter depth = 10;
+input d;
+output q;
+input clk, rst;
+reg [1:depth] dffs;
+always @ (posedge clk or posedge rst)
+if (rst)
+    dffs <= {depth{1'b0}};
+else
+    dffs <= {d,dffs[1:depth-1]};
+assign q = dffs[depth];
+endmodule
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
 ////  Versatile counter                                           ////

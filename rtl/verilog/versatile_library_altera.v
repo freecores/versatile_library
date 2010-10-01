@@ -280,6 +280,19 @@ output q;
 input clk;
 dff_sr i0 (.aclr(), .aset(), .clock(1'b1), .data(1'b1), .q(q));
 endmodule
+module delay ( d, q, clk, rst);
+parameter depth = 10;
+input d;
+output q;
+input clk, rst;
+reg [1:depth] dffs;
+always @ (posedge clk or posedge rst)
+if (rst)
+    dffs <= {depth{1'b0}};
+else
+    dffs <= {d,dffs[1:depth-1]};
+assign q = dffs[depth];
+endmodule
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
 ////  Versatile counter                                           ////
