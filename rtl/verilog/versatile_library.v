@@ -2201,7 +2201,6 @@ parameter wbm_adr0 = 2'b00;
 parameter wbm_adr1 = 2'b01;
 parameter wbm_data = 2'b10;
 
-reg wbs_we_reg;
 reg [1:0] wbs_bte_reg;
 reg wbs;
 wire wbs_eoc_alert, wbm_eoc_alert;
@@ -2209,9 +2208,6 @@ reg wbs_eoc, wbm_eoc;
 reg [1:0] wbm;
 
 reg [1:16] wbs_count, wbm_count;
-
-reg wbs_ack_o_rd;
-wire wbs_ack_o_wr;
 
 wire [35:0] a_d, a_q, b_d, b_q;
 wire a_wr, a_rd, a_fifo_full, a_fifo_empty, b_wr, b_rd, b_fifo_full, b_fifo_empty;
@@ -2268,9 +2264,9 @@ assign wbs_dat_o = a_q[35:4];
 	
 always @ (posedge wbs_clk or posedge wbs_rst)
 if (wbs_rst)
-	{wbs_we_reg,wbs_bte_reg} <= {1'b0,2'b00};
+	wbs_bte_reg <= 2'b00;
 else
-	{wbs_we_reg,wbs_bte_reg} <= {wbs_we_i,wbs_bte_i};
+	wbs_bte_reg <= wbs_bte_i;
 
 // wbm FIFO
 assign wbm_eoc_alert = (wbm_bte_o==wrap4 & wbm_count[3]) | (wbm_bte_o==wrap8 & wbm_count[7]) | (wbm_bte_o==wrap16 & wbm_count[15]);
