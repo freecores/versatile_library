@@ -1308,6 +1308,7 @@ module vl_rom_init ( adr, q, clk);
    always @ (posedge clk)
      q <= rom[adr];
 endmodule
+/*
 module vl_rom ( adr, q, clk);
 parameter data_width = 32;
 parameter addr_width = 4;
@@ -1334,6 +1335,7 @@ input clk;
 always @ (posedge clk)
     q <= data[adr];
 endmodule
+*/
 // Single port RAM
 module vl_ram ( d, adr, we, q, clk);
    parameter data_width = 32;
@@ -1496,14 +1498,14 @@ module vl_fifo_cmp_async ( wptr, rptr, fifo_empty, fifo_full, wclk, rclk, rst );
    parameter going_empty = 1'b0;
    parameter going_full  = 1'b1;
    input [N:0]  wptr, rptr;   
-   output reg	fifo_empty;
+   output 	fifo_empty;
    output       fifo_full;
    input 	wclk, rclk, rst;   
    wire direction;
    reg 	direction_set, direction_clr;
    wire async_empty, async_full;
    wire fifo_full2;
-   reg  fifo_empty2;   
+   wire fifo_empty2;   
    // direction_set
    always @ (wptr[N:N-1] or rptr[N:N-1])
      case ({wptr[N:N-1],rptr[N:N-1]})
@@ -1539,11 +1541,13 @@ module vl_fifo_cmp_async ( wptr, rptr, fifo_empty, fifo_full, wclk, rclk, rst );
      else
        {fifo_full, fifo_full2} <= {fifo_full2, async_full};
 */
-   always @ (posedge rclk or posedge async_empty)
+/*   always @ (posedge rclk or posedge async_empty)
      if (async_empty)
        {fifo_empty, fifo_empty2} <= 2'b11;
      else
-       {fifo_empty,fifo_empty2} <= {fifo_empty2,async_empty};   
+       {fifo_empty,fifo_empty2} <= {fifo_empty2,async_empty}; */
+    dff # ( .reset_value(1'b1)) dff0 ( .d(async_empty), .q(fifo_empty2), .clk(rclk), .rst(async_empty));
+    dff # ( .reset_value(1'b1)) dff1 ( .d(fifo_empty2), .q(fifo_empty),  .clk(rclk), .rst(async_empty));
 endmodule // async_comp
 module vl_fifo_1r1w_async (
     d, wr, fifo_full, wr_clk, wr_rst,
@@ -1738,14 +1742,15 @@ input [1:0]  wbs_bte_i;
 input [2:0]  wbs_cti_i;
 input wbs_we_i, wbs_cyc_i, wbs_stb_i;
 output [31:0] wbs_dat_o;
-output reg wbs_ack_o;
+output wbs_ack_o;
 input wbs_clk, wbs_rst;
 output [31:0] wbm_dat_o;
 output reg [31:2] wbm_adr_o;
 output [3:0]  wbm_sel_o;
 output reg [1:0]  wbm_bte_o;
 output reg [2:0]  wbm_cti_o;
-output reg wbm_we_o, wbm_cyc_o;
+output reg wbm_we_o;
+output wbm_cyc_o;
 output wbm_stb_o;
 input [31:0]  wbm_dat_i;
 input wbm_ack_i;
@@ -1770,13 +1775,13 @@ reg wbs;
 wire wbs_eoc_alert, wbm_eoc_alert;
 reg wbs_eoc, wbm_eoc;
 reg [1:0] wbm;
-reg [1:16] wbs_count, wbm_count;
+wire [1:16] wbs_count, wbm_count;
 wire [35:0] a_d, a_q, b_d, b_q;
 wire a_wr, a_rd, a_fifo_full, a_fifo_empty, b_wr, b_rd, b_fifo_full, b_fifo_empty;
 reg a_rd_reg;
 wire b_rd_adr, b_rd_data;
-reg b_rd_data_reg;
-reg [35:0] temp;
+wire b_rd_data_reg;
+wire [35:0] temp;
 assign wbs_eoc_alert = (wbs_bte_reg==wrap4 & wbs_count[3]) | (wbs_bte_reg==wrap8 & wbs_count[7]) | (wbs_bte_reg==wrap16 & wbs_count[15]);
 always @ (posedge wbs_clk or posedge wbs_rst)
 if (wbs_rst)

@@ -55,7 +55,7 @@ input [1:0]  wbs_bte_i;
 input [2:0]  wbs_cti_i;
 input wbs_we_i, wbs_cyc_i, wbs_stb_i;
 output [31:0] wbs_dat_o;
-output reg wbs_ack_o;
+output wbs_ack_o;
 input wbs_clk, wbs_rst;
 
 output [31:0] wbm_dat_o;
@@ -63,7 +63,8 @@ output reg [31:2] wbm_adr_o;
 output [3:0]  wbm_sel_o;
 output reg [1:0]  wbm_bte_o;
 output reg [2:0]  wbm_cti_o;
-output reg wbm_we_o, wbm_cyc_o;
+output reg wbm_we_o;
+output wbm_cyc_o;
 output wbm_stb_o;
 input [31:0]  wbm_dat_i;
 input wbm_ack_i;
@@ -94,14 +95,14 @@ wire wbs_eoc_alert, wbm_eoc_alert;
 reg wbs_eoc, wbm_eoc;
 reg [1:0] wbm;
 
-reg [1:16] wbs_count, wbm_count;
+wire [1:16] wbs_count, wbm_count;
 
 wire [35:0] a_d, a_q, b_d, b_q;
 wire a_wr, a_rd, a_fifo_full, a_fifo_empty, b_wr, b_rd, b_fifo_full, b_fifo_empty;
 reg a_rd_reg;
 wire b_rd_adr, b_rd_data;
-reg b_rd_data_reg;
-reg [35:0] temp;
+wire b_rd_data_reg;
+wire [35:0] temp;
 
 `define WE 5
 `define BTE 4:3

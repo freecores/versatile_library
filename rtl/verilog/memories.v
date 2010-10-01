@@ -60,6 +60,7 @@ module vl_rom_init ( adr, q, clk);
 
 endmodule
 
+/*
 module vl_rom ( adr, q, clk);
 
 parameter data_width = 32;
@@ -91,7 +92,7 @@ always @ (posedge clk)
     q <= data[adr];
 
 endmodule
-
+*/
 // Single port RAM
 
 module vl_ram ( d, adr, we, q, clk);
@@ -287,7 +288,7 @@ module vl_fifo_cmp_async ( wptr, rptr, fifo_empty, fifo_full, wclk, rclk, rst );
    parameter going_full  = 1'b1;
    
    input [N:0]  wptr, rptr;   
-   output reg	fifo_empty;
+   output 	fifo_empty;
    output       fifo_full;
    input 	wclk, rclk, rst;   
 
@@ -301,7 +302,7 @@ module vl_fifo_cmp_async ( wptr, rptr, fifo_empty, fifo_full, wclk, rclk, rst );
    
    wire async_empty, async_full;
    wire fifo_full2;
-   reg  fifo_empty2;   
+   wire fifo_empty2;   
    
    // direction_set
    always @ (wptr[N:N-1] or rptr[N:N-1])
@@ -353,11 +354,13 @@ module vl_fifo_cmp_async ( wptr, rptr, fifo_empty, fifo_full, wclk, rclk, rst );
      else
        {fifo_full, fifo_full2} <= {fifo_full2, async_full};
 */
-   always @ (posedge rclk or posedge async_empty)
+/*   always @ (posedge rclk or posedge async_empty)
      if (async_empty)
        {fifo_empty, fifo_empty2} <= 2'b11;
      else
-       {fifo_empty,fifo_empty2} <= {fifo_empty2,async_empty};   
+       {fifo_empty,fifo_empty2} <= {fifo_empty2,async_empty}; */
+    dff # ( .reset_value(1'b1)) dff0 ( .d(async_empty), .q(fifo_empty2), .clk(rclk), .rst(async_empty));
+    dff # ( .reset_value(1'b1)) dff1 ( .d(fifo_empty2), .q(fifo_empty),  .clk(rclk), .rst(async_empty));
 
 endmodule // async_comp
 
