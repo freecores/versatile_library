@@ -238,3 +238,49 @@ fifo (
     );
     
 endmodule
+
+// WB ROM
+module wb_boot_rom (
+    wb_adr_i, wb_stb_i, wb_cyc_i, 
+    wb_dat_o, wb_ack_o, wb_clk, wb_rst);
+
+//E2_ifndef BOOT_ROM
+//E2_define BOOT_ROM "boot_rom.v"
+//E2_endif
+    parameter addr_width = 5;
+   
+   input [(addr_width+2)-1:2]       wb_adr_i;
+   input 			    wb_stb_i;
+   input 			    wb_cyc_i;
+   output reg [31:0] 		    wb_dat_o;
+   output reg 			    wb_ack_o;
+   input 			    wb_clk;
+   input 			    wb_rst;
+   
+always @ (posedge wb_clk or posedge wb_rst)
+    if (wb_rst)
+        wb_dat_o <= 32'h15000000;
+    else
+	 case (wb_adr_i)
+//E2_include `BOOT_ROM
+	   /*	 
+	    // Zero r0 and jump to 0x00000100
+	    0 : wb_dat_o <= 32'h18000000;
+	    1 : wb_dat_o <= 32'hA8200000;
+	    2 : wb_dat_o <= 32'hA8C00100;
+	    3 : wb_dat_o <= 32'h44003000;
+	    4 : wb_dat_o <= 32'h15000000;
+	    */
+	   default:
+	     wb_dat_o <= 32'h00000000;
+	     
+	 endcase // case (wb_adr_i)
+
+   
+always @ (posedge wb_clk or posedge wb_rst)
+    if (wb_rst)
+        wb_ack_o <= 1'b0;
+    else
+        wb_ack_o <= wb_stb_i & wb_cyc_i & !wb_ack_o;
+
+endmodule

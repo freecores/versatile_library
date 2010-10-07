@@ -84,7 +84,7 @@ endmodule
 `endif //ACTEL
 
 // sync reset
-// input active lo async reset, normally from external reset generetaor and/or switch
+// input active lo async reset, normally from external reset generator and/or switch
 // output active high global reset sync with two DFFs 
 `timescale 1 ns/100 ps
 module vl_sync_rst ( rst_n_i, rst_o, clk);
@@ -93,22 +93,22 @@ output rst_o;
 reg [0:1] tmp;
 always @ (posedge clk or negedge rst_n_i)
 if (!rst_n_i)
-	tmp <= 2'b00;
+	tmp <= 2'b11;
 else
-	tmp <= {1'b1,tmp[0]};
-vl_gbuf buf_i0( .i(tmp[1]), .o(rst_o));
+	tmp <= {1'b0,tmp[0]};
+vl_gbuf buf_i0( .i(tmp[0]), .o(rst_o));
 endmodule
 
 // vl_pll
 `ifdef ACTEL
-`timescale 1 ns/100 ps
+`timescale 1 ps/1 ps
 module vl_pll ( clk_i, rst_n_i, lock, clk_o, rst_o);
 parameter index = 0;
 parameter number_of_clk = 1;
-parameter period_time_0 = 20;
-parameter period_time_1 = 20;
-parameter period_time_2 = 20;
-parameter lock_delay = 2000;
+parameter period_time_0 = 20000;
+parameter period_time_1 = 20000;
+parameter period_time_2 = 20000;
+parameter lock_delay = 2000000;
 input clk_i, rst_n_i;
 output lock;
 output reg [0:number_of_clk-1] clk_o;
@@ -205,13 +205,13 @@ endmodule
 `else
 
 // generic PLL
-`timescale 1 ns/100 ps
+`timescale 1 ps/1 ps
 module vl_pll ( clk_i, rst_n_i, lock, clk_o, rst_o);
 parameter index = 0;
 parameter number_of_clk = 1;
-parameter period_time_0 = 20;
-parameter period_time_1 = 20;
-parameter period_time_2 = 20;
+parameter period_time_0 = 20000;
+parameter period_time_1 = 20000;
+parameter period_time_2 = 20000;
 parameter lock_delay = 2000;
 input clk_i, rst_n_i;
 output lock;
@@ -242,7 +242,8 @@ assign #lock_delay lock = rst_n_i;
 endmodule
 
 `endif //altera
-`endif //actel//////////////////////////////////////////////////////////////////////
+`endif //actel
+//////////////////////////////////////////////////////////////////////
 ////                                                              ////
 ////  Versatile library, registers                                ////
 ////                                                              ////
@@ -531,6 +532,39 @@ input clk;/*
 endmodule
 `endif
 
+module shreg ( d, q, clk, rst);
+parameter depth = 10;
+input d;
+output q;
+input clk, rst;
+
+reg [1:depth] dffs;
+
+always @ (posedge clk or posedge rst)
+if (rst)
+    dffs <= {depth{1'b0}};
+else
+    dffs <= {d,dffs[1:depth-1]};
+assign q = dffs[depth];
+endmodule
+
+module shreg_ce ( d, ce, q, clk, rst);
+parameter depth = 10;
+input d, ce;
+output q;
+input clk, rst;
+
+reg [1:depth] dffs;
+
+always @ (posedge clk or posedge rst)
+if (rst)
+    dffs <= {depth{1'b0}};
+else
+    if (ce)
+        dffs <= {d,dffs[1:depth-1]};
+assign q = dffs[depth];
+endmodule
+
 module delay ( d, q, clk, rst);
 parameter depth = 10;
 input d;
@@ -545,7 +579,25 @@ if (rst)
 else
     dffs <= {d,dffs[1:depth-1]};
 assign q = dffs[depth];
-endmodule//////////////////////////////////////////////////////////////////////
+endmodule
+
+module delay_emptyflag ( d, q, emptyflag, clk, rst);
+parameter depth = 10;
+input d;
+output q, emptyflag;
+input clk, rst;
+
+reg [1:depth] dffs;
+
+always @ (posedge clk or posedge rst)
+if (rst)
+    dffs <= {depth{1'b0}};
+else
+    dffs <= {d,dffs[1:depth-1]};
+assign q = dffs[depth];
+assign emptyflag = !(|dffs);
+endmodule
+//////////////////////////////////////////////////////////////////////
 ////                                                              ////
 ////  Versatile counter                                           ////
 ////                                                              ////
@@ -2369,4 +2421,50 @@ fifo (
     .b_rst(wbm_rst)	
     );
     
+endmodule
+
+// WB ROM
+module wb_boot_rom (
+    wb_adr_i, wb_stb_i, wb_cyc_i, 
+    wb_dat_o, wb_ack_o, wb_clk, wb_rst);
+
+`ifndef BOOT_ROM
+`define BOOT_ROM "boot_rom.v"
+`endif
+    parameter addr_width = 5;
+   
+   input [(addr_width+2)-1:2]       wb_adr_i;
+   input 			    wb_stb_i;
+   input 			    wb_cyc_i;
+   output reg [31:0] 		    wb_dat_o;
+   output reg 			    wb_ack_o;
+   input 			    wb_clk;
+   input 			    wb_rst;
+   
+always @ (posedge wb_clk or posedge wb_rst)
+    if (wb_rst)
+        wb_dat_o <= 32'h15000000;
+    else
+	 case (wb_adr_i)
+`include `BOOT_ROM
+	   /*	 
+	    // Zero r0 and jump to 0x00000100
+	    0 : wb_dat_o <= 32'h18000000;
+	    1 : wb_dat_o <= 32'hA8200000;
+	    2 : wb_dat_o <= 32'hA8C00100;
+	    3 : wb_dat_o <= 32'h44003000;
+	    4 : wb_dat_o <= 32'h15000000;
+	    */
+	   default:
+	     wb_dat_o <= 32'h00000000;
+	     
+	 endcase // case (wb_adr_i)
+
+   
+always @ (posedge wb_clk or posedge wb_rst)
+    if (wb_rst)
+        wb_ack_o <= 1'b0;
+    else
+        wb_ack_o <= wb_stb_i & wb_cyc_i & !wb_ack_o;
+
 endmodule

@@ -84,7 +84,7 @@ endmodule
 `endif //ACTEL
 
 // sync reset
-// input active lo async reset, normally from external reset generetaor and/or switch
+// input active lo async reset, normally from external reset generator and/or switch
 // output active high global reset sync with two DFFs 
 `timescale 1 ns/100 ps
 module vl_sync_rst ( rst_n_i, rst_o, clk);
@@ -93,22 +93,22 @@ output rst_o;
 reg [0:1] tmp;
 always @ (posedge clk or negedge rst_n_i)
 if (!rst_n_i)
-	tmp <= 2'b00;
+	tmp <= 2'b11;
 else
-	tmp <= {1'b1,tmp[0]};
-vl_gbuf buf_i0( .i(tmp[1]), .o(rst_o));
+	tmp <= {1'b0,tmp[0]};
+vl_gbuf buf_i0( .i(tmp[0]), .o(rst_o));
 endmodule
 
 // vl_pll
 `ifdef ACTEL
-`timescale 1 ns/100 ps
+`timescale 1 ps/1 ps
 module vl_pll ( clk_i, rst_n_i, lock, clk_o, rst_o);
 parameter index = 0;
 parameter number_of_clk = 1;
-parameter period_time_0 = 20;
-parameter period_time_1 = 20;
-parameter period_time_2 = 20;
-parameter lock_delay = 2000;
+parameter period_time_0 = 20000;
+parameter period_time_1 = 20000;
+parameter period_time_2 = 20000;
+parameter lock_delay = 2000000;
 input clk_i, rst_n_i;
 output lock;
 output reg [0:number_of_clk-1] clk_o;
@@ -205,13 +205,13 @@ endmodule
 `else
 
 // generic PLL
-`timescale 1 ns/100 ps
+`timescale 1 ps/1 ps
 module vl_pll ( clk_i, rst_n_i, lock, clk_o, rst_o);
 parameter index = 0;
 parameter number_of_clk = 1;
-parameter period_time_0 = 20;
-parameter period_time_1 = 20;
-parameter period_time_2 = 20;
+parameter period_time_0 = 20000;
+parameter period_time_1 = 20000;
+parameter period_time_2 = 20000;
 parameter lock_delay = 2000;
 input clk_i, rst_n_i;
 output lock;

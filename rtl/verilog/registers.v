@@ -287,6 +287,39 @@ input clk;/*
 endmodule
 `endif
 
+module shreg ( d, q, clk, rst);
+parameter depth = 10;
+input d;
+output q;
+input clk, rst;
+
+reg [1:depth] dffs;
+
+always @ (posedge clk or posedge rst)
+if (rst)
+    dffs <= {depth{1'b0}};
+else
+    dffs <= {d,dffs[1:depth-1]};
+assign q = dffs[depth];
+endmodule
+
+module shreg_ce ( d, ce, q, clk, rst);
+parameter depth = 10;
+input d, ce;
+output q;
+input clk, rst;
+
+reg [1:depth] dffs;
+
+always @ (posedge clk or posedge rst)
+if (rst)
+    dffs <= {depth{1'b0}};
+else
+    if (ce)
+        dffs <= {d,dffs[1:depth-1]};
+assign q = dffs[depth];
+endmodule
+
 module delay ( d, q, clk, rst);
 parameter depth = 10;
 input d;
@@ -301,4 +334,21 @@ if (rst)
 else
     dffs <= {d,dffs[1:depth-1]};
 assign q = dffs[depth];
+endmodule
+
+module delay_emptyflag ( d, q, emptyflag, clk, rst);
+parameter depth = 10;
+input d;
+output q, emptyflag;
+input clk, rst;
+
+reg [1:depth] dffs;
+
+always @ (posedge clk or posedge rst)
+if (rst)
+    dffs <= {depth{1'b0}};
+else
+    dffs <= {d,dffs[1:depth-1]};
+assign q = dffs[depth];
+assign emptyflag = !(|dffs);
 endmodule
