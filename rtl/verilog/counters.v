@@ -40,7 +40,7 @@
 ////                                                              ////
 //////////////////////////////////////////////////////////////////////
 
-module cnt_shreg_wrap ( q, rst, clk);
+module vl_cnt_shreg_wrap ( q, rst, clk);
 
    parameter length = 4;
    output reg [0:length-1] q;
@@ -55,7 +55,7 @@ module cnt_shreg_wrap ( q, rst, clk);
             
 endmodule
 
-module cnt_shreg_ce_wrap ( cke, q, rst, clk);
+module vl_cnt_shreg_ce_wrap ( cke, q, rst, clk);
 
    parameter length = 4;
    input cke;
@@ -72,7 +72,7 @@ module cnt_shreg_ce_wrap ( cke, q, rst, clk);
             
 endmodule
 
-module cnt_shreg_ce_clear ( cke, clear, q, rst, clk);
+module vl_cnt_shreg_ce_clear ( cke, clear, q, rst, clk);
 
    parameter length = 4;
    input cke, clear;
@@ -92,7 +92,7 @@ module cnt_shreg_ce_clear ( cke, clear, q, rst, clk);
             
 endmodule
 
-module cnt_shreg_ce_clear_wrap ( cke, clear, q, rst, clk);
+module vl_cnt_shreg_ce_clear_wrap ( cke, clear, q, rst, clk);
 
    parameter length = 4;
    input cke, clear;

@@ -328,7 +328,7 @@ module vl_fifo_cmp_async ( wptr, rptr, fifo_empty, fifo_full, wclk, rclk, rst );
        endcase
 
 `ifndef GENERATE_DIRECTION_AS_LATCH
-    dff_sr dff_sr_dir( .aclr(direction_clr), .aset(direction_set), .clock(1'b1), .data(1'b1), .q(direction));
+    vl_dff_sr dff_sr_dir( .aclr(direction_clr), .aset(direction_set), .clock(1'b1), .data(1'b1), .q(direction));
 `endif
 
 `ifdef GENERATE_DIRECTION_AS_LATCH
@@ -342,8 +342,8 @@ module vl_fifo_cmp_async ( wptr, rptr, fifo_empty, fifo_full, wclk, rclk, rst );
    assign async_empty = (wptr == rptr) && (direction==going_empty);
    assign async_full  = (wptr == rptr) && (direction==going_full);
 
-    dff_sr dff_sr_empty0( .aclr(rst), .aset(async_full), .clock(wclk), .data(async_full), .q(fifo_full2));
-    dff_sr dff_sr_empty1( .aclr(rst), .aset(async_full), .clock(wclk), .data(fifo_full2), .q(fifo_full));
+    vl_dff_sr dff_sr_empty0( .aclr(rst), .aset(async_full), .clock(wclk), .data(async_full), .q(fifo_full2));
+    vl_dff_sr dff_sr_empty1( .aclr(rst), .aset(async_full), .clock(wclk), .data(fifo_full2), .q(fifo_full));
 
 /*
    always @ (posedge wclk or posedge rst or posedge async_full)
@@ -359,8 +359,8 @@ module vl_fifo_cmp_async ( wptr, rptr, fifo_empty, fifo_full, wclk, rclk, rst );
        {fifo_empty, fifo_empty2} <= 2'b11;
      else
        {fifo_empty,fifo_empty2} <= {fifo_empty2,async_empty}; */
-    dff # ( .reset_value(1'b1)) dff0 ( .d(async_empty), .q(fifo_empty2), .clk(rclk), .rst(async_empty));
-    dff # ( .reset_value(1'b1)) dff1 ( .d(fifo_empty2), .q(fifo_empty),  .clk(rclk), .rst(async_empty));
+    vl_dff # ( .reset_value(1'b1)) dff0 ( .d(async_empty), .q(fifo_empty2), .clk(rclk), .rst(async_empty));
+    vl_dff # ( .reset_value(1'b1)) dff1 ( .d(fifo_empty2), .q(fifo_empty),  .clk(rclk), .rst(async_empty));
 
 endmodule // async_comp
 
@@ -392,11 +392,11 @@ vl_fifo_1r1w_async (
     q, rd, fifo_empty, rd_clk, rd_rst
     );
 
-cnt_gray_ce_bin
+vl_cnt_gray_ce_bin
     # ( .length(addr_width))
     fifo_wr_adr( .cke(wr), .q(wadr), .q_bin(wadr_bin), .rst(wr_rst), .clk(wr_clk));
     
-cnt_gray_ce_bin
+vl_cnt_gray_ce_bin
     # (.length(addr_width))
     fifo_rd_adr( .cke(wr), .q(radr), .q_bin(radr_bin), .rst(rd_rst), .clk(rd_rst));
 
@@ -498,19 +498,19 @@ wire [addr_width:1] b_wadr, b_wadr_bin, b_radr, b_radr_bin;
 // dpram
 wire [addr_width:0] a_dpram_adr, b_dpram_adr;
 
-cnt_gray_ce_bin
+vl_cnt_gray_ce_bin
     # ( .length(addr_width))
     fifo_a_wr_adr( .cke(a_wr), .q(a_wadr), .q_bin(a_wadr_bin), .rst(a_rst), .clk(a_clk));
     
-cnt_gray_ce_bin
+vl_cnt_gray_ce_bin
     # (.length(addr_width))
     fifo_a_rd_adr( .cke(a_rd), .q(a_radr), .q_bin(a_radr_bin), .rst(a_rst), .clk(a_clk));
 
-cnt_gray_ce_bin
+vl_cnt_gray_ce_bin
     # ( .length(addr_width))
     fifo_b_wr_adr( .cke(b_wr), .q(b_wadr), .q_bin(b_wadr_bin), .rst(b_rst), .clk(b_clk));
     
-cnt_gray_ce_bin
+vl_cnt_gray_ce_bin
     # (.length(addr_width))
     fifo_b_rd_adr( .cke(b_rd), .q(b_radr), .q_bin(b_radr_bin), .rst(b_rst), .clk(b_clk));
 

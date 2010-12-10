@@ -1,5 +1,5 @@
 Name,type,,,,
-cnt_gray_ce_bin,GRAY,,,,
+vl_cnt_gray_ce_bin,GRAY,,,,
 ,,,,,
 clear,set,cke,rew,,
 0,0,1,0,,

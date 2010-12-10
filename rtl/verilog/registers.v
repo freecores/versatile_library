@@ -40,7 +40,7 @@
 ////                                                              ////
 //////////////////////////////////////////////////////////////////////
 
-module dff ( d, q, clk, rst);
+module vl_dff ( d, q, clk, rst);
 
 	parameter width = 1;	
 	parameter reset_value = 0;
@@ -57,7 +57,7 @@ module dff ( d, q, clk, rst);
 
 endmodule
 
-module dff_array ( d, q, clk, rst);
+module vl_dff_array ( d, q, clk, rst);
 
 	parameter width = 1;
         parameter depth = 2;
@@ -82,7 +82,7 @@ module dff_array ( d, q, clk, rst);
     
 endmodule
 
-module dff_ce ( d, ce, q, clk, rst);
+module vl_dff_ce ( d, ce, q, clk, rst);
 
 	parameter width = 1;	
 	parameter reset_value = 0;
@@ -100,7 +100,7 @@ module dff_ce ( d, ce, q, clk, rst);
 
 endmodule
 
-module dff_ce_clear ( d, ce, clear, q, clk, rst);
+module vl_dff_ce_clear ( d, ce, clear, q, clk, rst);
 
 	parameter width = 1;	
 	parameter reset_value = 0;
@@ -160,7 +160,7 @@ endmodule
 // synopsys translate_off
 `timescale 1 ps / 1 ps
 // synopsys translate_on
-module dff_sr (
+module vl_dff_sr (
 	aclr,
 	aset,
 	clock,
@@ -245,7 +245,7 @@ endmodule
 `else
 
 
-module dff_sr ( aclr, aset, clock, data, q);
+module vl_dff_sr ( aclr, aset, clock, data, q);
 
     input	  aclr;
     input	  aset;
@@ -268,7 +268,7 @@ endmodule
 // LATCH
 // For targtes not supporting LATCH use dff_sr with clk=1 and data=1
 `ifdef ALTERA
-module latch ( d, le, q, clk);
+module vl_latch ( d, le, q, clk);
 input d, le;
 output q;
 input clk;
@@ -287,7 +287,7 @@ input clk;/*
 endmodule
 `endif
 
-module shreg ( d, q, clk, rst);
+module vl_shreg ( d, q, clk, rst);
 parameter depth = 10;
 input d;
 output q;
@@ -303,7 +303,7 @@ else
 assign q = dffs[depth];
 endmodule
 
-module shreg_ce ( d, ce, q, clk, rst);
+module vl_shreg_ce ( d, ce, q, clk, rst);
 parameter depth = 10;
 input d, ce;
 output q;
@@ -320,7 +320,7 @@ else
 assign q = dffs[depth];
 endmodule
 
-module delay ( d, q, clk, rst);
+module vl_delay ( d, q, clk, rst);
 parameter depth = 10;
 input d;
 output q;
@@ -336,7 +336,7 @@ else
 assign q = dffs[depth];
 endmodule
 
-module delay_emptyflag ( d, q, emptyflag, clk, rst);
+module vl_delay_emptyflag ( d, q, emptyflag, clk, rst);
 parameter depth = 10;
 input d;
 output q, emptyflag;

@@ -42,7 +42,7 @@
 
 // async wb3 - wb3 bridge
 `timescale 1ns/1ns
-module wb3wb3_bridge ( 
+module vl_wb3wb3_bridge ( 
 	// wishbone slave side
 	wbs_dat_i, wbs_adr_i, wbs_sel_i, wbs_bte_i, wbs_cti_i, wbs_we_i, wbs_cyc_i, wbs_stb_i, wbs_dat_o, wbs_ack_o, wbs_clk, wbs_rst,
 	// wishbone master side
@@ -118,7 +118,7 @@ else
 	else if (wbs_eoc_alert & (a_rd | a_wr))
 		wbs_eoc <= 1'b1;
 
-cnt_shreg_ce_clear # ( .length(16))
+vl_cnt_shreg_ce_clear # ( .length(16))
     cnt0 (
         .cke(wbs_ack_o),
         .clear(wbs_eoc),
@@ -185,12 +185,12 @@ assign b_rd_data = (wbm==wbm_adr1 & !b_fifo_empty & wbm_we_o) ? 1'b1 : // b_q[`W
                    1'b0;
 assign b_rd = b_rd_adr | b_rd_data;
 
-dff dff1 ( .d(b_rd_data), .q(b_rd_data_reg), .clk(wbm_clk), .rst(wbm_rst));
-dff_ce # ( .width(36)) dff2 ( .d(b_q), .ce(b_rd_data_reg), .q(temp), .clk(wbm_clk), .rst(wbm_rst));
+vl_dff dff1 ( .d(b_rd_data), .q(b_rd_data_reg), .clk(wbm_clk), .rst(wbm_rst));
+vl_dff_ce # ( .width(36)) dff2 ( .d(b_q), .ce(b_rd_data_reg), .q(temp), .clk(wbm_clk), .rst(wbm_rst));
 
 assign {wbm_dat_o,wbm_sel_o} = (b_rd_data_reg) ? b_q : temp;
 
-cnt_shreg_ce_clear # ( .length(16))
+vl_cnt_shreg_ce_clear # ( .length(16))
     cnt1 (
         .cke(wbm_ack_i),
         .clear(wbm_eoc),
@@ -240,47 +240,62 @@ fifo (
 endmodule
 
 // WB ROM
-module wb_boot_rom (
+module vl_wb_boot_rom (
     wb_adr_i, wb_stb_i, wb_cyc_i, 
-    wb_dat_o, wb_ack_o, wb_clk, wb_rst);
+    wb_dat_o, wb_ack_o, hit_o, wb_clk, wb_rst);
+
+    parameter adr_hi = 31;
+    parameter adr_lo = 28;
+    parameter adr_sel = 4'hf;
+    parameter addr_width = 5;
 
 //E2_ifndef BOOT_ROM
 //E2_define BOOT_ROM "boot_rom.v"
 //E2_endif
-    parameter addr_width = 5;
    
-   input [(addr_width+2)-1:2]       wb_adr_i;
-   input 			    wb_stb_i;
-   input 			    wb_cyc_i;
-   output reg [31:0] 		    wb_dat_o;
-   output reg 			    wb_ack_o;
-   input 			    wb_clk;
-   input 			    wb_rst;
+    input [adr_hi:2]    wb_adr_i;
+    input 		wb_stb_i;
+    input 		wb_cyc_i;
+    output [31:0] 	wb_dat_o;
+    output  		wb_ack_o;
+    output              hit_o;
+    input 		wb_clk;
+    input 		wb_rst;
+
+    wire hit;
+    reg [31:0] wb_dat;
+    reg wb_ack;
+    
+assign hit = wb_adr_i[adr_hi:adr_lo] == adr_sel;
    
 always @ (posedge wb_clk or posedge wb_rst)
     if (wb_rst)
-        wb_dat_o <= 32'h15000000;
+        wb_dat <= 32'h15000000;
     else
-	 case (wb_adr_i)
+	 case (wb_adr_i[addr_width-1:2])
 //E2_include `BOOT_ROM
 	   /*	 
 	    // Zero r0 and jump to 0x00000100
-	    0 : wb_dat_o <= 32'h18000000;
-	    1 : wb_dat_o <= 32'hA8200000;
-	    2 : wb_dat_o <= 32'hA8C00100;
-	    3 : wb_dat_o <= 32'h44003000;
-	    4 : wb_dat_o <= 32'h15000000;
+	    0 : wb_dat <= 32'h18000000;
+	    1 : wb_dat <= 32'hA8200000;
+	    2 : wb_dat <= 32'hA8C00100;
+	    3 : wb_dat <= 32'h44003000;
+	    4 : wb_dat <= 32'h15000000;
 	    */
 	   default:
-	     wb_dat_o <= 32'h00000000;
+	     wb_dat <= 32'h00000000;
 	     
 	 endcase // case (wb_adr_i)
 
    
 always @ (posedge wb_clk or posedge wb_rst)
     if (wb_rst)
-        wb_ack_o <= 1'b0;
+        wb_ack <= 1'b0;
     else
-        wb_ack_o <= wb_stb_i & wb_cyc_i & !wb_ack_o;
+        wb_ack <= wb_stb_i & wb_cyc_i & hit & !wb_ack;
+
+assign hit_o = hit;
+assign wb_dat_o = wb_dat & {32{wb_ack}};
+assign wb_ack_o = wb_ack;
 
 endmodule

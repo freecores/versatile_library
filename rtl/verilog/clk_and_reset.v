@@ -90,7 +90,7 @@ endmodule
 module vl_sync_rst ( rst_n_i, rst_o, clk);
 input rst_n_i, clk;
 output rst_o;
-reg [0:1] tmp;
+reg [1:0] tmp;
 always @ (posedge clk or negedge rst_n_i)
 if (!rst_n_i)
 	tmp <= 2'b11;
