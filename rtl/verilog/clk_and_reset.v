@@ -71,7 +71,7 @@ gbuf gbuf_i0 ( .CLK(i), .GL(o));
 endmodule
 `else
 `ifdef ALTERA 
-altera
+//altera
 `else
 
 `timescale 1 ns/100 ps

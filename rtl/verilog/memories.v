@@ -386,12 +386,12 @@ input                   rd_clk;
 input                   rd_rst;
 
 wire [addr_width:1] wadr, wadr_bin, radr, radr_bin;
-
+/*
 vl_fifo_1r1w_async (
     d, wr, fifo_full, wr_clk, wr_rst,
     q, rd, fifo_empty, rd_clk, rd_rst
     );
-
+*/
 vl_cnt_gray_ce_bin
     # ( .length(addr_width))
     fifo_wr_adr( .cke(wr), .q(wadr), .q_bin(wadr_bin), .rst(wr_rst), .clk(wr_clk));

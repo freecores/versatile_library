@@ -42,7 +42,7 @@
 // Global buffer
 // usage:
 // use to enable global buffers for high fan out signals such as clock and reset
-altera
+//altera
  // ALTERA
  //ACTEL
 // sync reset
@@ -381,7 +381,7 @@ parameter nr_of_ports = 4;
 input [width-1:0] a3, a2, a1, a0;
 input [nr_of_ports-1:0] sel;
 output reg [width-1:0] dout;
-reg [width-1:0] tmp [nr_of_ports-1:0];
+wire [width-1:0] tmp [nr_of_ports-1:0];
 integer i;
 // and
 assign tmp[0] = {width{sel[0]}} & a0;
@@ -397,7 +397,7 @@ parameter nr_of_ports = 5;
 input [width-1:0] a4, a3, a2, a1, a0;
 input [nr_of_ports-1:0] sel;
 output reg [width-1:0] dout;
-reg [width-1:0] tmp [nr_of_ports-1:0];
+wire [width-1:0] tmp [nr_of_ports-1:0];
 integer i;
 // and
 assign tmp[0] = {width{sel[0]}} & a0;
@@ -414,7 +414,7 @@ parameter nr_of_ports = 6;
 input [width-1:0] a5, a4, a3, a2, a1, a0;
 input [nr_of_ports-1:0] sel;
 output reg [width-1:0] dout;
-reg [width-1:0] tmp [nr_of_ports-1:0];
+wire [width-1:0] tmp [nr_of_ports-1:0];
 integer i;
 // and
 assign tmp[0] = {width{sel[0]}} & a0;
@@ -1700,10 +1700,12 @@ output                  fifo_empty;
 input                   rd_clk;
 input                   rd_rst;
 wire [addr_width:1] wadr, wadr_bin, radr, radr_bin;
+/*
 vl_fifo_1r1w_async (
     d, wr, fifo_full, wr_clk, wr_rst,
     q, rd, fifo_empty, rd_clk, rd_rst
     );
+*/
 vl_cnt_gray_ce_bin
     # ( .length(addr_width))
     fifo_wr_adr( .cke(wr), .q(wadr), .q_bin(wadr_bin), .rst(wr_rst), .clk(wr_clk));

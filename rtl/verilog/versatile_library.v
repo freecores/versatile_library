@@ -71,7 +71,7 @@ gbuf gbuf_i0 ( .CLK(i), .GL(o));
 endmodule
 `else
 `ifdef ALTERA 
-altera
+//altera
 `else
 
 `timescale 1 ns/100 ps
@@ -647,7 +647,7 @@ input [width-1:0] a3, a2, a1, a0;
 input [nr_of_ports-1:0] sel;
 output reg [width-1:0] dout;
 
-reg [width-1:0] tmp [nr_of_ports-1:0];
+wire [width-1:0] tmp [nr_of_ports-1:0];
 integer i;
 
 // and
@@ -669,7 +669,7 @@ input [width-1:0] a4, a3, a2, a1, a0;
 input [nr_of_ports-1:0] sel;
 output reg [width-1:0] dout;
 
-reg [width-1:0] tmp [nr_of_ports-1:0];
+wire [width-1:0] tmp [nr_of_ports-1:0];
 integer i;
 
 // and
@@ -692,7 +692,7 @@ input [width-1:0] a5, a4, a3, a2, a1, a0;
 input [nr_of_ports-1:0] sel;
 output reg [width-1:0] dout;
 
-reg [width-1:0] tmp [nr_of_ports-1:0];
+wire [width-1:0] tmp [nr_of_ports-1:0];
 integer i;
 
 // and
@@ -2146,12 +2146,12 @@ input                   rd_clk;
 input                   rd_rst;
 
 wire [addr_width:1] wadr, wadr_bin, radr, radr_bin;
-
+/*
 vl_fifo_1r1w_async (
     d, wr, fifo_full, wr_clk, wr_rst,
     q, rd, fifo_empty, rd_clk, rd_rst
     );
-
+*/
 vl_cnt_gray_ce_bin
     # ( .length(addr_width))
     fifo_wr_adr( .cke(wr), .q(wadr), .q_bin(wadr_bin), .rst(wr_rst), .clk(wr_clk));
