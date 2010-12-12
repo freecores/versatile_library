@@ -1952,18 +1952,12 @@ output                  fifo_empty;
 input                   rd_clk;
 input                   rd_rst;
 wire [addr_width:1] wadr, wadr_bin, radr, radr_bin;
-/*
-vl_fifo_1r1w_async (
-    d, wr, fifo_full, wr_clk, wr_rst,
-    q, rd, fifo_empty, rd_clk, rd_rst
-    );
-*/
 vl_cnt_gray_ce_bin
     # ( .length(addr_width))
     fifo_wr_adr( .cke(wr), .q(wadr), .q_bin(wadr_bin), .rst(wr_rst), .clk(wr_clk));
 vl_cnt_gray_ce_bin
     # (.length(addr_width))
-    fifo_rd_adr( .cke(wr), .q(radr), .q_bin(radr_bin), .rst(rd_rst), .clk(rd_rst));
+    fifo_rd_adr( .cke(rd), .q(radr), .q_bin(radr_bin), .rst(rd_rst), .clk(rd_clk));
 vl_dpram_1r1w
     # (.data_width(data_width), .addr_width(addr_width))
     dpram ( .d_a(d), .adr_a(wadr_bin), .we_a(wr), .clk_a(wr_clk), .q_b(q), .adr_b(radr_bin), .clk_b(rd_clk));
