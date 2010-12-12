@@ -2,12 +2,15 @@ VERILOG_FILES = clk_and_reset.v
 VERILOG_FILES += registers.v
 VERILOG_FILES += logic.v
 
-VERILOG_FILES_CNT = vl_cnt_bin_ce.v
+VERILOG_FILES_CNT = vl_cnt_bin.v
+VERILOG_FILES_CNT += vl_cnt_bin_clear.v
+VERILOG_FILES_CNT += vl_cnt_bin_ce.v
 VERILOG_FILES_CNT += vl_cnt_bin_ce_clear.v
 VERILOG_FILES_CNT += vl_cnt_bin_ce_clear_set_rew.v
 VERILOG_FILES_CNT += vl_cnt_bin_ce_rew_l1.v
 VERILOG_FILES_CNT += vl_cnt_lfsr_zq.v
 VERILOG_FILES_CNT += vl_cnt_lfsr_ce_zq.v
+VERILOG_FILES_CNT += vl_cnt_lfsr_ce_q_zq.v
 VERILOG_FILES_CNT += vl_cnt_lfsr_ce_rew_l1.v
 VERILOG_FILES_CNT += vl_cnt_gray.v
 VERILOG_FILES_CNT += vl_cnt_gray_ce.v
@@ -29,12 +32,15 @@ svn_export:
 
 #.PHONY: $(VERILOG_FILES_CNT)
 $(VERILOG_FILES_CNT):
+	./versatile_counter_generator.php cnt_bin.csv > vl_cnt_bin.v
+	./versatile_counter_generator.php cnt_bin_clear.csv > vl_cnt_bin_clear.v
 	./versatile_counter_generator.php cnt_bin_ce.csv > vl_cnt_bin_ce.v
 	./versatile_counter_generator.php cnt_bin_ce_clear.csv > vl_cnt_bin_ce_clear.v
 	./versatile_counter_generator.php cnt_bin_ce_clear_set_rew.csv > vl_cnt_bin_ce_clear_set_rew.v
 	./versatile_counter_generator.php cnt_bin_ce_rew_l1.csv > vl_cnt_bin_ce_rew_l1.v
 	./versatile_counter_generator.php cnt_lfsr_zq.csv > vl_cnt_lfsr_zq.v
 	./versatile_counter_generator.php cnt_lfsr_ce_zq.csv > vl_cnt_lfsr_ce_zq.v
+	./versatile_counter_generator.php cnt_lfsr_ce_q_zq.csv > vl_cnt_lfsr_ce_q_zq.v
 	./versatile_counter_generator.php cnt_lfsr_ce_rew_l1.csv > vl_cnt_lfsr_ce_rew_l1.v
 	./versatile_counter_generator.php cnt_gray.csv > vl_cnt_gray.v
 	./versatile_counter_generator.php cnt_gray_ce.csv > vl_cnt_gray_ce.v
