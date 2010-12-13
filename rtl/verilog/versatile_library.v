@@ -366,6 +366,27 @@ module vl_dff_ce_clear ( d, ce, clear, q, clk, rst);
 
 endmodule
 
+module vl_dff_ce_set ( d, ce, set, q, clk, rst);
+
+	parameter width = 1;	
+	parameter reset_value = 0;
+	
+	input [width-1:0] d; 
+	input ce, set, clk, rst;
+	output reg [width-1:0] q;
+
+	always @ (posedge clk or posedge rst)
+	if (rst)
+	    q <= reset_value;
+	else
+            if (ce)
+                if (set)
+                    q <= {width{1'b1}};
+                else
+                    q <= d;
+
+endmodule
+
 `ifdef ALTERA
 // megafunction wizard: %LPM_FF%
 // GENERATION: STANDARD
