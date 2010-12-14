@@ -889,6 +889,170 @@ endmodule
 //// from http://www.opencores.org/lgpl.shtml                     ////
 ////                                                              ////
 //////////////////////////////////////////////////////////////////////
+// binary counter
+module vl_cnt_bin_ce_rew_zq_l1 ( cke, rew, zq, level1, rst, clk);
+   parameter length = 4;
+   input cke;
+   input rew;
+   output reg zq;
+   output reg level1;
+   input rst;
+   input clk;
+   parameter clear_value = 0;
+   parameter set_value = 1;
+   parameter wrap_value = 1;
+   parameter level1_value = 15;
+   reg  [length:1] qi;
+   wire  [length:1] q_next, q_next_fw, q_next_rew;
+   assign q_next_fw  = qi + {{length-1{1'b0}},1'b1};
+   assign q_next_rew = qi - {{length-1{1'b0}},1'b1};
+   assign q_next = rew ? q_next_rew : q_next_fw;
+   always @ (posedge clk or posedge rst)
+     if (rst)
+       qi <= {length{1'b0}};
+     else
+     if (cke)
+       qi <= q_next;
+   always @ (posedge clk or posedge rst)
+     if (rst)
+       zq <= 1'b1;
+     else
+     if (cke)
+       zq <= q_next == {length{1'b0}};
+    always @ (posedge clk or posedge rst)
+    if (rst)
+        level1 <= 1'b0;
+    else
+    if (cke)
+    if (q_next == level1_value)
+        level1 <= 1'b1;
+    else if (qi == level1_value & rew)
+        level1 <= 1'b0;
+endmodule
+//////////////////////////////////////////////////////////////////////
+////                                                              ////
+////  Versatile counter                                           ////
+////                                                              ////
+////  Description                                                 ////
+////  Versatile counter, a reconfigurable binary, gray or LFSR    ////
+////  counter                                                     ////
+////                                                              ////
+////  To Do:                                                      ////
+////   - add LFSR with more taps                                  ////
+////                                                              ////
+////  Author(s):                                                  ////
+////      - Michael Unneback, unneback@opencores.org              ////
+////        ORSoC AB                                              ////
+////                                                              ////
+//////////////////////////////////////////////////////////////////////
+////                                                              ////
+//// Copyright (C) 2009 Authors and OPENCORES.ORG                 ////
+////                                                              ////
+//// This source file may be used and distributed without         ////
+//// restriction provided that this copyright statement is not    ////
+//// removed from the file and that any derivative work contains  ////
+//// the original copyright notice and the associated disclaimer. ////
+////                                                              ////
+//// This source file is free software; you can redistribute it   ////
+//// and/or modify it under the terms of the GNU Lesser General   ////
+//// Public License as published by the Free Software Foundation; ////
+//// either version 2.1 of the License, or (at your option) any   ////
+//// later version.                                               ////
+////                                                              ////
+//// This source is distributed in the hope that it will be       ////
+//// useful, but WITHOUT ANY WARRANTY; without even the implied   ////
+//// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR      ////
+//// PURPOSE.  See the GNU Lesser General Public License for more ////
+//// details.                                                     ////
+////                                                              ////
+//// You should have received a copy of the GNU Lesser General    ////
+//// Public License along with this source; if not, download it   ////
+//// from http://www.opencores.org/lgpl.shtml                     ////
+////                                                              ////
+//////////////////////////////////////////////////////////////////////
+// binary counter
+module vl_cnt_bin_ce_rew_q_zq_l1 ( cke, rew, q, zq, level1, rst, clk);
+   parameter length = 4;
+   input cke;
+   input rew;
+   output [length:1] q;
+   output reg zq;
+   output reg level1;
+   input rst;
+   input clk;
+   parameter clear_value = 0;
+   parameter set_value = 1;
+   parameter wrap_value = 1;
+   parameter level1_value = 15;
+   reg  [length:1] qi;
+   wire  [length:1] q_next, q_next_fw, q_next_rew;
+   assign q_next_fw  = qi + {{length-1{1'b0}},1'b1};
+   assign q_next_rew = qi - {{length-1{1'b0}},1'b1};
+   assign q_next = rew ? q_next_rew : q_next_fw;
+   always @ (posedge clk or posedge rst)
+     if (rst)
+       qi <= {length{1'b0}};
+     else
+     if (cke)
+       qi <= q_next;
+   assign q = qi;
+   always @ (posedge clk or posedge rst)
+     if (rst)
+       zq <= 1'b1;
+     else
+     if (cke)
+       zq <= q_next == {length{1'b0}};
+    always @ (posedge clk or posedge rst)
+    if (rst)
+        level1 <= 1'b0;
+    else
+    if (cke)
+    if (q_next == level1_value)
+        level1 <= 1'b1;
+    else if (qi == level1_value & rew)
+        level1 <= 1'b0;
+endmodule
+//////////////////////////////////////////////////////////////////////
+////                                                              ////
+////  Versatile counter                                           ////
+////                                                              ////
+////  Description                                                 ////
+////  Versatile counter, a reconfigurable binary, gray or LFSR    ////
+////  counter                                                     ////
+////                                                              ////
+////  To Do:                                                      ////
+////   - add LFSR with more taps                                  ////
+////                                                              ////
+////  Author(s):                                                  ////
+////      - Michael Unneback, unneback@opencores.org              ////
+////        ORSoC AB                                              ////
+////                                                              ////
+//////////////////////////////////////////////////////////////////////
+////                                                              ////
+//// Copyright (C) 2009 Authors and OPENCORES.ORG                 ////
+////                                                              ////
+//// This source file may be used and distributed without         ////
+//// restriction provided that this copyright statement is not    ////
+//// removed from the file and that any derivative work contains  ////
+//// the original copyright notice and the associated disclaimer. ////
+////                                                              ////
+//// This source file is free software; you can redistribute it   ////
+//// and/or modify it under the terms of the GNU Lesser General   ////
+//// Public License as published by the Free Software Foundation; ////
+//// either version 2.1 of the License, or (at your option) any   ////
+//// later version.                                               ////
+////                                                              ////
+//// This source is distributed in the hope that it will be       ////
+//// useful, but WITHOUT ANY WARRANTY; without even the implied   ////
+//// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR      ////
+//// PURPOSE.  See the GNU Lesser General Public License for more ////
+//// details.                                                     ////
+////                                                              ////
+//// You should have received a copy of the GNU Lesser General    ////
+//// Public License along with this source; if not, download it   ////
+//// from http://www.opencores.org/lgpl.shtml                     ////
+////                                                              ////
+//////////////////////////////////////////////////////////////////////
 // LFSR counter
 module vl_cnt_lfsr_zq ( zq, rst, clk);
    parameter length = 4;
@@ -1888,6 +2052,39 @@ module vl_dpram_2r2w ( d_a, q_a, adr_a, we_a, clk_a, d_b, q_b, adr_b, we_b, clk_
 endmodule
 // Content addresable memory, CAM
 // FIFO
+module vl_fifo_1r1w_fill_level_sync (
+    d, wr, fifo_full,
+    q, rd, fifo_empty,
+    fill_level,
+    clk, rst
+    );
+parameter data_width = 18;
+parameter addr_width = 4;
+// write side
+input  [data_width-1:0] d;
+input                   wr;
+output                  fifo_full;
+// read side
+output [data_width-1:0] q;
+input                   rd;
+output                  fifo_empty;
+// common
+output [addr_width:0]   fill_level;
+input rst, clk;
+wire [addr_width:1] wadr, radr;
+vl_cnt_bin_ce
+    # ( .length(addr_width))
+    fifo_wr_adr( .cke(wr), .q(wadr), .rst(rst), .clk(clk));
+vl_cnt_bin_ce
+    # (.length(addr_width))
+    fifo_rd_adr( .cke(rd), .q(radr), .rst(rst), .clk(clk));
+vl_dpram_1r1w
+    # (.data_width(data_width), .addr_width(addr_width))
+    dpram ( .d_a(d), .adr_a(wadr), .we_a(wr), .clk_a(clk), .q_b(q), .adr_b(radr), .clk_b(clk));
+vl_cnt_bin_ce_rew_zq_l1
+    # (.length(addr_width+1), .level1(1<<add_width))
+    fill_level_cnt( .cke(rd ^ wr), .rew(rd), .q(fill_level), .zq(fifo_empty), .level1(fifo_full), .rst(rst), .clk(clk));
+endmodule
 module vl_fifo_cmp_async ( wptr, rptr, fifo_empty, fifo_full, wclk, rclk, rst );
    parameter addr_width = 4;   
    parameter N = addr_width-1;

@@ -273,6 +273,47 @@ endmodule
 // Content addresable memory, CAM
 
 // FIFO
+module vl_fifo_1r1w_fill_level_sync (
+    d, wr, fifo_full,
+    q, rd, fifo_empty,
+    fill_level,
+    clk, rst
+    );
+    
+parameter data_width = 18;
+parameter addr_width = 4;
+
+// write side
+input  [data_width-1:0] d;
+input                   wr;
+output                  fifo_full;
+// read side
+output [data_width-1:0] q;
+input                   rd;
+output                  fifo_empty;
+// common
+output [addr_width:0]   fill_level;
+input rst, clk;
+
+wire [addr_width:1] wadr, radr;
+
+vl_cnt_bin_ce
+    # ( .length(addr_width))
+    fifo_wr_adr( .cke(wr), .q(wadr), .rst(rst), .clk(clk));
+    
+vl_cnt_bin_ce
+    # (.length(addr_width))
+    fifo_rd_adr( .cke(rd), .q(radr), .rst(rst), .clk(clk));
+
+vl_dpram_1r1w
+    # (.data_width(data_width), .addr_width(addr_width))
+    dpram ( .d_a(d), .adr_a(wadr), .we_a(wr), .clk_a(clk), .q_b(q), .adr_b(radr), .clk_b(clk));
+
+vl_cnt_bin_ce_rew_zq_l1
+    # (.length(addr_width+1), .level1(1<<add_width))
+    fill_level_cnt( .cke(rd ^ wr), .rew(rd), .q(fill_level), .zq(fifo_empty), .level1(fifo_full), .rst(rst), .clk(clk));
+
+endmodule
 
 module vl_fifo_cmp_async ( wptr, rptr, fifo_empty, fifo_full, wclk, rclk, rst );
 
@@ -362,7 +403,7 @@ module vl_fifo_cmp_async ( wptr, rptr, fifo_empty, fifo_full, wclk, rclk, rst );
     vl_dff # ( .reset_value(1'b1)) dff0 ( .d(async_empty), .q(fifo_empty2), .clk(rclk), .rst(async_empty));
     vl_dff # ( .reset_value(1'b1)) dff1 ( .d(fifo_empty2), .q(fifo_empty),  .clk(rclk), .rst(async_empty));
 
-endmodule // async_comp
+endmodule // async_compb
 
 module vl_fifo_1r1w_async (
     d, wr, fifo_full, wr_clk, wr_rst,
