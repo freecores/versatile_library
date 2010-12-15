@@ -2363,10 +2363,10 @@ vl_dpram_2r2w
     dpram ( .d_a(a_d), .q_a(a_q), .adr_a(a_dpram_adr), .we_a(a_wr), .clk_a(a_clk), 
             .d_b(b_d), .q_b(b_q), .adr_b(b_dpram_adr), .we_b(b_wr), .clk_b(b_clk));
 vl_cnt_bin_ce_rew_zq_l1
-    # (.length(addr_width+1), .level1_value(fifo_full_level))
+    # (.length(addr_width), .level1_value(fifo_full_level))
     a_fill_level_cnt( .cke(a_rd ^ a_wr), .rew(a_rd), .q(a_fill_level), .zq(a_fifo_empty), .level1(a_fifo_full), .rst(rst), .clk(clk));
 vl_cnt_bin_ce_rew_zq_l1
-    # (.length(addr_width+1), .level1_value(fifo_full_level))
+    # (.length(addr_width), .level1_value(fifo_full_level))
     b_fill_level_cnt( .cke(b_rd ^ b_wr), .rew(b_rd), .q(b_fill_level), .zq(b_fifo_empty), .level1(b_fifo_full), .rst(rst), .clk(clk));
 endmodule
 module vl_fifo_cmp_async ( wptr, rptr, fifo_empty, fifo_full, wclk, rclk, rst );
