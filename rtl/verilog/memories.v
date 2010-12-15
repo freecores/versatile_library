@@ -310,8 +310,89 @@ vl_dpram_1r1w
     dpram ( .d_a(d), .adr_a(wadr), .we_a(wr), .clk_a(clk), .q_b(q), .adr_b(radr), .clk_b(clk));
 
 vl_cnt_bin_ce_rew_zq_l1
-    # (.length(addr_width+1), .level1_value(1<<add_width))
+    # (.length(addr_width+1), .level1_value(1<<addr_width))
     fill_level_cnt( .cke(rd ^ wr), .rew(rd), .q(fill_level), .zq(fifo_empty), .level1(fifo_full), .rst(rst), .clk(clk));
+
+endmodule
+
+// Intended use is two small FIFOs (RX and TX typically) in one FPGA RAM resource
+// RAM is supposed to be larger than the two FIFOs
+// LFSR counters used adr pointers
+module vl_fifo_2r2w_sync_simplex (
+    // a side
+    a_d, a_wr, a_fifo_full,
+    a_q, a_rd, a_fifo_empty,
+    a_fill_level,
+    // b side
+    b_d, b_wr, b_fifo_full,
+    b_q, b_rd, b_fifo_empty,
+    b_fill_level,
+    // common
+    clk, rst	
+    );
+parameter data_width = 8;
+parameter addr_width = 5;
+parameter fifo_full_level = (1<<addr_width)-1;
+
+// a side
+input  [data_width-1:0] a_d;
+input                   a_wr;
+output                  a_fifo_full;
+output [data_width-1:0] a_q;
+input                   a_rd;
+output                  a_fifo_empty;
+output [addr_width-1:0] a_fill_level;
+
+// b side
+input  [data_width-1:0] b_d;
+input                   b_wr;
+output                  b_fifo_full;
+output [data_width-1:0] b_q;
+input                   b_rd;
+output                  b_fifo_empty;
+output [addr_width-1:0] b_fill_level;
+
+input                   clk;
+input                   rst;
+
+// adr_gen
+wire [addr_width:1] a_wadr, a_radr;
+wire [addr_width:1] b_wadr, b_radr;
+// dpram
+wire [addr_width:0] a_dpram_adr, b_dpram_adr;
+
+vl_cnt_lfsr_ce
+    # ( .length(addr_width))
+    fifo_a_wr_adr( .cke(a_wr), .q(a_wadr), .rst(rst), .clk(clk));
+    
+vl_cnt_lfsr_ce
+    # (.length(addr_width))
+    fifo_a_rd_adr( .cke(a_rd), .q(a_radr), .rst(rst), .clk(clk));
+
+vl_cnt_lfsr_ce
+    # ( .length(addr_width))
+    fifo_b_wr_adr( .cke(b_wr), .q(b_wadr), .rst(rst), .clk(clk));
+    
+vl_cnt_lfsr_ce
+    # (.length(addr_width))
+    fifo_b_rd_adr( .cke(b_rd), .q(b_radr), .rst(rst), .clk(clk));
+
+// mux read or write adr to DPRAM
+assign a_dpram_adr = (a_wr) ? {1'b0,a_wadr} : {1'b1,a_radr};
+assign b_dpram_adr = (b_wr) ? {1'b1,b_wadr} : {1'b0,b_radr};
+
+vl_dpram_2r2w
+    # (.data_width(data_width), .addr_width(addr_width+1))
+    dpram ( .d_a(a_d), .q_a(a_q), .adr_a(a_dpram_adr), .we_a(a_wr), .clk_a(a_clk), 
+            .d_b(b_d), .q_b(b_q), .adr_b(b_dpram_adr), .we_b(b_wr), .clk_b(b_clk));
+            
+vl_cnt_bin_ce_rew_zq_l1
+    # (.length(addr_width+1), .level1_value(fifo_full_level))
+    a_fill_level_cnt( .cke(a_rd ^ a_wr), .rew(a_rd), .q(a_fill_level), .zq(a_fifo_empty), .level1(a_fifo_full), .rst(rst), .clk(clk));
+
+vl_cnt_bin_ce_rew_zq_l1
+    # (.length(addr_width+1), .level1_value(fifo_full_level))
+    b_fill_level_cnt( .cke(b_rd ^ b_wr), .rew(b_rd), .q(b_fill_level), .zq(b_fifo_empty), .level1(b_fifo_full), .rst(rst), .clk(clk));
 
 endmodule
 
