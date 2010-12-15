@@ -310,7 +310,7 @@ vl_dpram_1r1w
     dpram ( .d_a(d), .adr_a(wadr), .we_a(wr), .clk_a(clk), .q_b(q), .adr_b(radr), .clk_b(clk));
 
 vl_cnt_bin_ce_rew_zq_l1
-    # (.length(addr_width+1), .level1(1<<add_width))
+    # (.length(addr_width+1), .level1_value(1<<add_width))
     fill_level_cnt( .cke(rd ^ wr), .rew(rd), .q(fill_level), .zq(fifo_empty), .level1(fifo_full), .rst(rst), .clk(clk));
 
 endmodule

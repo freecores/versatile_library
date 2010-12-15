@@ -12,6 +12,8 @@ VERILOG_FILES_CNT += vl_cnt_bin_ce_rew_zq_l1.v
 VERILOG_FILES_CNT += vl_cnt_bin_ce_rew_q_zq_l1.v
 VERILOG_FILES_CNT += vl_cnt_lfsr_zq.v
 VERILOG_FILES_CNT += vl_cnt_lfsr_ce_zq.v
+VERILOG_FILES_CNT += vl_cnt_lfsr_ce_q.v
+VERILOG_FILES_CNT += vl_cnt_lfsr_ce_clear_q.v
 VERILOG_FILES_CNT += vl_cnt_lfsr_ce_q_zq.v
 VERILOG_FILES_CNT += vl_cnt_lfsr_ce_rew_l1.v
 VERILOG_FILES_CNT += vl_cnt_gray.v
@@ -44,6 +46,8 @@ $(VERILOG_FILES_CNT):
 	./versatile_counter_generator.php cnt_bin_ce_rew_q_zq_l1.csv > vl_cnt_bin_ce_rew_q_zq_l1.v
 	./versatile_counter_generator.php cnt_lfsr_zq.csv > vl_cnt_lfsr_zq.v
 	./versatile_counter_generator.php cnt_lfsr_ce_zq.csv > vl_cnt_lfsr_ce_zq.v
+	./versatile_counter_generator.php cnt_lfsr_ce_q.csv > vl_cnt_lfsr_ce_q.v
+	./versatile_counter_generator.php cnt_lfsr_ce_clear_q.csv > vl_cnt_lfsr_ce_clear_q.v
 	./versatile_counter_generator.php cnt_lfsr_ce_q_zq.csv > vl_cnt_lfsr_ce_q_zq.v
 	./versatile_counter_generator.php cnt_lfsr_ce_rew_l1.csv > vl_cnt_lfsr_ce_rew_l1.v
 	./versatile_counter_generator.php cnt_gray.csv > vl_cnt_gray.v
