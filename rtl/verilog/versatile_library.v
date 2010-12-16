@@ -387,6 +387,47 @@ module vl_dff_ce_set ( d, ce, set, q, clk, rst);
 
 endmodule
 
+module vl_spr ( sp, r, q, clk, rst);
+        
+        parameter width = 1;
+        parameter reset_value = 0;
+        
+        input sp, r;
+        output reg q;
+        input clk, rst;
+        
+        always @ (posedge clk or posedge rst)
+        if (rst)
+            q <= reset_value;
+        else
+            if (sp)
+                q <= 1'b1;
+            else if (r)
+                q <= 1'b0;
+
+endmodule
+
+module vl_srp ( s, rp, q, clk, rst);
+        
+        parameter width = 1;
+        parameter reset_value = 0;
+        
+        input s, rp;
+        output reg q;
+        input clk, rst;
+        
+        always @ (posedge clk or posedge rst)
+        if (rst)
+            q <= reset_value;
+        else
+            if (rp)
+                q <= 1'b0;
+            else if (s)
+                q <= 1'b1;
+
+endmodule
+
+
 `ifdef ALTERA
 // megafunction wizard: %LPM_FF%
 // GENERATION: STANDARD
@@ -1049,6 +1090,105 @@ endmodule
 //////////////////////////////////////////////////////////////////////
 
 // binary counter
+module vl_cnt_bin_ce_clear_l1_l2 ( clear, cke, q, level1, level2, rst, clk);
+
+   parameter length = 4;
+   input clear;
+   input cke;
+   output [length:1] q;
+   output reg level1;
+   output reg level2;
+   input rst;
+   input clk;
+
+   parameter clear_value = 0;
+   parameter set_value = 1;
+   parameter wrap_value = 7;
+   parameter level1_value = 15;
+
+   wire rew;
+   assign rew=1'b0;
+   reg  [length:1] qi;
+   wire [length:1] q_next;
+   assign q_next =  clear ? {length{1'b0}} :qi + {{length-1{1'b0}},1'b1};
+
+   always @ (posedge clk or posedge rst)
+     if (rst)
+       qi <= {length{1'b0}};
+     else
+     if (cke)
+       qi <= q_next;
+
+   assign q = qi;
+
+
+    always @ (posedge clk or posedge rst)
+    if (rst)
+        level1 <= 1'b0;
+    else
+    if (cke)
+    if (clear)
+        level1 <= 1'b0;
+    else if (q_next == level1_value)
+        level1 <= 1'b1;
+    else if (qi == level1_value & rew)
+        level1 <= 1'b0;
+
+    always @ (posedge clk or posedge rst)
+    if (rst)
+        level2 <= 1'b0;
+    else
+    if (cke)
+    if (clear)
+        level2 <= 1'b0;
+    else if (q_next == level2_value)
+        level2 <= 1'b1;
+    else if (qi == level2_value & rew)
+        level2 <= 1'b0;
+endmodule
+//////////////////////////////////////////////////////////////////////
+////                                                              ////
+////  Versatile counter                                           ////
+////                                                              ////
+////  Description                                                 ////
+////  Versatile counter, a reconfigurable binary, gray or LFSR    ////
+////  counter                                                     ////
+////                                                              ////
+////  To Do:                                                      ////
+////   - add LFSR with more taps                                  ////
+////                                                              ////
+////  Author(s):                                                  ////
+////      - Michael Unneback, unneback@opencores.org              ////
+////        ORSoC AB                                              ////
+////                                                              ////
+//////////////////////////////////////////////////////////////////////
+////                                                              ////
+//// Copyright (C) 2009 Authors and OPENCORES.ORG                 ////
+////                                                              ////
+//// This source file may be used and distributed without         ////
+//// restriction provided that this copyright statement is not    ////
+//// removed from the file and that any derivative work contains  ////
+//// the original copyright notice and the associated disclaimer. ////
+////                                                              ////
+//// This source file is free software; you can redistribute it   ////
+//// and/or modify it under the terms of the GNU Lesser General   ////
+//// Public License as published by the Free Software Foundation; ////
+//// either version 2.1 of the License, or (at your option) any   ////
+//// later version.                                               ////
+////                                                              ////
+//// This source is distributed in the hope that it will be       ////
+//// useful, but WITHOUT ANY WARRANTY; without even the implied   ////
+//// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR      ////
+//// PURPOSE.  See the GNU Lesser General Public License for more ////
+//// details.                                                     ////
+////                                                              ////
+//// You should have received a copy of the GNU Lesser General    ////
+//// Public License along with this source; if not, download it   ////
+//// from http://www.opencores.org/lgpl.shtml                     ////
+////                                                              ////
+//////////////////////////////////////////////////////////////////////
+
+// binary counter
 module vl_cnt_bin_ce_clear_set_rew ( clear, set, cke, rew, q, rst, clk);
 
    parameter length = 4;
@@ -1138,6 +1278,8 @@ module vl_cnt_bin_ce_rew_l1 ( cke, rew, level1, rst, clk);
    parameter wrap_value = 1;
    parameter level1_value = 15;
 
+   wire clear;
+   assign clear=1'b0;
    reg  [length:1] qi;
    wire  [length:1] q_next, q_next_fw, q_next_rew;
    assign q_next_fw  = qi + {{length-1{1'b0}},1'b1};
@@ -1158,7 +1300,9 @@ module vl_cnt_bin_ce_rew_l1 ( cke, rew, level1, rst, clk);
         level1 <= 1'b0;
     else
     if (cke)
-    if (q_next == level1_value)
+    if (clear)
+        level1 <= 1'b0;
+    else if (q_next == level1_value)
         level1 <= 1'b1;
     else if (qi == level1_value & rew)
         level1 <= 1'b0;
@@ -1221,6 +1365,8 @@ module vl_cnt_bin_ce_rew_zq_l1 ( cke, rew, zq, level1, rst, clk);
    parameter wrap_value = 1;
    parameter level1_value = 15;
 
+   wire clear;
+   assign clear=1'b0;
    reg  [length:1] qi;
    wire  [length:1] q_next, q_next_fw, q_next_rew;
    assign q_next_fw  = qi + {{length-1{1'b0}},1'b1};
@@ -1248,7 +1394,9 @@ module vl_cnt_bin_ce_rew_zq_l1 ( cke, rew, zq, level1, rst, clk);
         level1 <= 1'b0;
     else
     if (cke)
-    if (q_next == level1_value)
+    if (clear)
+        level1 <= 1'b0;
+    else if (q_next == level1_value)
         level1 <= 1'b1;
     else if (qi == level1_value & rew)
         level1 <= 1'b0;
@@ -1312,6 +1460,8 @@ module vl_cnt_bin_ce_rew_q_zq_l1 ( cke, rew, q, zq, level1, rst, clk);
    parameter wrap_value = 1;
    parameter level1_value = 15;
 
+   wire clear;
+   assign clear=1'b0;
    reg  [length:1] qi;
    wire  [length:1] q_next, q_next_fw, q_next_rew;
    assign q_next_fw  = qi + {{length-1{1'b0}},1'b1};
@@ -1340,7 +1490,9 @@ module vl_cnt_bin_ce_rew_q_zq_l1 ( cke, rew, q, zq, level1, rst, clk);
         level1 <= 1'b0;
     else
     if (cke)
-    if (q_next == level1_value)
+    if (clear)
+        level1 <= 1'b0;
+    else if (q_next == level1_value)
         level1 <= 1'b1;
     else if (qi == level1_value & rew)
         level1 <= 1'b0;
@@ -2000,6 +2152,8 @@ module vl_cnt_lfsr_ce_rew_l1 ( cke, rew, level1, rst, clk);
    parameter wrap_value = 8;
    parameter level1_value = 15;
 
+   wire clear;
+   assign clear=1'b0;
    reg  [length:1] qi;
    reg lfsr_fb, lfsr_fb_rew;
    wire  [length:1] q_next, q_next_fw, q_next_rew;
@@ -2112,7 +2266,9 @@ module vl_cnt_lfsr_ce_rew_l1 ( cke, rew, level1, rst, clk);
         level1 <= 1'b0;
     else
     if (cke)
-    if (q_next == level1_value)
+    if (clear)
+        level1 <= 1'b0;
+    else if (q_next == level1_value)
         level1 <= 1'b1;
     else if (qi == level1_value & rew)
         level1 <= 1'b0;

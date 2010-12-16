@@ -142,6 +142,47 @@ module vl_dff_ce_set ( d, ce, set, q, clk, rst);
 
 endmodule
 
+module vl_spr ( sp, r, q, clk, rst);
+        
+        parameter width = 1;
+        parameter reset_value = 0;
+        
+        input sp, r;
+        output reg q;
+        input clk, rst;
+        
+        always @ (posedge clk or posedge rst)
+        if (rst)
+            q <= reset_value;
+        else
+            if (sp)
+                q <= 1'b1;
+            else if (r)
+                q <= 1'b0;
+
+endmodule
+
+module vl_srp ( s, rp, q, clk, rst);
+        
+        parameter width = 1;
+        parameter reset_value = 0;
+        
+        input s, rp;
+        output reg q;
+        input clk, rst;
+        
+        always @ (posedge clk or posedge rst)
+        if (rst)
+            q <= reset_value;
+        else
+            if (rp)
+                q <= 1'b0;
+            else if (s)
+                q <= 1'b1;
+
+endmodule
+
+
 `ifdef ALTERA
 // megafunction wizard: %LPM_FF%
 // GENERATION: STANDARD
