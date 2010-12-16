@@ -1103,11 +1103,12 @@ module vl_cnt_bin_ce_clear_l1_l2 ( clear, cke, q, level1, level2, rst, clk);
 
    parameter clear_value = 0;
    parameter set_value = 1;
-   parameter wrap_value = 7;
-   parameter level1_value = 15;
+   parameter wrap_value = 15;
+   parameter level1_value = 8;
+   parameter level2_value = 15;
 
    wire rew;
-   assign rew=1'b0;
+   assign rew = 1'b0;
    reg  [length:1] qi;
    wire [length:1] q_next;
    assign q_next =  clear ? {length{1'b0}} :qi + {{length-1{1'b0}},1'b1};
@@ -1279,7 +1280,7 @@ module vl_cnt_bin_ce_rew_l1 ( cke, rew, level1, rst, clk);
    parameter level1_value = 15;
 
    wire clear;
-   assign clear=1'b0;
+   assign clear = 1'b0;
    reg  [length:1] qi;
    wire  [length:1] q_next, q_next_fw, q_next_rew;
    assign q_next_fw  = qi + {{length-1{1'b0}},1'b1};
@@ -1366,7 +1367,7 @@ module vl_cnt_bin_ce_rew_zq_l1 ( cke, rew, zq, level1, rst, clk);
    parameter level1_value = 15;
 
    wire clear;
-   assign clear=1'b0;
+   assign clear = 1'b0;
    reg  [length:1] qi;
    wire  [length:1] q_next, q_next_fw, q_next_rew;
    assign q_next_fw  = qi + {{length-1{1'b0}},1'b1};
@@ -1461,7 +1462,7 @@ module vl_cnt_bin_ce_rew_q_zq_l1 ( cke, rew, q, zq, level1, rst, clk);
    parameter level1_value = 15;
 
    wire clear;
-   assign clear=1'b0;
+   assign clear = 1'b0;
    reg  [length:1] qi;
    wire  [length:1] q_next, q_next_fw, q_next_rew;
    assign q_next_fw  = qi + {{length-1{1'b0}},1'b1};
@@ -2153,7 +2154,7 @@ module vl_cnt_lfsr_ce_rew_l1 ( cke, rew, level1, rst, clk);
    parameter level1_value = 15;
 
    wire clear;
-   assign clear=1'b0;
+   assign clear = 1'b0;
    reg  [length:1] qi;
    reg lfsr_fb, lfsr_fb_rew;
    wire  [length:1] q_next, q_next_fw, q_next_rew;
