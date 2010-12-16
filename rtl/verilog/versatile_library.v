@@ -2923,7 +2923,7 @@ vl_dpram_1r1w
     # (.data_width(data_width), .addr_width(addr_width))
     dpram ( .d_a(d), .adr_a(wadr), .we_a(wr), .clk_a(clk), .q_b(q), .adr_b(radr), .clk_b(clk));
 
-vl_cnt_bin_ce_rew_zq_l1
+vl_cnt_bin_ce_rew_q_zq_l1
     # (.length(addr_width+1), .level1_value(1<<addr_width))
     fill_level_cnt( .cke(rd ^ wr), .rew(rd), .q(fill_level), .zq(fifo_empty), .level1(fifo_full), .rst(rst), .clk(clk));
 
