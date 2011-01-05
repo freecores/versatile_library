@@ -299,3 +299,66 @@ assign wb_dat_o = wb_dat & {32{wb_ack}};
 assign wb_ack_o = wb_ack;
 
 endmodule
+
+module vl_wb_dpram ( 
+	// wishbone slave side a
+	wbsa_dat_i, wbsa_adr_i, wbsa_we_i, wbsa_cyc_i, wbsa_stb_i, wbsa_dat_o, wbsa_ack_o,
+        wbsa_clk, wbsa_rst,
+	// wishbone slave side a
+	wbsb_dat_i, wbsb_adr_i, wbsb_we_i, wbsb_cyc_i, wbsb_stb_i, wbsb_dat_o, wbsb_ack_o,
+        wbsb_clk, wbsb_rst);
+
+parameter data_width = 32;
+parameter addr_width = 8;
+
+parameter dat_o_mask_a = 1;
+parameter dat_o_mask_b = 1;
+
+input [31:0] wbsa_dat_i;
+input [addr_width-1:2] wbsa_adr_i;
+input wbsa_we_i, wbsa_cyc_i, wbsa_stb_i;
+output [31:0] wbsa_dat_o;
+output wbsa_ack_o;
+input wbsa_clk, wbsa_rst;
+
+input [31:0] wbsb_dat_i;
+input [addr_width-1:2] wbsb_adr_i;
+input wbsb_we_i, wbsb_cyc_i, wbsb_stb_i;
+output [31:0] wbsb_dat_o;
+output wbsb_ack_o;
+input wbsb_clk, wbsb_rst;
+
+wire wbsa_dat_tmp, wbsb_dat_tmp;
+
+vl_dpram_2r2w # (
+    .data_width(data_width), addr_width(addr_width) )
+dpram0(
+    .d_a(wbsa_dat_i),
+    .q_a(wbsa_dat_tmp),
+    .adr_a(wbsa_adr_i),
+    .we_a(wbsa_we_i),
+    .clk_a(wbsa_clk),
+    .d_b(wbsb_dat_i),
+    .q_b(wbsb_dat_tmp),
+    .adr_b(wbsb_adr_i),
+    .we_b(wbsb_we_i),
+    .clk_b(wbsb_clk) );
+
+if (dat_o_mask_a==1) generate
+    assign wbsa_dat_o = wbsa_dat_tmp & {data_width{wbsa_ack_o}};
+endgenerate
+if (dat_o_mask_a==0) generate
+    assign wbsa_dat_o = wbsa_dat_tmp;
+endgenerate
+
+if (dat_o_mask_b==1) generate
+    assign wbsb_dat_o = wbsb_dat_tmp & {data_width{wbsb_ack_o}};
+endgenerate
+if (dat_o_mask_b==0) generate
+    assign wbsb_dat_o = wbsb_dat_tmp;
+endgenerate
+
+vl_spr ack_a( .sp(wbsa_cyc_i & wbsa_stb_i & !wbsa_ack_o), .r(1'b1), .q(wbsa_ack_o), .clk(wbsa_clk), .rst(wbsa_rst));
+vl_spr ack_b( .sp(wbsb_cyc_i & wbsb_stb_i & !wbsb_ack_o), .r(1'b1), .q(wbsb_ack_o), .clk(wbsb_clk), .rst(wbsb_rst));
+
+endmodule

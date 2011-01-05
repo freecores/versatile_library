@@ -101,6 +101,7 @@ endmodule
 
 // vl_pll
 `ifdef ACTEL
+///////////////////////////////////////////////////////////////////////////////
 `timescale 1 ps/1 ps
 module vl_pll ( clk_i, rst_n_i, lock, clk_o, rst_o);
 parameter index = 0;
@@ -197,10 +198,154 @@ end
 endgenerate
 endmodule
 //E2_endif
+///////////////////////////////////////////////////////////////////////////////
 
 `else
 
+///////////////////////////////////////////////////////////////////////////////
 `ifdef ALTERA
+
+`timescale 1 ps/1 ps
+module vl_pll ( clk_i, rst_n_i, lock, clk_o, rst_o);
+parameter index = 0;
+parameter number_of_clk = 1;
+parameter period_time_0 = 20000;
+parameter period_time_1 = 20000;
+parameter period_time_2 = 20000;
+parameter period_time_3 = 20000;
+parameter period_time_4 = 20000;
+parameter lock_delay = 2000000;
+input clk_i, rst_n_i;
+output lock;
+output reg [0:number_of_clk-1] clk_o;
+output [0:number_of_clk-1] rst_o;
+
+//E2_ifdef SIM_PLL
+
+always
+     #((period_time_0)/2) clk_o[0] <=  (!rst_n_i) ? 0 : ~clk_o[0];
+
+generate if (number_of_clk > 1)
+always
+     #((period_time_1)/2) clk_o[1] <=  (!rst_n_i) ? 0 : ~clk_o[1];
+endgenerate
+
+generate if (number_of_clk > 2)
+always
+     #((period_time_2)/2) clk_o[2] <=  (!rst_n_i) ? 0 : ~clk_o[2];
+endgenerate
+
+always
+     #((period_time_3)/2) clk_o[3] <=  (!rst_n_i) ? 0 : ~clk_o[3];
+endgenerate
+
+always
+     #((period_time_4)/2) clk_o[4] <=  (!rst_n_i) ? 0 : ~clk_o[4];
+endgenerate
+
+genvar i;
+generate for (i=0;i<number_of_clk;i=i+1) begin: clock
+     vl_sync_rst rst_i0 ( .rst_n_i(rst_n_i | lock), .rst_o(rst_o[i]), .clk(clk_o[i]));
+end
+endgenerate
+
+assign #lock_delay lock = rst_n_i;
+	
+endmodule
+//E2_else
+generate if (number_of_clk==1 & index==0) begin
+	pll0 pll_i0 (.areset(1'b1), .inclk(clk_i), .locked(lock), .c0(clk_o[0]));
+end
+endgenerate // index==0
+generate if (number_of_clk==1 & index==1) begin
+	pll1 pll_i0 (.areset(1'b1), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]));
+end
+endgenerate // index==1
+generate if (number_of_clk==1 & index==2) begin
+	pll2 pll_i0 (.areset(1'b1), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]));
+end
+endgenerate // index==2
+generate if (number_of_clk==1 & index==3) begin
+	pll3 pll_i0 (.areset(1'b1), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]));
+end
+endgenerate // index==3
+
+generate if (number_of_clk==2 & index==0) begin
+	pll0 pll_i0 (.areset(1'b1), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]));
+end
+endgenerate // index==0
+generate if (number_of_clk==2 & index==1) begin
+	pll1 pll_i0 (.areset(1'b1), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]));
+end
+endgenerate // index==1
+generate if (number_of_clk==2 & index==2) begin
+	pll2 pll_i0 (.areset(1'b1), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]));
+end
+endgenerate // index==2
+generate if (number_of_clk==2 & index==3) begin
+	pll3 pll_i0 (.areset(1'b1), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]));
+end
+endgenerate // index==3
+
+generate if (number_of_clk==3 & index==0) begin
+	pll0 pll_i0 (.areset(1'b1), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]), .c2(clk_o[2]));
+end
+endgenerate // index==0
+generate if (number_of_clk==3 & index==1) begin
+	pll1 pll_i0 (.areset(1'b1), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]), .c2(clk_o[2]));
+end
+endgenerate // index==1
+generate if (number_of_clk==3 & index==2) begin
+	pll2 pll_i0 (.areset(1'b1), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]), .c2(clk_o[2]));
+end
+endgenerate // index==2
+generate if (number_of_clk==3 & index==3) begin
+	pll3 pll_i0 (.areset(1'b1), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]), .c2(clk_o[2]));
+end
+endgenerate // index==3
+
+generate if (number_of_clk==4 & index==0) begin
+	pll0 pll_i0 (.areset(1'b1), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]), .c2(clk_o[2]), .c3(clk_o[3]));
+end
+endgenerate // index==0
+generate if (number_of_clk==4 & index==1) begin
+	pll1 pll_i0 (.areset(1'b1), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]), .c2(clk_o[2], .c3(clk_o[3]));
+end
+endgenerate // index==1
+generate if (number_of_clk==4 & index==2) begin
+	pll2 pll_i0 (.areset(1'b1), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]), .c2(clk_o[2], .c3(clk_o[3]));
+end
+endgenerate // index==2
+generate if (number_of_clk==4 & index==3) begin
+	pll3 pll_i0 (.areset(1'b1), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]), .c2(clk_o[2], .c3(clk_o[3]));
+end
+endgenerate // index==3
+
+generate if (number_of_clk==5 & index==0) begin
+	pll0 pll_i0 (.areset(1'b1), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]), .c2(clk_o[2]), .c3(clk_o[3], .c4(clk_o[4]));
+end
+endgenerate // index==0
+generate if (number_of_clk==5 & index==1) begin
+	pll1 pll_i0 (.areset(1'b1), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]), .c2(clk_o[2], .c3(clk_o[3], .c4(clk_o[4]));
+end
+endgenerate // index==1
+generate if (number_of_clk==5 & index==2) begin
+	pll2 pll_i0 (.areset(1'b1), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]), .c2(clk_o[2], .c3(clk_o[3], .c4(clk_o[4]));
+end
+endgenerate // index==2
+generate if (number_of_clk==5 & index==3) begin
+	pll3 pll_i0 (.areset(1'b1), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]), .c2(clk_o[2], .c3(clk_o[3], .c4(clk_o[4]));
+end
+endgenerate // index==3
+
+genvar i;
+generate for (i=0;i<number_of_clk;i=i+1) begin: clock
+	vl_sync_rst rst_i0 ( .rst_n_i(rst_n_i | lock), .rst_o(rst_o), .clk(clk_o[i]));	
+end
+endgenerate
+endmodule
+//E2_endif
+///////////////////////////////////////////////////////////////////////////////
 
 `else
 
