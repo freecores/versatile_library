@@ -63,7 +63,7 @@ versatile_library_actel.v: $(VERILOG_FILES)
 	vppreproc  --noline --noblank +define+ACTEL $(VERILOG_FILES) | sed -r -e 's/\/\/E2_([a-z]+)/`\1/' > versatile_library_actel.v
 	
 versatile_library_altera.v: $(VERILOG_FILES)
-	vppreproc  --noline --noblank +define+ALTERA $(VERILOG_FILES) > versatile_library_altera.v	
+	vppreproc  --noline --noblank +define+ALTERA $(VERILOG_FILES) | sed -r -e 's/\/\/E2_([a-z]+)/`\1/' > versatile_library_altera.v	
 
 all: $(VERSATILE_LIBRARIES)
 

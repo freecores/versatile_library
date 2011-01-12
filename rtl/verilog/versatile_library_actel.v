@@ -75,7 +75,7 @@ always @ (posedge clk or negedge rst_n_i)
 if (!rst_n_i)
 	tmp <= 2'b11;
 else
-	tmp <= {1'b0,tmp[0]};
+	tmp <= {1'b0,tmp[1]};
 vl_gbuf buf_i0( .i(tmp[0]), .o(rst_o));
 endmodule
 // vl_pll
@@ -2783,9 +2783,10 @@ parameter incburst     = 3'b010;
 parameter endofburst   = 3'b111;
 parameter wbs_adr  = 1'b0;
 parameter wbs_data = 1'b1;
-parameter wbm_adr0 = 2'b00;
-parameter wbm_adr1 = 2'b01;
-parameter wbm_data = 2'b10;
+parameter wbm_adr0      = 2'b00;
+parameter wbm_adr1      = 2'b01;
+parameter wbm_data      = 2'b10;
+parameter wbm_data_wait = 2'b11;
 reg [1:0] wbs_bte_reg;
 reg wbs;
 wire wbs_eoc_alert, wbm_eoc_alert;
@@ -2854,16 +2855,35 @@ always @ (posedge wbm_clk or posedge wbm_rst)
 if (wbm_rst)
 	wbm <= wbm_adr0;
 else
+/*
     if ((wbm==wbm_adr0 & !b_fifo_empty) |
         (wbm==wbm_adr1 & !b_fifo_empty & wbm_we_o) |
         (wbm==wbm_adr1 & !wbm_we_o) |
         (wbm==wbm_data & wbm_ack_i & wbm_eoc))
         wbm <= {wbm[0],!(wbm[1] ^ wbm[0])};  // count sequence 00,01,10
+*/
+    case (wbm)
+    wbm_adr0:
+        if (!b_fifo_empty)
+            wbm <= wbm_adr1;
+    wbm_adr1:
+        if (!wbm_we_o | (!b_fifo_empty & wbm_we_o))
+            wbm <= wbm_data;
+    wbm_data:
+        if (wbm_ack_i & wbm_eoc)
+            wbm <= wbm_adr0;
+        else if (b_fifo_empty & wbm_we_o & wbm_ack_i)
+            wbm <= wbm_data_wait;
+    wbm_data_wait:
+        if (!b_fifo_empty)
+            wbm <= wbm_data;
+    endcase
 assign b_d = {wbm_dat_i,4'b1111};
 assign b_wr = !wbm_we_o & wbm_ack_i;
 assign b_rd_adr  = (wbm==wbm_adr0 & !b_fifo_empty);
 assign b_rd_data = (wbm==wbm_adr1 & !b_fifo_empty & wbm_we_o) ? 1'b1 : // b_q[`WE]
                    (wbm==wbm_data & !b_fifo_empty & wbm_we_o & wbm_ack_i & !wbm_eoc) ? 1'b1 :
+                   (wbm==wbm_data_wait & !b_fifo_empty) ? 1'b1 : 
                    1'b0;
 assign b_rd = b_rd_adr | b_rd_data;
 vl_dff dff1 ( .d(b_rd_data), .q(b_rd_data_reg), .clk(wbm_clk), .rst(wbm_rst));
@@ -2876,10 +2896,8 @@ vl_cnt_shreg_ce_clear # ( .length(16))
         .q(wbm_count),
         .rst(wbm_rst),
         .clk(wbm_clk));
-assign wbm_cyc_o = wbm==wbm_data;
-assign wbm_stb_o = (wbm==wbm_data & wbm_we_o) ? !b_fifo_empty : 
-                   (wbm==wbm_data) ? 1'b1 :
-                   1'b0;
+assign wbm_cyc_o = (wbm==wbm_data | wbm==wbm_data_wait);
+assign wbm_stb_o = (wbm==wbm_data);
 always @ (posedge wbm_clk or posedge wbm_rst)
 if (wbm_rst)
 	{wbm_adr_o,wbm_we_o,wbm_bte_o,wbm_cti_o} <= {30'h0,1'b0,linear,classic};
@@ -2921,9 +2939,11 @@ module vl_wb_boot_rom (
     parameter adr_lo = 28;
     parameter adr_sel = 4'hf;
     parameter addr_width = 5;
+/*
 `ifndef BOOT_ROM
 `define BOOT_ROM "boot_rom.v"
 `endif
+*/   
     input [adr_hi:2]    wb_adr_i;
     input 		wb_stb_i;
     input 		wb_cyc_i;
@@ -2941,7 +2961,9 @@ always @ (posedge wb_clk or posedge wb_rst)
         wb_dat <= 32'h15000000;
     else
 	 case (wb_adr_i[addr_width-1:2])
+`ifdef BOOT_ROM
 `include `BOOT_ROM
+`endif
 	   /*	 
 	    // Zero r0 and jump to 0x00000100
 	    0 : wb_dat <= 32'h18000000;
@@ -2987,7 +3009,7 @@ output wbsb_ack_o;
 input wbsb_clk, wbsb_rst;
 wire wbsa_dat_tmp, wbsb_dat_tmp;
 vl_dpram_2r2w # (
-    .data_width(data_width), addr_width(addr_width) )
+    .data_width(data_width), .addr_width(addr_width) )
 dpram0(
     .d_a(wbsa_dat_i),
     .q_a(wbsa_dat_tmp),
@@ -2999,16 +3021,16 @@ dpram0(
     .adr_b(wbsb_adr_i),
     .we_b(wbsb_we_i),
     .clk_b(wbsb_clk) );
-if (dat_o_mask_a==1) generate
+generate if (dat_o_mask_a==1) 
     assign wbsa_dat_o = wbsa_dat_tmp & {data_width{wbsa_ack_o}};
 endgenerate
-if (dat_o_mask_a==0) generate
+generate if (dat_o_mask_a==0) 
     assign wbsa_dat_o = wbsa_dat_tmp;
 endgenerate
-if (dat_o_mask_b==1) generate
+generate if (dat_o_mask_b==1) 
     assign wbsb_dat_o = wbsb_dat_tmp & {data_width{wbsb_ack_o}};
 endgenerate
-if (dat_o_mask_b==0) generate
+generate if (dat_o_mask_b==0) 
     assign wbsb_dat_o = wbsb_dat_tmp;
 endgenerate
 vl_spr ack_a( .sp(wbsa_cyc_i & wbsa_stb_i & !wbsa_ack_o), .r(1'b1), .q(wbsa_ack_o), .clk(wbsa_clk), .rst(wbsa_rst));

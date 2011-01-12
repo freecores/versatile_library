@@ -69,9 +69,17 @@ assign o=i;
 gbuf gbuf_i0 ( .CLK(i), .GL(o));
 `endif
 endmodule
+
 `else
+
 `ifdef ALTERA 
 //altera
+module vl_gbuf ( i, o);
+input i;
+output o;
+assign o = i;
+endmodule
+
 `else
 
 `timescale 1 ns/100 ps
@@ -95,7 +103,7 @@ always @ (posedge clk or negedge rst_n_i)
 if (!rst_n_i)
 	tmp <= 2'b11;
 else
-	tmp <= {1'b0,tmp[0]};
+	tmp <= {1'b0,tmp[1]};
 vl_gbuf buf_i0( .i(tmp[0]), .o(rst_o));
 endmodule
 
@@ -235,10 +243,12 @@ always
      #((period_time_2)/2) clk_o[2] <=  (!rst_n_i) ? 0 : ~clk_o[2];
 endgenerate
 
+generate if (number_of_clk > 3)
 always
      #((period_time_3)/2) clk_o[3] <=  (!rst_n_i) ? 0 : ~clk_o[3];
 endgenerate
 
+generate if (number_of_clk > 4)
 always
      #((period_time_4)/2) clk_o[4] <=  (!rst_n_i) ? 0 : ~clk_o[4];
 endgenerate
@@ -249,98 +259,87 @@ generate for (i=0;i<number_of_clk;i=i+1) begin: clock
 end
 endgenerate
 
-assign #lock_delay lock = rst_n_i;
+//assign #lock_delay lock = rst_n_i;
+assign lock = rst_n_i;
 	
 endmodule
 `else
-generate if (number_of_clk==1 & index==0) begin
-	pll0 pll_i0 (.areset(1'b1), .inclk(clk_i), .locked(lock), .c0(clk_o[0]));
-end
-endgenerate // index==0
-generate if (number_of_clk==1 & index==1) begin
-	pll1 pll_i0 (.areset(1'b1), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]));
-end
-endgenerate // index==1
-generate if (number_of_clk==1 & index==2) begin
-	pll2 pll_i0 (.areset(1'b1), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]));
-end
-endgenerate // index==2
-generate if (number_of_clk==1 & index==3) begin
-	pll3 pll_i0 (.areset(1'b1), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]));
-end
-endgenerate // index==3
 
-generate if (number_of_clk==2 & index==0) begin
-	pll0 pll_i0 (.areset(1'b1), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]));
-end
-endgenerate // index==0
-generate if (number_of_clk==2 & index==1) begin
-	pll1 pll_i0 (.areset(1'b1), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]));
-end
-endgenerate // index==1
-generate if (number_of_clk==2 & index==2) begin
-	pll2 pll_i0 (.areset(1'b1), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]));
-end
-endgenerate // index==2
-generate if (number_of_clk==2 & index==3) begin
-	pll3 pll_i0 (.areset(1'b1), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]));
-end
-endgenerate // index==3
+`ifdef VL_PLL0
+`ifdef VL_PLL0_CLK1
+    pll0 pll0_i0 (.areset(rst_n_i), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]));
+`endif
+`ifdef VL_PLL0_CLK2
+    pll0 pll0_i0 (.areset(rst_n_i), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]));
+`endif
+`ifdef VL_PLL0_CLK3
+    pll0 pll0_i0 (.areset(rst_n_i), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]), .c2(clk_o[2]));
+`endif
+`ifdef VL_PLL0_CLK4
+    pll0 pll0_i0 (.areset(rst_n_i), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]), .c2(clk_o[2]), .c3(clk_o[3]));
+`endif
+`ifdef VL_PLL0_CLK5
+    pll0 pll0_i0 (.areset(rst_n_i), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]), .c2(clk_o[2]), .c3(clk_o[3]), .c4(clk_o[4]));
+`endif
+`endif
 
-generate if (number_of_clk==3 & index==0) begin
-	pll0 pll_i0 (.areset(1'b1), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]), .c2(clk_o[2]));
-end
-endgenerate // index==0
-generate if (number_of_clk==3 & index==1) begin
-	pll1 pll_i0 (.areset(1'b1), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]), .c2(clk_o[2]));
-end
-endgenerate // index==1
-generate if (number_of_clk==3 & index==2) begin
-	pll2 pll_i0 (.areset(1'b1), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]), .c2(clk_o[2]));
-end
-endgenerate // index==2
-generate if (number_of_clk==3 & index==3) begin
-	pll3 pll_i0 (.areset(1'b1), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]), .c2(clk_o[2]));
-end
-endgenerate // index==3
+`ifdef VL_PLL1
+`ifdef VL_PLL1_CLK1
+    pll1 pll1_i0 (.areset(rst_n_i), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]));
+`endif
+`ifdef VL_PLL1_CLK2
+    pll1 pll1_i0 (.areset(rst_n_i), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]));
+`endif
+`ifdef VL_PLL1_CLK3
+    pll1 pll1_i0 (.areset(rst_n_i), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]), .c2(clk_o[2]));
+`endif
+`ifdef VL_PLL1_CLK4
+    pll1 pll1_i0 (.areset(rst_n_i), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]), .c2(clk_o[2]), .c3(clk_o[3]));
+`endif
+`ifdef VL_PLL1_CLK5
+    pll1 pll1_i0 (.areset(rst_n_i), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]), .c2(clk_o[2]), .c3(clk_o[3]), .c4(clk_o[4]));
+`endif
+`endif
 
-generate if (number_of_clk==4 & index==0) begin
-	pll0 pll_i0 (.areset(1'b1), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]), .c2(clk_o[2]), .c3(clk_o[3]));
-end
-endgenerate // index==0
-generate if (number_of_clk==4 & index==1) begin
-	pll1 pll_i0 (.areset(1'b1), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]), .c2(clk_o[2], .c3(clk_o[3]));
-end
-endgenerate // index==1
-generate if (number_of_clk==4 & index==2) begin
-	pll2 pll_i0 (.areset(1'b1), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]), .c2(clk_o[2], .c3(clk_o[3]));
-end
-endgenerate // index==2
-generate if (number_of_clk==4 & index==3) begin
-	pll3 pll_i0 (.areset(1'b1), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]), .c2(clk_o[2], .c3(clk_o[3]));
-end
-endgenerate // index==3
+`ifdef VL_PLL2
+`ifdef VL_PLL2_CLK1
+    pll2 pll2_i0 (.areset(rst_n_i), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]));
+`endif
+`ifdef VL_PLL2_CLK2
+    pll2 pll2_i0 (.areset(rst_n_i), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]));
+`endif
+`ifdef VL_PLL2_CLK3
+    pll2 pll2_i0 (.areset(rst_n_i), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]), .c2(clk_o[2]));
+`endif
+`ifdef VL_PLL2_CLK4
+    pll2 pll2_i0 (.areset(rst_n_i), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]), .c2(clk_o[2]), .c3(clk_o[3]));
+`endif
+`ifdef VL_PLL2_CLK5
+    pll2 pll2_i0 (.areset(rst_n_i), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]), .c2(clk_o[2]), .c3(clk_o[3]), .c4(clk_o[4]));
+`endif
+`endif
 
-generate if (number_of_clk==5 & index==0) begin
-	pll0 pll_i0 (.areset(1'b1), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]), .c2(clk_o[2]), .c3(clk_o[3], .c4(clk_o[4]));
-end
-endgenerate // index==0
-generate if (number_of_clk==5 & index==1) begin
-	pll1 pll_i0 (.areset(1'b1), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]), .c2(clk_o[2], .c3(clk_o[3], .c4(clk_o[4]));
-end
-endgenerate // index==1
-generate if (number_of_clk==5 & index==2) begin
-	pll2 pll_i0 (.areset(1'b1), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]), .c2(clk_o[2], .c3(clk_o[3], .c4(clk_o[4]));
-end
-endgenerate // index==2
-generate if (number_of_clk==5 & index==3) begin
-	pll3 pll_i0 (.areset(1'b1), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]), .c2(clk_o[2], .c3(clk_o[3], .c4(clk_o[4]));
-end
-endgenerate // index==3
+`ifdef VL_PLL3
+`ifdef VL_PLL3_CLK1
+    pll3 pll3_i0 (.areset(rst_n_i), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]));
+`endif
+`ifdef VL_PLL3_CLK2
+    pll3 pll3_i0 (.areset(rst_n_i), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]));
+`endif
+`ifdef VL_PLL3_CLK3
+    pll3 pll3_i0 (.areset(rst_n_i), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]), .c2(clk_o[2]));
+`endif
+`ifdef VL_PLL3_CLK4
+    pll3 pll3_i0 (.areset(rst_n_i), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]), .c2(clk_o[2]), .c3(clk_o[3]));
+`endif
+`ifdef VL_PLL3_CLK5
+    pll3 pll3_i0 (.areset(rst_n_i), .inclk0(clk_i), .locked(lock), .c0(clk_o[0]), .c1(clk_o[1]), .c2(clk_o[2]), .c3(clk_o[3]), .c4(clk_o[4]));
+`endif
+`endif
 
 genvar i;
 generate for (i=0;i<number_of_clk;i=i+1) begin: clock
-	vl_sync_rst rst_i0 ( .rst_n_i(rst_n_i | lock), .rst_o(rst_o), .clk(clk_o[i]));	
+	vl_sync_rst rst_i0 ( .rst_n_i(rst_n_i | lock), .rst_o(rst_o[i]), .clk(clk_o[i]));	
 end
 endgenerate
 endmodule
@@ -3495,9 +3494,10 @@ parameter endofburst   = 3'b111;
 parameter wbs_adr  = 1'b0;
 parameter wbs_data = 1'b1;
 
-parameter wbm_adr0 = 2'b00;
-parameter wbm_adr1 = 2'b01;
-parameter wbm_data = 2'b10;
+parameter wbm_adr0      = 2'b00;
+parameter wbm_adr1      = 2'b01;
+parameter wbm_data      = 2'b10;
+parameter wbm_data_wait = 2'b11;
 
 reg [1:0] wbs_bte_reg;
 reg wbs;
@@ -3581,17 +3581,36 @@ always @ (posedge wbm_clk or posedge wbm_rst)
 if (wbm_rst)
 	wbm <= wbm_adr0;
 else
+/*
     if ((wbm==wbm_adr0 & !b_fifo_empty) |
         (wbm==wbm_adr1 & !b_fifo_empty & wbm_we_o) |
         (wbm==wbm_adr1 & !wbm_we_o) |
         (wbm==wbm_data & wbm_ack_i & wbm_eoc))
         wbm <= {wbm[0],!(wbm[1] ^ wbm[0])};  // count sequence 00,01,10
+*/
+    case (wbm)
+    wbm_adr0:
+        if (!b_fifo_empty)
+            wbm <= wbm_adr1;
+    wbm_adr1:
+        if (!wbm_we_o | (!b_fifo_empty & wbm_we_o))
+            wbm <= wbm_data;
+    wbm_data:
+        if (wbm_ack_i & wbm_eoc)
+            wbm <= wbm_adr0;
+        else if (b_fifo_empty & wbm_we_o & wbm_ack_i)
+            wbm <= wbm_data_wait;
+    wbm_data_wait:
+        if (!b_fifo_empty)
+            wbm <= wbm_data;
+    endcase
 
 assign b_d = {wbm_dat_i,4'b1111};
 assign b_wr = !wbm_we_o & wbm_ack_i;
 assign b_rd_adr  = (wbm==wbm_adr0 & !b_fifo_empty);
 assign b_rd_data = (wbm==wbm_adr1 & !b_fifo_empty & wbm_we_o) ? 1'b1 : // b_q[`WE]
                    (wbm==wbm_data & !b_fifo_empty & wbm_we_o & wbm_ack_i & !wbm_eoc) ? 1'b1 :
+                   (wbm==wbm_data_wait & !b_fifo_empty) ? 1'b1 : 
                    1'b0;
 assign b_rd = b_rd_adr | b_rd_data;
 
@@ -3608,10 +3627,8 @@ vl_cnt_shreg_ce_clear # ( .length(16))
         .rst(wbm_rst),
         .clk(wbm_clk));
 
-assign wbm_cyc_o = wbm==wbm_data;
-assign wbm_stb_o = (wbm==wbm_data & wbm_we_o) ? !b_fifo_empty : 
-                   (wbm==wbm_data) ? 1'b1 :
-                   1'b0;
+assign wbm_cyc_o = (wbm==wbm_data | wbm==wbm_data_wait);
+assign wbm_stb_o = (wbm==wbm_data);
 
 always @ (posedge wbm_clk or posedge wbm_rst)
 if (wbm_rst)
@@ -3658,11 +3675,11 @@ module vl_wb_boot_rom (
     parameter adr_lo = 28;
     parameter adr_sel = 4'hf;
     parameter addr_width = 5;
-
+/*
 `ifndef BOOT_ROM
 `define BOOT_ROM "boot_rom.v"
 `endif
-   
+*/   
     input [adr_hi:2]    wb_adr_i;
     input 		wb_stb_i;
     input 		wb_cyc_i;
@@ -3683,7 +3700,9 @@ always @ (posedge wb_clk or posedge wb_rst)
         wb_dat <= 32'h15000000;
     else
 	 case (wb_adr_i[addr_width-1:2])
+`ifdef BOOT_ROM
 `include `BOOT_ROM
+`endif
 	   /*	 
 	    // Zero r0 and jump to 0x00000100
 	    0 : wb_dat <= 32'h18000000;
@@ -3741,7 +3760,7 @@ input wbsb_clk, wbsb_rst;
 wire wbsa_dat_tmp, wbsb_dat_tmp;
 
 vl_dpram_2r2w # (
-    .data_width(data_width), addr_width(addr_width) )
+    .data_width(data_width), .addr_width(addr_width) )
 dpram0(
     .d_a(wbsa_dat_i),
     .q_a(wbsa_dat_tmp),
@@ -3754,17 +3773,17 @@ dpram0(
     .we_b(wbsb_we_i),
     .clk_b(wbsb_clk) );
 
-if (dat_o_mask_a==1) generate
+generate if (dat_o_mask_a==1) 
     assign wbsa_dat_o = wbsa_dat_tmp & {data_width{wbsa_ack_o}};
 endgenerate
-if (dat_o_mask_a==0) generate
+generate if (dat_o_mask_a==0) 
     assign wbsa_dat_o = wbsa_dat_tmp;
 endgenerate
 
-if (dat_o_mask_b==1) generate
+generate if (dat_o_mask_b==1) 
     assign wbsb_dat_o = wbsb_dat_tmp & {data_width{wbsb_ack_o}};
 endgenerate
-if (dat_o_mask_b==0) generate
+generate if (dat_o_mask_b==0) 
     assign wbsb_dat_o = wbsb_dat_tmp;
 endgenerate
 
