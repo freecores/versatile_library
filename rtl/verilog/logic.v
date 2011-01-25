@@ -39,6 +39,46 @@
 //// from http://www.opencores.org/lgpl.shtml                     ////
 ////                                                              ////
 //////////////////////////////////////////////////////////////////////
+module vl_mux2_andor ( a1, a0, sel, dout);
+
+parameter width = 32;
+parameter nr_of_ports = 2;
+input [width-1:0] a1, a0;
+input [nr_of_ports-1:0] sel;
+output [width-1:0] dout;
+
+wire [width-1:0] tmp [nr_of_ports-1:0];
+integer i;
+
+// and
+assign tmp[0] = {width{sel[0]}} & a0;
+assign tmp[1] = {width{sel[1]}} & a1;
+
+// or
+assign dout = tmp[1] | tmp[0];
+
+endmodule
+
+module vl_mux3_andor ( a2, a1, a0, sel, dout);
+
+parameter width = 32;
+parameter nr_of_ports = 3;
+input [width-1:0] a2, a1, a0;
+input [nr_of_ports-1:0] sel;
+output [width-1:0] dout;
+
+wire [width-1:0] tmp [nr_of_ports-1:0];
+integer i;
+
+// and
+assign tmp[0] = {width{sel[0]}} & a0;
+assign tmp[1] = {width{sel[1]}} & a1;
+assign tmp[2] = {width{sel[2]}} & a2;
+
+// or
+assign dout = tmp[2] | tmp[1] | tmp[0];
+
+endmodule
 
 module vl_mux4_andor ( a3, a2, a1, a0, sel, dout);
 
