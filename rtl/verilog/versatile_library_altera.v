@@ -547,7 +547,7 @@ endmodule
 //////////////////////////////////////////////////////////////////////
 module vl_mux2_andor ( a1, a0, sel, dout);
 parameter width = 32;
-parameter nr_of_ports = 2;
+localparam nr_of_ports = 2;
 input [width-1:0] a1, a0;
 input [nr_of_ports-1:0] sel;
 output [width-1:0] dout;
@@ -561,7 +561,7 @@ assign dout = tmp[1] | tmp[0];
 endmodule
 module vl_mux3_andor ( a2, a1, a0, sel, dout);
 parameter width = 32;
-parameter nr_of_ports = 3;
+localparam nr_of_ports = 3;
 input [width-1:0] a2, a1, a0;
 input [nr_of_ports-1:0] sel;
 output [width-1:0] dout;
@@ -576,7 +576,7 @@ assign dout = tmp[2] | tmp[1] | tmp[0];
 endmodule
 module vl_mux4_andor ( a3, a2, a1, a0, sel, dout);
 parameter width = 32;
-parameter nr_of_ports = 4;
+localparam nr_of_ports = 4;
 input [width-1:0] a3, a2, a1, a0;
 input [nr_of_ports-1:0] sel;
 output [width-1:0] dout;
@@ -592,7 +592,7 @@ assign dout = tmp[3] | tmp[2] | tmp[1] | tmp[0];
 endmodule
 module vl_mux5_andor ( a4, a3, a2, a1, a0, sel, dout);
 parameter width = 32;
-parameter nr_of_ports = 5;
+localparam nr_of_ports = 5;
 input [width-1:0] a4, a3, a2, a1, a0;
 input [nr_of_ports-1:0] sel;
 output [width-1:0] dout;
@@ -609,7 +609,7 @@ assign dout = tmp[4] | tmp[3] | tmp[2] | tmp[1] | tmp[0];
 endmodule
 module vl_mux6_andor ( a5, a4, a3, a2, a1, a0, sel, dout);
 parameter width = 32;
-parameter nr_of_ports = 6;
+localparam nr_of_ports = 6;
 input [width-1:0] a5, a4, a3, a2, a1, a0;
 input [nr_of_ports-1:0] sel;
 output [width-1:0] dout;
