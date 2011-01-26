@@ -844,6 +844,24 @@ endmodule
 //// from http://www.opencores.org/lgpl.shtml                     ////
 ////                                                              ////
 //////////////////////////////////////////////////////////////////////
+module vl_mux_andor ( a, sel, dout);
+
+parameter width = 32;
+parameter nr_of_ports = 4;
+
+input [nr_of_ports*width-1:0] a;
+input [nr_of_ports-1:0] sel;
+output reg [width-1:0] dout;
+
+always @ (a, sel)
+begin
+    dout = a[width-1:0] & {width{sel[0]}};
+    for (i=nr_of_ports-2;i<nr_of_ports;i=i+1)
+        dout = (a[i*width-1:(i-1)*width] & {width{sel[i]}}) | dout;
+end
+
+endmodule
+
 module vl_mux2_andor ( a1, a0, sel, dout);
 
 parameter width = 32;
@@ -852,6 +870,10 @@ input [width-1:0] a1, a0;
 input [nr_of_ports-1:0] sel;
 output [width-1:0] dout;
 
+vl_mux_andor
+    # ( .width(width), .nr_of_ports(nr_of_ports)
+    mux0( .a({a1,a0}), .sel(sel), .dout(dout));
+/*
 wire [width-1:0] tmp [nr_of_ports-1:0];
 integer i;
 
@@ -861,7 +883,7 @@ assign tmp[1] = {width{sel[1]}} & a1;
 
 // or
 assign dout = tmp[1] | tmp[0];
-
+*/
 endmodule
 
 module vl_mux3_andor ( a2, a1, a0, sel, dout);
@@ -871,6 +893,11 @@ localparam nr_of_ports = 3;
 input [width-1:0] a2, a1, a0;
 input [nr_of_ports-1:0] sel;
 output [width-1:0] dout;
+
+vl_mux_andor
+    # ( .width(width), .nr_of_ports(nr_of_ports)
+    mux0( .a({a2,a1,a0}), .sel(sel), .dout(dout));
+/*
 
 wire [width-1:0] tmp [nr_of_ports-1:0];
 integer i;
@@ -882,7 +909,7 @@ assign tmp[2] = {width{sel[2]}} & a2;
 
 // or
 assign dout = tmp[2] | tmp[1] | tmp[0];
-
+*/
 endmodule
 
 module vl_mux4_andor ( a3, a2, a1, a0, sel, dout);
@@ -893,6 +920,10 @@ input [width-1:0] a3, a2, a1, a0;
 input [nr_of_ports-1:0] sel;
 output [width-1:0] dout;
 
+vl_mux_andor
+    # ( .width(width), .nr_of_ports(nr_of_ports)
+    mux0( .a({a3,a2,a1,a0}), .sel(sel), .dout(dout));
+/*
 wire [width-1:0] tmp [nr_of_ports-1:0];
 integer i;
 
@@ -904,7 +935,7 @@ assign tmp[3] = {width{sel[3]}} & a3;
 
 // or
 assign dout = tmp[3] | tmp[2] | tmp[1] | tmp[0];
-
+*/
 endmodule
 
 module vl_mux5_andor ( a4, a3, a2, a1, a0, sel, dout);
@@ -915,6 +946,10 @@ input [width-1:0] a4, a3, a2, a1, a0;
 input [nr_of_ports-1:0] sel;
 output [width-1:0] dout;
 
+vl_mux_andor
+    # ( .width(width), .nr_of_ports(nr_of_ports)
+    mux0( .a({a4,a3,a2,a1,a0}), .sel(sel), .dout(dout));
+/*
 wire [width-1:0] tmp [nr_of_ports-1:0];
 integer i;
 
@@ -927,7 +962,7 @@ assign tmp[4] = {width{sel[4]}} & a4;
 
 // or
 assign dout = tmp[4] | tmp[3] | tmp[2] | tmp[1] | tmp[0];
-
+*/
 endmodule
 
 module vl_mux6_andor ( a5, a4, a3, a2, a1, a0, sel, dout);
@@ -938,6 +973,10 @@ input [width-1:0] a5, a4, a3, a2, a1, a0;
 input [nr_of_ports-1:0] sel;
 output [width-1:0] dout;
 
+vl_mux_andor
+    # ( .width(width), .nr_of_ports(nr_of_ports)
+    mux0( .a({a5,a4,a3,a2,a1,a0}), .sel(sel), .dout(dout));
+/*
 wire [width-1:0] tmp [nr_of_ports-1:0];
 integer i;
 
@@ -951,7 +990,7 @@ assign tmp[5] = {width{sel[5]}} & a5;
 
 // or
 assign dout = tmp[5] | tmp[4] | tmp[3] | tmp[2] | tmp[1] | tmp[0];
-
+*/
 endmodule
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
