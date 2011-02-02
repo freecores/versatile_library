@@ -3053,6 +3053,85 @@ fifo (
     .b_rst(wbm_rst)	
     );
 endmodule
+module vl_wb3_arbiter_type1 (
+    wbm_dat_o, wbm_adr_o, wbm_sel_o, wbm_cti_o, wbm_bte_o, wbm_we_o, wbm_stb_o, wbm_cyc_o,
+    wbm_dat_i, wbm_ack_i, wbm_err_i, wbm_rty_i,
+    wbs_dat_i, wbs_adr_i, wbs_sel_i, wbs_cti_i, wbs_bte_i, wbs_we_i, wbs_stb_i, wbs_cyc_i,
+    wbs_dat_o, wbs_ack_o, wbs_err_o, wbs_rty_o,
+    wb_clk, wb_rst
+);
+parameter nr_of_ports = 3;
+parameter adr_size = 26;
+parameter adr_lo   = 2;
+parameter dat_size = 32;
+parameter sel_size = dat_size/8;
+localparam aw = (adr_size - adr_lo) * nr_of_ports;
+localparam dw = dat_size * nr_of_ports;
+localparam sw = sel_size * nr_of_ports;
+localparam cw = 3 * nr_of_ports;
+localparam bw = 2 * nr_of_ports;
+input  [dw-1:0] wbm_dat_o;
+input  [aw-1:0] wbm_adr_o;
+input  [sw-1:0] wbm_sel_o;
+input  [cw-1:0] wbm_cti_o;
+input  [bw-1:0] wbm_bte_o;
+input  [nr_of_ports-1:0] wbm_we_o, wbm_stb_o, wbm_cyc_o;
+output [dw-1:0] wbm_dat_i;
+output [nr_of_ports-1:0] wbm_ack_i, wbm_err_i, wbm_rty_i;
+output [dat_size-1:0] wbs_dat_i;
+output [adr_size-1:adr_lo] wbs_adr_i;
+output [sel_size-1:0] wbs_sel_i;
+output [2:0] wbs_cti_i;
+output [1:0] wbs_bte_i;
+output wbs_we_i, wbs_stb_i, wbs_cyc_i;
+input  [dat_size-1:0] wbs_dat_o;
+input  wbs_ack_o, wbs_err_o, wbs_rty_o;
+input wb_clk, wb_rst;
+wire [nr_of_ports-1:0] select;
+wire [nr_of_ports-1:0] state;
+wire [nr_of_ports-1:0] eoc; // end-of-cycle
+wire [nr_of_ports-1:0] sel;
+wire idle;
+genvar i;
+assign idle = !(|state);
+generate
+if (nr_of_ports == 2) begin
+    wire [2:0] wbm1_cti_o, wbm0_cti_o;
+    assign {wbm1_cti_o,wbm0_cti_o} = wbm_cti_o;
+    assign select = (idle) ? {wbm_cyc_o[1],!wbm_cyc_o[1] & wbm_cyc_o[0]} : 2'b00;
+    assign eoc[1] = (wbm_ack_i[1] & (wbm1_cti_o == 3'b000 | wbm1_cti_o == 3'b111)) | !wbm_cyc_o[1];
+    assign eoc[0] = (wbm_ack_i[0] & (wbm0_cti_o == 3'b000 | wbm0_cti_o == 3'b111)) | !wbm_cyc_o[0];
+end
+endgenerate
+generate
+if (nr_of_ports == 3) begin
+    wire [2:0] wbm2_cti_o, wbm1_cti_o, wbm0_cti_o;
+    assign {wbm2_cti_o,wbm1_cti_o,wbm0_cti_o} = wbm_cti_o;
+    assign select = (idle) ? {wbm_cyc_o[2],!wbm_cyc_o[2] & wbm_cyc_o[1],wbm_cyc_o[2:1]==2'b00 & wbm_cyc_o[0]} : 3'b000;
+    assign eoc[2] = (wbm_ack_i[2] & (wbm2_cti_o == 3'b000 | wbm2_cti_o == 3'b111)) | !wbm_cyc_o[2];
+    assign eoc[1] = (wbm_ack_i[1] & (wbm1_cti_o == 3'b000 | wbm1_cti_o == 3'b111)) | !wbm_cyc_o[1];
+    assign eoc[0] = (wbm_ack_i[0] & (wbm0_cti_o == 3'b000 | wbm0_cti_o == 3'b111)) | !wbm_cyc_o[0];
+end
+endgenerate
+generate
+for (i=0;i<nr_of_ports;i=i+1) begin
+    vl_spr sr0( .sp(select[i]), .r(eoc[i]), .q(state[i]), .clk(wb_clk), .rst(wb_rst));
+end
+endgenerate
+    assign sel = select | state;
+    vl_mux_andor # ( .nr_of_ports(nr_of_ports), .width(32)) mux0 ( .a(wbm_dat_o), .sel(sel), .dout(wbs_dat_i));
+    vl_mux_andor # ( .nr_of_ports(nr_of_ports), .width(adr_size-adr_lo)) mux1 ( .a(wbm_adr_o), .sel(sel), .dout(wbs_adr_i));
+    vl_mux_andor # ( .nr_of_ports(nr_of_ports), .width(sel_size)) mux2 ( .a(wbm_sel_o), .sel(sel), .dout(wbs_sel_i));
+    vl_mux_andor # ( .nr_of_ports(nr_of_ports), .width(3)) mux3 ( .a(wbm_cti_o), .sel(sel), .dout(wbs_cti_i));
+    vl_mux_andor # ( .nr_of_ports(nr_of_ports), .width(2)) mux4 ( .a(wbm_bte_o), .sel(sel), .dout(wbs_bte_i));
+    vl_mux_andor # ( .nr_of_ports(nr_of_ports), .width(1)) mux5 ( .a(wbm_we_o), .sel(sel), .dout(wbs_we_i));
+    vl_mux_andor # ( .nr_of_ports(nr_of_ports), .width(1)) mux6 ( .a(wbm_stb_o), .sel(sel), .dout(wbs_stb_i));
+    assign wbs_cyc_i = |sel;
+    assign wbm_dat_i = {nr_of_ports{wbs_dat_o}};
+    assign wbm_ack_i = {nr_of_ports{wbs_ack_o}} & sel;
+    assign wbm_err_i = {nr_of_ports{wbs_err_o}} & sel;
+    assign wbm_rty_i = {nr_of_ports{wbs_rty_o}} & sel;
+endmodule
 // WB ROM
 module vl_wb_boot_rom (
     wb_adr_i, wb_stb_i, wb_cyc_i, 
