@@ -1090,7 +1090,7 @@ endmodule
 
 `ifdef DELAY_EMPTYFLAG
 `define MODULE delay_emptyflag
-module vl_delay_emptyflag ( d, q, emptyflag, clk, rst);
+module `BASE`MODULE ( d, q, emptyflag, clk, rst);
 `undef MODULE
 parameter depth = 10;
 input d;
