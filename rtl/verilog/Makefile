@@ -1,4 +1,5 @@
-VERILOG_FILES = clk_and_reset.v
+VERILOG_FILES = defines.v
+VERILOG_FILES += clk_and_reset.v
 VERILOG_FILES += registers.v
 VERILOG_FILES += logic.v
 
@@ -30,10 +31,8 @@ VERILOG_FILES += arith.v
 VERSATILE_LIBRARIES = versatile_library.v
 VERSATILE_LIBRARIES += versatile_library_actel.v
 VERSATILE_LIBRARIES += versatile_library_altera.v
-
-svn_export:
-	svn export http://opencores.org/ocsvn/versatile_counter/versatile_counter/trunk/rtl/verilog/versatile_counter_generator.php
-	svn export http://opencores.org/ocsvn/versatile_counter/versatile_counter/trunk/rtl/verilog/CSV.class.php
+OUT_FILE ?= custom.v
+VERSATILE_LIBRARIES += $(OUT_FILE)
 
 #.PHONY: $(VERILOG_FILES_CNT)
 $(VERILOG_FILES_CNT):
@@ -60,10 +59,14 @@ versatile_library.v: $(VERILOG_FILES)
 	cat $(VERILOG_FILES)  | sed -r -e 's/\/\/E2_([a-z]+)/`\1/' > versatile_library.v
 	
 versatile_library_actel.v: $(VERILOG_FILES)
-	vppreproc  --noline --noblank +define+ACTEL $(VERILOG_FILES) | sed -r -e 's/\/\/E2_([a-z]+)/`\1/' > versatile_library_actel.v
+	vppreproc  --noline --noblank +define+ACTEL +define+ALL $(VERILOG_FILES) | sed -r -e 's/\/\/E2_([a-z]+)/`\1/' > versatile_library_actel.v
 	
 versatile_library_altera.v: $(VERILOG_FILES)
-	vppreproc  --noline --noblank +define+ALTERA $(VERILOG_FILES) | sed -r -e 's/\/\/E2_([a-z]+)/`\1/' > versatile_library_altera.v	
+	vppreproc  --noline --noblank +define+ALTERA +define+ALL $(VERILOG_FILES) | sed -r -e 's/\/\/E2_([a-z]+)/`\1/' > versatile_library_altera.v
+	
+$(OUT_FILE): $(VERILOG_FILES)
+	vppreproc  --noline --noblank $(DEFINE_FILE) $(VERILOG_FILES) | sed -r -e 's/\/\/E2_([a-z]+)/`\1/' > $(OUT_FILE)
+
 
 all: $(VERSATILE_LIBRARIES)
 

@@ -40,8 +40,10 @@
 ////                                                              ////
 //////////////////////////////////////////////////////////////////////
 
-module vl_dff ( d, q, clk, rst);
-
+`ifdef DFF
+`define MODULE dff
+module `BASE`MODULE ( d, q, clk, rst);
+`undef MODULE
 	parameter width = 1;	
 	parameter reset_value = 0;
 
@@ -56,8 +58,12 @@ module vl_dff ( d, q, clk, rst);
 		q <= d;
 
 endmodule
+`endif
 
-module vl_dff_array ( d, q, clk, rst);
+`ifdef DFF_ARRAY
+`define MODULE dff_array
+module `BASE`MODULE ( d, q, clk, rst);
+`undef MODULE
 
 	parameter width = 1;
         parameter depth = 2;
@@ -81,8 +87,12 @@ module vl_dff_array ( d, q, clk, rst);
     assign q = q_tmp[depth-1];
     
 endmodule
+`endif
 
-module vl_dff_ce ( d, ce, q, clk, rst);
+`ifdef DFF_CE
+`define MODULE dff_ce
+module `BASE`MODULE ( d, ce, q, clk, rst);
+`undef MODULE
 
 	parameter width = 1;	
 	parameter reset_value = 0;
@@ -99,8 +109,12 @@ module vl_dff_ce ( d, ce, q, clk, rst);
 			q <= d;
 
 endmodule
+`endif
 
-module vl_dff_ce_clear ( d, ce, clear, q, clk, rst);
+`ifdef DFF_CE_CLEAR
+`define MODULE dff_ce_clear
+module `BASE`MODULE ( d, ce, clear, q, clk, rst);
+`undef MODULE
 
 	parameter width = 1;	
 	parameter reset_value = 0;
@@ -120,8 +134,12 @@ module vl_dff_ce_clear ( d, ce, clear, q, clk, rst);
                     q <= d;
 
 endmodule
+`endif
 
-module vl_dff_ce_set ( d, ce, set, q, clk, rst);
+`ifdef DF_CE_SET
+`define MODULE dff_ce_set
+module `BASE`MODULE ( d, ce, set, q, clk, rst);
+`undef MODULE
 
 	parameter width = 1;	
 	parameter reset_value = 0;
@@ -141,9 +159,13 @@ module vl_dff_ce_set ( d, ce, set, q, clk, rst);
                     q <= d;
 
 endmodule
+`endif
 
-module vl_spr ( sp, r, q, clk, rst);
-        
+`ifdef SPR
+`define MODULE spr
+module `BASE`MODULE ( sp, r, q, clk, rst);
+`undef MODULE
+
         parameter width = 1;
         parameter reset_value = 0;
         
@@ -161,9 +183,13 @@ module vl_spr ( sp, r, q, clk, rst);
                 q <= 1'b0;
 
 endmodule
+`endif
 
-module vl_srp ( s, rp, q, clk, rst);
-        
+`ifdef SRP
+`define MODULE srp
+module `BASE`MODULE ( s, rp, q, clk, rst);
+`undef MODULE
+
         parameter width = 1;
         parameter reset_value = 0;
         
@@ -181,9 +207,11 @@ module vl_srp ( s, rp, q, clk, rst);
                 q <= 1'b1;
 
 endmodule
-
+`endif
 
 `ifdef ALTERA
+
+`ifdef DFF_SR
 // megafunction wizard: %LPM_FF%
 // GENERATION: STANDARD
 // VERSION: WM1.0
@@ -222,7 +250,10 @@ endmodule
 // synopsys translate_off
 `timescale 1 ps / 1 ps
 // synopsys translate_on
-module vl_dff_sr (
+`define MODULE dff_sr
+module `BASE`MODULE (
+`undef MODULE
+
 	aclr,
 	aset,
 	clock,
@@ -302,12 +333,14 @@ endmodule
 // Retrieval info: GEN_FILE: TYPE_NORMAL dff_sr_inst.v FALSE
 // Retrieval info: GEN_FILE: TYPE_NORMAL dff_sr_bb.v FALSE
 // Retrieval info: LIB_FILE: lpm
-
+`endif
 
 `else
 
-
-module vl_dff_sr ( aclr, aset, clock, data, q);
+`ifdef DFF_SR
+`define MODULE dff_sr
+module `BASE`MODULE ( aclr, aset, clock, data, q);
+`undef MODULE
 
     input	  aclr;
     input	  aset;
@@ -324,20 +357,31 @@ module vl_dff_sr ( aclr, aset, clock, data, q);
        q <= data;
 
 endmodule
+`endif
 
 `endif
 
 // LATCH
 // For targtes not supporting LATCH use dff_sr with clk=1 and data=1
 `ifdef ALTERA
-module vl_latch ( d, le, q, clk);
+
+`ifdef LATCH
+`define MODULE latch
+module `BASE`MODULE ( d, le, q, clk);
+`undef MODULE
 input d, le;
 output q;
 input clk;
 dff_sr i0 (.aclr(), .aset(), .clock(1'b1), .data(1'b1), .q(q));
 endmodule
+`endif
+
 `else
-module latch ( d, le, q, clk);
+
+`ifdef LATCH
+`define MODULE latch
+module `BASE`MODULE ( d, le, q, clk);
+`undef MODULE
 input d, le;
 output q;
 input clk;/*
@@ -349,7 +393,13 @@ input clk;/*
 endmodule
 `endif
 
-module vl_shreg ( d, q, clk, rst);
+`endif
+
+`ifdef SHREG
+`define MODULE shreg
+module `BASE`MODULE ( d, q, clk, rst);
+`undef MODULE
+
 parameter depth = 10;
 input d;
 output q;
@@ -364,8 +414,12 @@ else
     dffs <= {d,dffs[1:depth-1]};
 assign q = dffs[depth];
 endmodule
+`endif
 
-module vl_shreg_ce ( d, ce, q, clk, rst);
+`ifdef SHREG_CE
+`define MODULE shreg_ce
+module `BASE`MODULE ( d, ce, q, clk, rst);
+`undef MODULE
 parameter depth = 10;
 input d, ce;
 output q;
@@ -381,8 +435,12 @@ else
         dffs <= {d,dffs[1:depth-1]};
 assign q = dffs[depth];
 endmodule
+`endif
 
-module vl_delay ( d, q, clk, rst);
+`ifdef DELAY
+`define MODULE delay
+module `BASE`MODULE ( d, q, clk, rst);
+`undef MODULE
 parameter depth = 10;
 input d;
 output q;
@@ -397,8 +455,12 @@ else
     dffs <= {d,dffs[1:depth-1]};
 assign q = dffs[depth];
 endmodule
+`endif
 
+`ifdef DELAY_EMPTYFLAG
+`define MODULE delay_emptyflag
 module vl_delay_emptyflag ( d, q, emptyflag, clk, rst);
+`undef MODULE
 parameter depth = 10;
 input d;
 output q, emptyflag;
@@ -414,3 +476,4 @@ else
 assign q = dffs[depth];
 assign emptyflag = !(|dffs);
 endmodule
+`endif

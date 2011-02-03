@@ -40,8 +40,11 @@
 ////                                                              ////
 //////////////////////////////////////////////////////////////////////
 
+`ifdef MULTS
 // signed multiplication
-module vl_mults (a,b,p);
+`define MODULE mults
+module `BASE`MODULE (a,b,p);
+`undef MODULE
 parameter operand_a_width = 18;
 parameter operand_b_width = 18;
 parameter result_hi = 35;
@@ -59,17 +62,24 @@ wire signed [operand_a_width+operand_b_width-1:0] result;
     assign p = result[result_hi:result_lo];
     
 endmodule
-
-module vl_mults18x18 (a,b,p);
+`endif
+`ifdef MULTS18X18
+`define MODULE mults18x18
+module `BASE`MODULE (a,b,p);
+`undef MODULE
 input [17:0] a,b;
 output [35:0] p;
 vl_mult
     # (.operand_a_width(18), .operand_b_width(18))
     mult0 (.a(a), .b(b), .p(p));
 endmodule
+`endif
 
+`ifdef MULT
+`define MODULE mult
 // unsigned multiplication
-module vl_mult (a,b,p);
+module `BASE`MODULE (a,b,p);
+`undef MODULE
 parameter operand_a_width = 18;
 parameter operand_b_width = 18;
 parameter result_hi = 35;
@@ -84,14 +94,18 @@ wire [operand_a_width+operand_b_width-1:0] result;
     assign p = result[result_hi:result_lo];
     
 endmodule
+`endif
 
+`ifdef SHIFT_UNIT_32
+`define MODULE shift_unit_32
 // shift unit
 // supporting the following shift functions
 //   SLL
 //   SRL
 //   SRA
 `define SHIFT_UNIT_MULT # ( .operand_a_width(25), .operand_b_width(16), .result_hi(14), .result_lo(7))
-module vl_shift_unit_32( din, s, dout, opcode);
+module `BASE`MODULE( din, s, dout, opcode);
+`undef MODULE
 input [31:0] din; // data in operand
 input [4:0] s; // shift operand
 input [1:0] opcode;
@@ -132,11 +146,12 @@ assign sign[3] = din[31] & sra;
 assign sign[2] = sign[3] & (&din[31:24]);
 assign sign[1] = sign[2] & (&din[23:16]);
 assign sign[0] = sign[1] & (&din[15:8]);
-vl_mults `SHIFT_UNIT_MULT mult_byte3 ( .a({sign[3], {8{sign[3]}},din[31:24], din[23:16]}), .b({1'b0,s1}), .p(tmp[3]));
-vl_mults `SHIFT_UNIT_MULT mult_byte2 ( .a({sign[2], din[31:24]  ,din[23:16],  din[15:8]}), .b({1'b0,s1}), .p(tmp[2]));
-vl_mults `SHIFT_UNIT_MULT mult_byte1 ( .a({sign[1], din[23:16]  ,din[15:8],   din[7:0]}), .b({1'b0,s1}), .p(tmp[1]));
-vl_mults `SHIFT_UNIT_MULT mult_byte0 ( .a({sign[0], din[15:8]   ,din[7:0],    8'h00}),      .b({1'b0,s1}), .p(tmp[0]));
-
+`define MODULE mults
+`BASE`MODULE `SHIFT_UNIT_MULT mult_byte3 ( .a({sign[3], {8{sign[3]}},din[31:24], din[23:16]}), .b({1'b0,s1}), .p(tmp[3]));
+`BASE`MODULE `SHIFT_UNIT_MULT mult_byte2 ( .a({sign[2], din[31:24]  ,din[23:16],  din[15:8]}), .b({1'b0,s1}), .p(tmp[2]));
+`BASE`MODULE `SHIFT_UNIT_MULT mult_byte1 ( .a({sign[1], din[23:16]  ,din[15:8],   din[7:0]}), .b({1'b0,s1}), .p(tmp[1]));
+`BASE`MODULE `SHIFT_UNIT_MULT mult_byte0 ( .a({sign[0], din[15:8]   ,din[7:0],    8'h00}),      .b({1'b0,s1}), .p(tmp[0]));
+`undef MODULE
 // second stage is multiplexer based
 // shift on byte level
 
@@ -172,14 +187,18 @@ assign dout[7:0]   = (s[4:3]==2'b00) ? tmp[0] :
                      tmp[3];
 
 endmodule
+`endif
 
+`ifdef LOGIC_UNIT
 // logic unit
 // supporting the following logic functions
 //    a and b
 //    a or  b
 //    a xor b
 //    not b
-module vl_logic_unit( a, b, result, opcode);
+`define MODULE logic_unit
+module `BASE`MODULE( a, b, result, opcode);
+`undef MODULE
 parameter width = 32;
 parameter opcode_and = 2'b00;
 parameter opcode_or  = 2'b01;
@@ -209,3 +228,4 @@ assign z = (result=={width{1'b0}});
 assign ovfl = ( a[width-1] &  b[width-1] & ~result[width-1]) |
                (~a[width-1] & ~b[width-1] &  result[width-1]);
 endmodule
+`endif

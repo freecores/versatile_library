@@ -39,7 +39,10 @@
 //// from http://www.opencores.org/lgpl.shtml                     ////
 ////                                                              ////
 //////////////////////////////////////////////////////////////////////
-module vl_mux_andor ( a, sel, dout);
+`ifdef MUX_ANDOR
+`define MODULE mux_andor
+module `BASE`MODULE ( a, sel, dout);
+`undef MODULE
 
 parameter width = 32;
 parameter nr_of_ports = 4;
@@ -59,8 +62,12 @@ begin
 end
 
 endmodule
+`endif
 
-module vl_mux2_andor ( a1, a0, sel, dout);
+`ifdef MUX2_ANDOR
+`define MODULE mux2_andor
+module `BASE`MODULE ( a1, a0, sel, dout);
+`undef MODULE
 
 parameter width = 32;
 localparam nr_of_ports = 2;
@@ -68,13 +75,19 @@ input [width-1:0] a1, a0;
 input [nr_of_ports-1:0] sel;
 output [width-1:0] dout;
 
-vl_mux_andor
+`define MODULE mux_andor
+`BASE`MODULE
     # ( .width(width), .nr_of_ports(nr_of_ports))
     mux0( .a({a1,a0}), .sel(sel), .dout(dout));
-    
-endmodule
+`undef MODULE
 
-module vl_mux3_andor ( a2, a1, a0, sel, dout);
+endmodule
+`endif
+
+`ifdef MUX3_ANDOR
+`define MODULE mux3_andor
+module `BASE`MODULE ( a2, a1, a0, sel, dout);
+`undef MODULE
 
 parameter width = 32;
 localparam nr_of_ports = 3;
@@ -82,13 +95,18 @@ input [width-1:0] a2, a1, a0;
 input [nr_of_ports-1:0] sel;
 output [width-1:0] dout;
 
-vl_mux_andor
+`define MODULE mux_andor
+`BASE`MODULE
     # ( .width(width), .nr_of_ports(nr_of_ports))
     mux0( .a({a2,a1,a0}), .sel(sel), .dout(dout));
-    
+`undef MODULE    
 endmodule
+`endif
 
-module vl_mux4_andor ( a3, a2, a1, a0, sel, dout);
+`ifdef MUX4_ANDOR
+`define MODULE mux4_andor
+module `BASE`MODULE ( a3, a2, a1, a0, sel, dout);
+`undef MODULE
 
 parameter width = 32;
 localparam nr_of_ports = 4;
@@ -96,13 +114,19 @@ input [width-1:0] a3, a2, a1, a0;
 input [nr_of_ports-1:0] sel;
 output [width-1:0] dout;
 
-vl_mux_andor
+`define MODULE mux_andor
+`BASE`MODULE
     # ( .width(width), .nr_of_ports(nr_of_ports))
     mux0( .a({a3,a2,a1,a0}), .sel(sel), .dout(dout));
+`undef MODULE
 
 endmodule
+`endif
 
-module vl_mux5_andor ( a4, a3, a2, a1, a0, sel, dout);
+`ifdef MUX5_ANDOR
+`define MODULE mux5_andor
+module `BASE`MODULE ( a4, a3, a2, a1, a0, sel, dout);
+`undef MODULE
 
 parameter width = 32;
 localparam nr_of_ports = 5;
@@ -110,13 +134,19 @@ input [width-1:0] a4, a3, a2, a1, a0;
 input [nr_of_ports-1:0] sel;
 output [width-1:0] dout;
 
-vl_mux_andor
+`define MODULE mux_andor
+`BASE`MODULE
     # ( .width(width), .nr_of_ports(nr_of_ports))
     mux0( .a({a4,a3,a2,a1,a0}), .sel(sel), .dout(dout));
+`undef MODULE
 
 endmodule
+`endif
 
-module vl_mux6_andor ( a5, a4, a3, a2, a1, a0, sel, dout);
+`ifdef MUX6_ANDOR
+`define MODULE mux6_andor
+module `BASE`MODULE ( a5, a4, a3, a2, a1, a0, sel, dout);
+`undef MODULE
 
 parameter width = 32;
 localparam nr_of_ports = 6;
@@ -124,8 +154,11 @@ input [width-1:0] a5, a4, a3, a2, a1, a0;
 input [nr_of_ports-1:0] sel;
 output [width-1:0] dout;
 
-vl_mux_andor
+`define MODULE mux_andor
+`BASE`MODULE
     # ( .width(width), .nr_of_ports(nr_of_ports))
     mux0( .a({a5,a4,a3,a2,a1,a0}), .sel(sel), .dout(dout));
+`undef MODULE
 
 endmodule
+`endif

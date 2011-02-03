@@ -40,9 +40,12 @@
 ////                                                              ////
 //////////////////////////////////////////////////////////////////////
 
+`ifdef WB3WB3_BRIDGE
 // async wb3 - wb3 bridge
 `timescale 1ns/1ns
-module vl_wb3wb3_bridge ( 
+`define MODULE wb3wb3_bridge
+module `BASE`MODULE ( 
+`undef MODULE
 	// wishbone slave side
 	wbs_dat_i, wbs_adr_i, wbs_sel_i, wbs_bte_i, wbs_cti_i, wbs_we_i, wbs_cyc_i, wbs_stb_i, wbs_dat_o, wbs_ack_o, wbs_clk, wbs_rst,
 	// wishbone master side
@@ -119,7 +122,9 @@ else
 	else if (wbs_eoc_alert & (a_rd | a_wr))
 		wbs_eoc <= 1'b1;
 
-vl_cnt_shreg_ce_clear # ( .length(16))
+`define MODULE cnt_shreg_ce_clear
+`BASE`MODULE # ( .length(16))
+`undef MODULE
     cnt0 (
         .cke(wbs_ack_o),
         .clear(wbs_eoc),
@@ -205,12 +210,18 @@ assign b_rd_data = (wbm==wbm_adr1 & !b_fifo_empty & wbm_we_o) ? 1'b1 : // b_q[`W
                    1'b0;
 assign b_rd = b_rd_adr | b_rd_data;
 
-vl_dff dff1 ( .d(b_rd_data), .q(b_rd_data_reg), .clk(wbm_clk), .rst(wbm_rst));
-vl_dff_ce # ( .width(36)) dff2 ( .d(b_q), .ce(b_rd_data_reg), .q(temp), .clk(wbm_clk), .rst(wbm_rst));
+`define MODULE dff
+`BASE`MODULE dff1 ( .d(b_rd_data), .q(b_rd_data_reg), .clk(wbm_clk), .rst(wbm_rst));
+`undef MODULE
+`define MODULE dff_ce
+`BASE`MODULE # ( .width(36)) dff2 ( .d(b_q), .ce(b_rd_data_reg), .q(temp), .clk(wbm_clk), .rst(wbm_rst));
+`undef MODULE
 
 assign {wbm_dat_o,wbm_sel_o} = (b_rd_data_reg) ? b_q : temp;
 
+`define MODULE cnt_shreg_ce_clear
 vl_cnt_shreg_ce_clear # ( .length(16))
+`undef MODULE
     cnt1 (
         .cke(wbm_ack_i),
         .clear(wbm_eoc),
@@ -232,7 +243,9 @@ else begin
 end	
 
 //async_fifo_dw_simplex_top
-vl_fifo_2r2w_async_simplex
+`define MODULE fifo_2r2w_async_simplex
+`BASE`MODULE
+`undef MODULE
 # ( .data_width(36), .addr_width(addr_width))
 fifo (
     // a side
@@ -256,8 +269,15 @@ fifo (
     );
     
 endmodule
+`undef WE
+`undef BTE
+`undef CTI
+`endif
 
+`ifdef WB3_ARBITER_TYPE1
+`define MODULE wb3_arbiter_type1
 module vl_wb3_arbiter_type1 (
+`undef MODULE
     wbm_dat_o, wbm_adr_o, wbm_sel_o, wbm_cti_o, wbm_bte_o, wbm_we_o, wbm_stb_o, wbm_cyc_o,
     wbm_dat_i, wbm_ack_i, wbm_err_i, wbm_rty_i,
     wbs_dat_i, wbs_adr_i, wbs_sel_i, wbs_cti_i, wbs_bte_i, wbs_we_i, wbs_stb_i, wbs_cyc_i,
@@ -344,13 +364,15 @@ endgenerate
 
     assign sel = select | state;
 
-    vl_mux_andor # ( .nr_of_ports(nr_of_ports), .width(32)) mux0 ( .a(wbm_dat_o), .sel(sel), .dout(wbs_dat_i));
-    vl_mux_andor # ( .nr_of_ports(nr_of_ports), .width(adr_size-adr_lo)) mux1 ( .a(wbm_adr_o), .sel(sel), .dout(wbs_adr_i));
-    vl_mux_andor # ( .nr_of_ports(nr_of_ports), .width(sel_size)) mux2 ( .a(wbm_sel_o), .sel(sel), .dout(wbs_sel_i));
-    vl_mux_andor # ( .nr_of_ports(nr_of_ports), .width(3)) mux3 ( .a(wbm_cti_o), .sel(sel), .dout(wbs_cti_i));
-    vl_mux_andor # ( .nr_of_ports(nr_of_ports), .width(2)) mux4 ( .a(wbm_bte_o), .sel(sel), .dout(wbs_bte_i));
-    vl_mux_andor # ( .nr_of_ports(nr_of_ports), .width(1)) mux5 ( .a(wbm_we_o), .sel(sel), .dout(wbs_we_i));
-    vl_mux_andor # ( .nr_of_ports(nr_of_ports), .width(1)) mux6 ( .a(wbm_stb_o), .sel(sel), .dout(wbs_stb_i));
+`define MODULE mux_andor
+    `BASE`MODULE # ( .nr_of_ports(nr_of_ports), .width(32)) mux0 ( .a(wbm_dat_o), .sel(sel), .dout(wbs_dat_i));
+    `BASE`MODULE # ( .nr_of_ports(nr_of_ports), .width(adr_size-adr_lo)) mux1 ( .a(wbm_adr_o), .sel(sel), .dout(wbs_adr_i));
+    `BASE`MODULE # ( .nr_of_ports(nr_of_ports), .width(sel_size)) mux2 ( .a(wbm_sel_o), .sel(sel), .dout(wbs_sel_i));
+    `BASE`MODULE # ( .nr_of_ports(nr_of_ports), .width(3)) mux3 ( .a(wbm_cti_o), .sel(sel), .dout(wbs_cti_i));
+    `BASE`MODULE # ( .nr_of_ports(nr_of_ports), .width(2)) mux4 ( .a(wbm_bte_o), .sel(sel), .dout(wbs_bte_i));
+    `BASE`MODULE # ( .nr_of_ports(nr_of_ports), .width(1)) mux5 ( .a(wbm_we_o), .sel(sel), .dout(wbs_we_i));
+    `BASE`MODULE # ( .nr_of_ports(nr_of_ports), .width(1)) mux6 ( .a(wbm_stb_o), .sel(sel), .dout(wbs_stb_i));
+`undef MODULE
     assign wbs_cyc_i = |sel;
     
     assign wbm_dat_i = {nr_of_ports{wbs_dat_o}};
@@ -359,9 +381,13 @@ endgenerate
     assign wbm_rty_i = {nr_of_ports{wbs_rty_o}} & sel;
 
 endmodule
+`endif
 
+`ifdef WB_BOOT_ROM
 // WB ROM
-module vl_wb_boot_rom (
+`define MODULE wb_boot_rom
+module `BASE`MODULE (
+`undef MODULE
     wb_adr_i, wb_stb_i, wb_cyc_i, 
     wb_dat_o, wb_ack_o, hit_o, wb_clk, wb_rst);
 
@@ -422,8 +448,12 @@ assign wb_dat_o = wb_dat & {32{wb_ack}};
 assign wb_ack_o = wb_ack;
 
 endmodule
+`endif
 
-module vl_wb_dpram ( 
+`ifdef WB_DPRAM
+`define MODULE wb_dpram
+module `BASE`MODULE ( 
+`undef MODULE
 	// wishbone slave side a
 	wbsa_dat_i, wbsa_adr_i, wbsa_we_i, wbsa_cyc_i, wbsa_stb_i, wbsa_dat_o, wbsa_ack_o,
         wbsa_clk, wbsa_rst,
@@ -453,7 +483,9 @@ input wbsb_clk, wbsb_rst;
 
 wire wbsa_dat_tmp, wbsb_dat_tmp;
 
-vl_dpram_2r2w # (
+`define MODULE dpram_2r2w
+`BASE`MODULE # (
+`undef MODULE
     .data_width(data_width), .addr_width(addr_width) )
 dpram0(
     .d_a(wbsa_dat_i),
@@ -481,7 +513,10 @@ generate if (dat_o_mask_b==0)
     assign wbsb_dat_o = wbsb_dat_tmp;
 endgenerate
 
-vl_spr ack_a( .sp(wbsa_cyc_i & wbsa_stb_i & !wbsa_ack_o), .r(1'b1), .q(wbsa_ack_o), .clk(wbsa_clk), .rst(wbsa_rst));
-vl_spr ack_b( .sp(wbsb_cyc_i & wbsb_stb_i & !wbsb_ack_o), .r(1'b1), .q(wbsb_ack_o), .clk(wbsb_clk), .rst(wbsb_rst));
+`define MODULE spr
+`BASE`MODULE ack_a( .sp(wbsa_cyc_i & wbsa_stb_i & !wbsa_ack_o), .r(1'b1), .q(wbsa_ack_o), .clk(wbsa_clk), .rst(wbsa_rst));
+`BASE`MODULE ack_b( .sp(wbsb_cyc_i & wbsb_stb_i & !wbsb_ack_o), .r(1'b1), .q(wbsb_ack_o), .clk(wbsb_clk), .rst(wbsb_rst));
+`undef MODULE
 
 endmodule
+`endif

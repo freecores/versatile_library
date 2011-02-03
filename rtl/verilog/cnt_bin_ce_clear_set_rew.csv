@@ -1,5 +1,5 @@
 Name,type,,,,
-vl_cnt_bin_ce_clear_set_rew,binary,,,,
+cnt_bin_ce_clear_set_rew,binary,,,,
 ,,,,,
 clear,set,cke,rew,,
 1,1,1,1,,

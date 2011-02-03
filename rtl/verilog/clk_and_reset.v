@@ -45,7 +45,7 @@
 // use to enable global buffers for high fan out signals such as clock and reset
 
 `ifdef ACTEL
-
+`ifdef GBUF
 `timescale 1 ns/100 ps
 // Version: 8.4 8.4.0.33
 module gbuf(GL,CLK);
@@ -60,7 +60,9 @@ input  CLK;
     
 endmodule
 `timescale 1 ns/1 ns
-module vl_gbuf ( i, o);
+`define MODULE gbuf
+module `BASE`MODULE ( i, o);
+`undef MODULE
 input i;
 output o;
 //E2_ifdef SIM_GBUF
@@ -69,33 +71,45 @@ assign o=i;
 gbuf gbuf_i0 ( .CLK(i), .GL(o));
 //E2_endif
 endmodule
+`endif
 
 `else
 
-`ifdef ALTERA 
+`ifdef ALTERA
+`ifdef GBUF
 //altera
-module vl_gbuf ( i, o);
+`define MODULE gbuf
+module `BASE`MODULE ( i, o);
+`undef MODULE
 input i;
 output o;
 assign o = i;
 endmodule
+`endif
 
 `else
 
+`ifdef GBUF
 `timescale 1 ns/100 ps
-module vl_gbuf ( i, o);
+`define MODULE
+module `BASE`MODULE ( i, o);
+`undef MODULE
 input i;
 output o;
 assign o = i;
 endmodule
+`endif
 `endif // ALTERA
 `endif //ACTEL
 
+`ifdef SYNC_RST
 // sync reset
 // input active lo async reset, normally from external reset generator and/or switch
 // output active high global reset sync with two DFFs 
 `timescale 1 ns/100 ps
-module vl_sync_rst ( rst_n_i, rst_o, clk);
+`define MODULE sync_rst
+module `BASE`MODULE ( rst_n_i, rst_o, clk);
+`undef MODULE
 input rst_n_i, clk;
 output rst_o;
 reg [1:0] tmp;
@@ -104,14 +118,20 @@ if (!rst_n_i)
 	tmp <= 2'b11;
 else
 	tmp <= {1'b0,tmp[1]};
-vl_gbuf buf_i0( .i(tmp[0]), .o(rst_o));
+`define MODULE gbuf
+`BASE`MODULE buf_i0( .i(tmp[0]), .o(rst_o));
+`undef MODULE
 endmodule
+`endif
 
+`ifdef PLL
 // vl_pll
 `ifdef ACTEL
 ///////////////////////////////////////////////////////////////////////////////
 `timescale 1 ps/1 ps
-module vl_pll ( clk_i, rst_n_i, lock, clk_o, rst_o);
+`define MODULE pll
+module `BASE`MODULE ( clk_i, rst_n_i, lock, clk_o, rst_o);
+`undef MODULE
 parameter index = 0;
 parameter number_of_clk = 1;
 parameter period_time_0 = 20000;
@@ -201,7 +221,9 @@ endgenerate // index==0
 
 genvar i;
 generate for (i=0;i<number_of_clk;i=i+1) begin: clock
-	vl_sync_rst rst_i0 ( .rst_n_i(rst_n_i | lock), .rst_o(rst_o), .clk(clk_o[i]));	
+`define MODULE sync_rst
+	`BASE`MODULE rst_i0 ( .rst_n_i(rst_n_i | lock), .rst_o(rst_o), .clk(clk_o[i]));
+`undef MODULE
 end
 endgenerate
 endmodule
@@ -214,7 +236,9 @@ endmodule
 `ifdef ALTERA
 
 `timescale 1 ps/1 ps
-module vl_pll ( clk_i, rst_n_i, lock, clk_o, rst_o);
+`define MODULE pll
+module `BASE`MODULE ( clk_i, rst_n_i, lock, clk_o, rst_o);
+`undef MODULE
 parameter index = 0;
 parameter number_of_clk = 1;
 parameter period_time_0 = 20000;
@@ -339,7 +363,9 @@ endmodule
 
 genvar i;
 generate for (i=0;i<number_of_clk;i=i+1) begin: clock
-	vl_sync_rst rst_i0 ( .rst_n_i(rst_n_i | lock), .rst_o(rst_o[i]), .clk(clk_o[i]));	
+`define MODULE sync_rst
+	`BASE`MODULE rst_i0 ( .rst_n_i(rst_n_i | lock), .rst_o(rst_o[i]), .clk(clk_o[i]));
+`undef MODULE
 end
 endgenerate
 endmodule
@@ -350,7 +376,9 @@ endmodule
 
 // generic PLL
 `timescale 1 ps/1 ps
-module vl_pll ( clk_i, rst_n_i, lock, clk_o, rst_o);
+`define MODULE pll
+module `BASE`MODULE ( clk_i, rst_n_i, lock, clk_o, rst_o);
+`undef MODULE
 parameter index = 0;
 parameter number_of_clk = 1;
 parameter period_time_0 = 20000;
@@ -377,7 +405,9 @@ endgenerate
 
 genvar i;
 generate for (i=0;i<number_of_clk;i=i+1) begin: clock
-     vl_sync_rst rst_i0 ( .rst_n_i(rst_n_i | lock), .rst_o(rst_o[i]), .clk(clk_o[i]));
+`define MODULE sync_rst
+     `BASE`MODULE rst_i0 ( .rst_n_i(rst_n_i | lock), .rst_o(rst_o[i]), .clk(clk_o[i]));
+`undef MODULE
 end
 endgenerate
 
@@ -387,3 +417,5 @@ endmodule
 
 `endif //altera
 `endif //actel
+`undef MODULE
+`endif

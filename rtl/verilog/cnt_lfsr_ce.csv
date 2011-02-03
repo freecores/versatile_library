@@ -1,5 +1,5 @@
 Name,type,,,,
-vl_cnt_lfsr_ce,LFSR,,,,
+cnt_lfsr_ce,LFSR,,,,
 ,,,,,
 clear,set,cke,rew,,
 0,0,1,0,,

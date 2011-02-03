@@ -40,9 +40,12 @@
 ////                                                              ////
 //////////////////////////////////////////////////////////////////////
 
+`ifdef ROM_INIT
 /// ROM
+`define MODULE rom_init
+module `BASE`MODULE ( adr, q, clk);
+`undef MODULE
 
-module vl_rom_init ( adr, q, clk);
    parameter data_width = 32;
    parameter addr_width = 8;
    input [(addr_width-1):0] 	 adr;
@@ -59,6 +62,7 @@ module vl_rom_init ( adr, q, clk);
      q <= rom[adr];
 
 endmodule
+`endif
 
 /*
 module vl_rom ( adr, q, clk);
@@ -93,9 +97,13 @@ always @ (posedge clk)
 
 endmodule
 */
-// Single port RAM
 
-module vl_ram ( d, adr, we, q, clk);
+`ifdef RAM
+`define MODULE ram
+// Single port RAM
+module `BASE`MODULE ( d, adr, we, q, clk);
+`undef MODULE
+
    parameter data_width = 32;
    parameter addr_width = 8;
    input [(data_width-1):0]      d;
@@ -122,8 +130,13 @@ module vl_ram ( d, adr, we, q, clk);
    end
 
 endmodule
+`endif
 
-module vl_ram_be ( d, adr, be, we, q, clk);
+`ifdef RAM_BE
+`define MODULE ram_be
+module `BASE`MODULE ( d, adr, be, we, q, clk);
+`undef MODULE
+
    parameter data_width = 32;
    parameter addr_width = 8;
    input [(data_width-1):0]      d;
@@ -157,7 +170,7 @@ module vl_ram_be ( d, adr, be, we, q, clk);
       q <= ram[adr];
 
 endmodule
-
+`endif
 
 // Dual port RAM
 
@@ -168,7 +181,10 @@ endmodule
         `define SYN 
 `endif
 
-module vl_dpram_1r1w ( d_a, adr_a, we_a, clk_a, q_b, adr_b, clk_b );
+`ifdef DPRAM_1R1W
+`define MODULE dpram_1r1w
+module `BASE`MODULE ( d_a, adr_a, we_a, clk_a, q_b, adr_b, clk_b );
+`undef MODULE
    parameter data_width = 32;
    parameter addr_width = 8;
    input [(data_width-1):0]      d_a;
@@ -196,9 +212,15 @@ module vl_dpram_1r1w ( d_a, adr_a, we_a, clk_a, q_b, adr_b, clk_b );
    always @ (posedge clk_b)
    adr_b_reg <= adr_b;   
    assign q_b = ram[adr_b_reg];
+   
 endmodule
+`endif
 
-module vl_dpram_2r1w ( d_a, q_a, adr_a, we_a, clk_a, q_b, adr_b, clk_b );
+`ifdef DPRAM_2R1W
+`define MODULE dpram_2r1w
+module `BASE`MODULE ( d_a, q_a, adr_a, we_a, clk_a, q_b, adr_b, clk_b );
+`undef MODULE
+
    parameter data_width = 32;
    parameter addr_width = 8;
    input [(data_width-1):0]      d_a;
@@ -230,8 +252,13 @@ module vl_dpram_2r1w ( d_a, q_a, adr_a, we_a, clk_a, q_b, adr_b, clk_b );
    always @ (posedge clk_b)
 	  q_b <= ram[adr_b];
 endmodule
+`endif
 
-module vl_dpram_2r2w ( d_a, q_a, adr_a, we_a, clk_a, d_b, q_b, adr_b, we_b, clk_b );
+`ifdef DPRAM_2R2W
+`define MODULE dpram_2r2w
+module `BASE`MODULE ( d_a, q_a, adr_a, we_a, clk_a, d_b, q_b, adr_b, we_b, clk_b );
+`undef MODULE
+
    parameter data_width = 32;
    parameter addr_width = 8;
    input [(data_width-1):0]      d_a;
@@ -269,11 +296,15 @@ module vl_dpram_2r2w ( d_a, q_a, adr_a, we_a, clk_a, d_b, q_b, adr_b, we_b, clk_
 	  ram[adr_b] <= d_b;
      end
 endmodule
+`endif
 
 // Content addresable memory, CAM
 
+`ifdef FIFO_1R1W_FILL_LEVEL_SYNC
 // FIFO
-module vl_fifo_1r1w_fill_level_sync (
+`define MODULE fifo_1r1w_fill_level_sync
+module `BASE`MODULE (
+`undef MODULE
     d, wr, fifo_full,
     q, rd, fifo_empty,
     fill_level,
@@ -297,28 +328,36 @@ input rst, clk;
 
 wire [addr_width:1] wadr, radr;
 
-vl_cnt_bin_ce
+`define MODULE cnt_bin_ce
+`BASE`MODULE
     # ( .length(addr_width))
     fifo_wr_adr( .cke(wr), .q(wadr), .rst(rst), .clk(clk));
-    
-vl_cnt_bin_ce
+`BASE`MODULE
     # (.length(addr_width))
     fifo_rd_adr( .cke(rd), .q(radr), .rst(rst), .clk(clk));
+`undef MODULE
 
-vl_dpram_1r1w
+`define MODULE dpram_1r1w
+`BASE`MODULE
     # (.data_width(data_width), .addr_width(addr_width))
     dpram ( .d_a(d), .adr_a(wadr), .we_a(wr), .clk_a(clk), .q_b(q), .adr_b(radr), .clk_b(clk));
+`undef MODULE
 
-vl_cnt_bin_ce_rew_q_zq_l1
+`define MODULE cnt_bin_ce_rew_q_zq_l1
+`BASE`MODULE
     # (.length(addr_width+1), .level1_value(1<<addr_width))
     fill_level_cnt( .cke(rd ^ wr), .rew(rd), .q(fill_level), .zq(fifo_empty), .level1(fifo_full), .rst(rst), .clk(clk));
-
+`undef MODULE
 endmodule
+`endif
 
+`ifdef FIFO_2R2W_SYNC_SIMPLEX
 // Intended use is two small FIFOs (RX and TX typically) in one FPGA RAM resource
 // RAM is supposed to be larger than the two FIFOs
 // LFSR counters used adr pointers
-module vl_fifo_2r2w_sync_simplex (
+`define MODULE fifo_2r2w_sync_simplex
+module `BASE`MODULE (
+`undef MODULE
     // a side
     a_d, a_wr, a_fifo_full,
     a_q, a_rd, a_fifo_empty,
@@ -361,42 +400,52 @@ wire [addr_width:1] b_wadr, b_radr;
 // dpram
 wire [addr_width:0] a_dpram_adr, b_dpram_adr;
 
-vl_cnt_lfsr_ce
+`define MODULE cnt_lfsr_ce
+`BASE`MODULE
     # ( .length(addr_width))
     fifo_a_wr_adr( .cke(a_wr), .q(a_wadr), .rst(rst), .clk(clk));
     
-vl_cnt_lfsr_ce
+`BASE`MODULE
     # (.length(addr_width))
     fifo_a_rd_adr( .cke(a_rd), .q(a_radr), .rst(rst), .clk(clk));
 
-vl_cnt_lfsr_ce
+`BASE`MODULE
     # ( .length(addr_width))
     fifo_b_wr_adr( .cke(b_wr), .q(b_wadr), .rst(rst), .clk(clk));
     
-vl_cnt_lfsr_ce
+`BASE`MODULE
     # (.length(addr_width))
     fifo_b_rd_adr( .cke(b_rd), .q(b_radr), .rst(rst), .clk(clk));
+`undef MODULE
 
 // mux read or write adr to DPRAM
 assign a_dpram_adr = (a_wr) ? {1'b0,a_wadr} : {1'b1,a_radr};
 assign b_dpram_adr = (b_wr) ? {1'b1,b_wadr} : {1'b0,b_radr};
 
-vl_dpram_2r2w
+`define MODULE dpram_2r2w
+`BASE`MODULE
     # (.data_width(data_width), .addr_width(addr_width+1))
     dpram ( .d_a(a_d), .q_a(a_q), .adr_a(a_dpram_adr), .we_a(a_wr), .clk_a(a_clk), 
             .d_b(b_d), .q_b(b_q), .adr_b(b_dpram_adr), .we_b(b_wr), .clk_b(b_clk));
-            
-vl_cnt_bin_ce_rew_zq_l1
+`undef MODULE
+
+`define MODULE cnt_bin_ce_rew_zq_l1
+`BASE`MODULE
     # (.length(addr_width), .level1_value(fifo_full_level))
     a_fill_level_cnt( .cke(a_rd ^ a_wr), .rew(a_rd), .q(a_fill_level), .zq(a_fifo_empty), .level1(a_fifo_full), .rst(rst), .clk(clk));
 
-vl_cnt_bin_ce_rew_zq_l1
+`BASE`MODULE
     # (.length(addr_width), .level1_value(fifo_full_level))
     b_fill_level_cnt( .cke(b_rd ^ b_wr), .rew(b_rd), .q(b_fill_level), .zq(b_fifo_empty), .level1(b_fifo_full), .rst(rst), .clk(clk));
+`undef MODULE
 
 endmodule
+`endif
 
-module vl_fifo_cmp_async ( wptr, rptr, fifo_empty, fifo_full, wclk, rclk, rst );
+`ifdef FIFO_CMP_ASYNC
+`define MODULE fifo_cmp_async
+module `BASE`MODULE ( wptr, rptr, fifo_empty, fifo_full, wclk, rclk, rst );
+`undef MODULE
 
    parameter addr_width = 4;   
    parameter N = addr_width-1;
@@ -449,8 +498,9 @@ module vl_fifo_cmp_async ( wptr, rptr, fifo_empty, fifo_full, wclk, rclk, rst );
 	 default : direction_clr <= 1'b0;
        endcase
 
+`define MODULE dff_sr
 `ifndef GENERATE_DIRECTION_AS_LATCH
-    vl_dff_sr dff_sr_dir( .aclr(direction_clr), .aset(direction_set), .clock(1'b1), .data(1'b1), .q(direction));
+    `BASE`MODULE dff_sr_dir( .aclr(direction_clr), .aset(direction_set), .clock(1'b1), .data(1'b1), .q(direction));
 `endif
 
 `ifdef GENERATE_DIRECTION_AS_LATCH
@@ -464,8 +514,9 @@ module vl_fifo_cmp_async ( wptr, rptr, fifo_empty, fifo_full, wclk, rclk, rst );
    assign async_empty = (wptr == rptr) && (direction==going_empty);
    assign async_full  = (wptr == rptr) && (direction==going_full);
 
-    vl_dff_sr dff_sr_empty0( .aclr(rst), .aset(async_full), .clock(wclk), .data(async_full), .q(fifo_full2));
-    vl_dff_sr dff_sr_empty1( .aclr(rst), .aset(async_full), .clock(wclk), .data(fifo_full2), .q(fifo_full));
+    `BASE`MODULE dff_sr_empty0( .aclr(rst), .aset(async_full), .clock(wclk), .data(async_full), .q(fifo_full2));
+    `BASE`MODULE dff_sr_empty1( .aclr(rst), .aset(async_full), .clock(wclk), .data(fifo_full2), .q(fifo_full));
+`undef MODULE
 
 /*
    always @ (posedge wclk or posedge rst or posedge async_full)
@@ -481,12 +532,17 @@ module vl_fifo_cmp_async ( wptr, rptr, fifo_empty, fifo_full, wclk, rclk, rst );
        {fifo_empty, fifo_empty2} <= 2'b11;
      else
        {fifo_empty,fifo_empty2} <= {fifo_empty2,async_empty}; */
-    vl_dff # ( .reset_value(1'b1)) dff0 ( .d(async_empty), .q(fifo_empty2), .clk(rclk), .rst(async_empty));
-    vl_dff # ( .reset_value(1'b1)) dff1 ( .d(fifo_empty2), .q(fifo_empty),  .clk(rclk), .rst(async_empty));
-
+`define MODULE dff
+    `BASE`MODULE # ( .reset_value(1'b1)) dff0 ( .d(async_empty), .q(fifo_empty2), .clk(rclk), .rst(async_empty));
+    `BASE`MODULE # ( .reset_value(1'b1)) dff1 ( .d(fifo_empty2), .q(fifo_empty),  .clk(rclk), .rst(async_empty));
+`undef MODULE
 endmodule // async_compb
+`endif
 
-module vl_fifo_1r1w_async (
+`ifdef FIFO_1R1W_ASYNC
+`define MODULE fifo_1r1w_async
+module `BASE`MODULE (
+`undef MODULE
     d, wr, fifo_full, wr_clk, wr_rst,
     q, rd, fifo_empty, rd_clk, rd_rst
     );
@@ -509,25 +565,35 @@ input                   rd_rst;
 
 wire [addr_width:1] wadr, wadr_bin, radr, radr_bin;
 
-vl_cnt_gray_ce_bin
+`define MODULE cnt_gray_ce_bin
+`BASE`MODULE
     # ( .length(addr_width))
     fifo_wr_adr( .cke(wr), .q(wadr), .q_bin(wadr_bin), .rst(wr_rst), .clk(wr_clk));
     
-vl_cnt_gray_ce_bin
+`BASE`MODULE
     # (.length(addr_width))
     fifo_rd_adr( .cke(rd), .q(radr), .q_bin(radr_bin), .rst(rd_rst), .clk(rd_clk));
+`undef MODULE
 
-vl_dpram_1r1w
+`define MODULE dpram_1r1w
+`BASE`MODULE
     # (.data_width(data_width), .addr_width(addr_width))
     dpram ( .d_a(d), .adr_a(wadr_bin), .we_a(wr), .clk_a(wr_clk), .q_b(q), .adr_b(radr_bin), .clk_b(rd_clk));
+`undef MODULE
 
-vl_fifo_cmp_async
+`define MODULE fifo_cmp_async
+`BASE`MODULE
     # (.addr_width(addr_width))
     cmp ( .wptr(wadr), .rptr(radr), .fifo_empty(fifo_empty), .fifo_full(fifo_full), .wclk(wr_clk), .rclk(rd_clk), .rst(wr_rst) );
+`undef MODULE
 
 endmodule
+`endif
 
-module vl_fifo_2r2w_async (
+`ifdef FIFO_2R2W_ASYNC
+`define MODULE fifo_2r2w_async
+module `BASE`MODULE (
+`undef MODULE
     // a side
     a_d, a_wr, a_fifo_full,
     a_q, a_rd, a_fifo_empty, 
@@ -561,21 +627,27 @@ output                  b_fifo_empty;
 input                   b_clk;
 input                   b_rst;
 
-vl_fifo_1r1w_async # (.data_width(data_width), .addr_width(addr_width))
+`define MODULE fifo_1r1w_async
+`BASE`MODULE # (.data_width(data_width), .addr_width(addr_width))
 vl_fifo_1r1w_async_a (
     .d(a_d), .wr(a_wr), .fifo_full(a_fifo_full), .wr_clk(a_clk), .wr_rst(a_rst),
     .q(b_q), .rd(b_rd), .fifo_empty(b_fifo_empty), .rd_clk(b_clk), .rd_rst(b_rst)
     );
 
-vl_fifo_1r1w_async # (.data_width(data_width), .addr_width(addr_width))
+`BASE`MODULE # (.data_width(data_width), .addr_width(addr_width))
 vl_fifo_1r1w_async_b (
     .d(b_d), .wr(b_wr), .fifo_full(b_fifo_full), .wr_clk(b_clk), .wr_rst(b_rst),
     .q(a_q), .rd(a_rd), .fifo_empty(a_fifo_empty), .rd_clk(a_clk), .rd_rst(a_rst)
     );
-    
-endmodule
+`undef MODULE
 
-module vl_fifo_2r2w_async_simplex (
+endmodule
+`endif
+
+`ifdef FIFO_2R2W_ASYNC_SIMPLEX
+`define MODULE fifo_2r2w_async_simplex
+module `BASE`MODULE (
+`undef MODULE
     // a side
     a_d, a_wr, a_fifo_full,
     a_q, a_rd, a_fifo_empty, 
@@ -615,37 +687,44 @@ wire [addr_width:1] b_wadr, b_wadr_bin, b_radr, b_radr_bin;
 // dpram
 wire [addr_width:0] a_dpram_adr, b_dpram_adr;
 
-vl_cnt_gray_ce_bin
+`define MODULE cnt_gray_ce_bin
+`BASE`MODULE
     # ( .length(addr_width))
     fifo_a_wr_adr( .cke(a_wr), .q(a_wadr), .q_bin(a_wadr_bin), .rst(a_rst), .clk(a_clk));
     
-vl_cnt_gray_ce_bin
+`BASE`MODULE
     # (.length(addr_width))
     fifo_a_rd_adr( .cke(a_rd), .q(a_radr), .q_bin(a_radr_bin), .rst(a_rst), .clk(a_clk));
 
-vl_cnt_gray_ce_bin
+`BASE`MODULE
     # ( .length(addr_width))
     fifo_b_wr_adr( .cke(b_wr), .q(b_wadr), .q_bin(b_wadr_bin), .rst(b_rst), .clk(b_clk));
     
-vl_cnt_gray_ce_bin
+`BASE`MODULE
     # (.length(addr_width))
     fifo_b_rd_adr( .cke(b_rd), .q(b_radr), .q_bin(b_radr_bin), .rst(b_rst), .clk(b_clk));
+`undef MODULE
 
 // mux read or write adr to DPRAM
 assign a_dpram_adr = (a_wr) ? {1'b0,a_wadr_bin} : {1'b1,a_radr_bin};
 assign b_dpram_adr = (b_wr) ? {1'b1,b_wadr_bin} : {1'b0,b_radr_bin};
 
-vl_dpram_2r2w
+`define MODULE dpram_2r2w
+`BASE`MODULE
     # (.data_width(data_width), .addr_width(addr_width+1))
     dpram ( .d_a(a_d), .q_a(a_q), .adr_a(a_dpram_adr), .we_a(a_wr), .clk_a(a_clk), 
             .d_b(b_d), .q_b(b_q), .adr_b(b_dpram_adr), .we_b(b_wr), .clk_b(b_clk));
+`undef MODULE
 
-vl_fifo_cmp_async
+`define MODULE fifo_cmp_async
+`BASE`MODULE
     # (.addr_width(addr_width))
     cmp1 ( .wptr(a_wadr), .rptr(b_radr), .fifo_empty(b_fifo_empty), .fifo_full(a_fifo_full), .wclk(a_clk), .rclk(b_clk), .rst(a_rst) );
 
-vl_fifo_cmp_async
+`BASE`MODULE
     # (.addr_width(addr_width))
     cmp2 ( .wptr(b_wadr), .rptr(a_radr), .fifo_empty(a_fifo_empty), .fifo_full(b_fifo_full), .wclk(b_clk), .rclk(a_clk), .rst(b_rst) );
+`undef MODULE
 
 endmodule
+`endif

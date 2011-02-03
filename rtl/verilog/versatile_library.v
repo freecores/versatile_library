@@ -1,3 +1,214 @@
+`ifndef BASE
+`define BASE vl_
+`endif
+ 
+`ifdef ALL
+
+`define GBUF
+`define SYNC_RST
+`define PLL
+
+`define MULTS
+`define MULTS18X18
+`define MULT
+`define SHIFT_UNIT_32
+`define LOGIC_UNIT
+
+`define CNT_SHREG_WRAP
+`define CNT_SHREG_CE_WRAP
+`define CNT_SHREG_CE_CLEAR
+`define CNT_SHREG_CE_CLEAR_WRAP
+
+`define MUX_ANDOR
+`define MUX2_ANDOR
+`define MUX3_ANDOR
+`define MUX4_ANDOR
+`define MUX5_ANDOR
+`define MUX6_ANDOR
+
+`define ROM_INIT
+`define RAM
+`define RAM_BE
+`define DPRAM_1R1W
+`define DPRAM_2R1W
+`define DPRAM_2R2W
+`define FIFO_1R1W_FILL_LEVEL_SYNC
+`define FIFO_2R2W_SYNC_SIMPLEX
+`define FIFO_CMP_ASYNC
+`define FIFO_1R1W_ASYNC
+`define FIFO_2R2W_ASYNC
+`define FIFO_2R2W_ASYNC_SIMPLEX
+
+`define DFF
+`define DFF_ARRAY
+`define DFF_CE
+`define DFF_CE_CLEAR
+`define DF_CE_SET
+`define SPR
+`define SRP
+`define DFF_SR
+`define LATCH
+`define SHREG
+`define SHREG_CE
+`define DELAY
+`define DELAY_EMPTYFLAG
+
+`define WB3WB3_BRIDGE
+`define WB3_ARBITER_TYPE1
+`define WB_BOOT_ROM
+`define WB_DPRAM
+
+`endif
+
+`ifdef PLL
+`ifndef SYNC_RST
+`define SYNC_RST
+`endif
+`endif
+
+`ifdef SYNC_RST
+`ifndef GBUF
+`define GBUF
+`endif
+`endif
+
+`ifdef WB_DPRAM
+`ifndef DPRAM_2R2W
+`define DPRAM_2R2W
+`endif
+`ifndef SPR
+`define SPR
+`endif
+`endif
+
+`ifdef WB3_ARBITER_TYPE1
+`ifndef MUX_ANDOR
+`define MUX_ANDOR
+`endif
+`endif
+
+`ifdef WB3WB3_BRIDGE
+`ifndef CNT_SHREG_CE_CLEAR
+`define CNT_SHREG_CE_CLEAR
+`endif
+`ifndef DFF
+`define DFF
+`endif
+`ifndef DFF_CE
+`define DFF_CE
+`endif
+`ifndef CNT_SHREG_CE_CLEAR
+`define CNT_SHREG_CE_CLEAR
+`endif
+`ifndef FIFO_2R2W_ASYNC_SIMPLEX
+`define FIFO_2R2W_ASYNC_SIMPLEX
+`endif
+`endif
+
+`ifdef MULTS18X18
+`ifndef MULTS
+`define MULTS
+`endif
+`endif
+
+`ifdef SHIFT_UNIT_32
+`ifndef MULTS
+`define MULTS
+`endif
+`endif
+
+`ifdef MUX2_ANDOR
+`ifndef MUX_ANDOR
+`define MUX_ANDOR
+`endif
+`endif
+
+`ifdef MUX3_ANDOR
+`ifndef MUX_ANDOR
+`define MUX_ANDOR
+`endif
+`endif
+
+`ifdef MUX4_ANDOR
+`ifndef MUX_ANDOR
+`define MUX_ANDOR
+`endif
+`endif
+
+`ifdef MUX5_ANDOR
+`ifndef MUX_ANDOR
+`define MUX_ANDOR
+`endif
+`endif
+
+`ifdef MUX6_ANDOR
+`ifndef MUX_ANDOR
+`define MUX_ANDOR
+`endif
+`endif
+
+`ifdef FIFO_1R1W_FILL_LEVEL_SYNC
+`ifndef CNT_BIN_CE
+`define CNT_BIN_CE
+`endif
+`ifndef DPRAM_1R1W
+`define DPRAM_1R1W
+`endif
+`ifndef CNT_BIN_CE_REW_Q_ZQ_L1
+`define CNT_BIN_CE_REW_Q_ZQ_L1
+`endif
+`endif
+
+`ifdef FIFO_1R1W_FILL_LEVEL_SYNC
+`ifndef CNT_LFSR_CE
+`define CNT_LFSR_CE
+`endif
+`ifndef DPRAM_2R2W
+`define DPRAM_2R2W
+`endif
+`ifndef CNT_BIN_CE_REW_ZQ_L1
+`define CNT_BIN_CE_REW_ZQ_L1
+`endif
+`endif
+
+`ifdef FIFO_2R2W_ASYNC_SIMPLEX
+`ifndef CNT_GRAY_CE_BIN
+`define CNT_GRAY_CE_BIN
+`endif
+`ifndef DPRAM_2R2W
+`define DPRAM_2R2W
+`endif
+`ifndef FIFO_CMP_ASYNC
+`define FIFO_CMP_ASYNC
+`endif
+`endif
+
+`ifdef FIFO_2R2W_ASYNC
+`ifndef FIFO_1R1W_ASYNC
+`define FIFO_1R1W_ASYNC
+`endif
+`endif
+
+`ifdef FIFO_1R1W_ASYNC
+`ifndef CNT_GRAY_CE_BIN
+`define CNT_GRAY_CE_BIN
+`endif
+`ifndef DPRAM_1R1W
+`define DPRAM_1R1W
+`endif
+`ifndef FIFO_CMP_ASYNC
+`define FIFO_CMP_ASYNC
+`endif
+`endif
+
+`ifdef FIFO_CMP_ASYNC
+`ifndef DFF_SR
+`define DFF_SR
+`endif
+`ifndef DFF
+`define DFF
+`endif
+`endif
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
 ////  Versatile library, clock and reset                          ////
@@ -45,7 +256,7 @@
 // use to enable global buffers for high fan out signals such as clock and reset
 
 `ifdef ACTEL
-
+`ifdef GBUF
 `timescale 1 ns/100 ps
 // Version: 8.4 8.4.0.33
 module gbuf(GL,CLK);
@@ -60,7 +271,9 @@ input  CLK;
     
 endmodule
 `timescale 1 ns/1 ns
-module vl_gbuf ( i, o);
+`define MODULE gbuf
+module `BASE`MODULE ( i, o);
+`undef MODULE
 input i;
 output o;
 `ifdef SIM_GBUF
@@ -69,33 +282,45 @@ assign o=i;
 gbuf gbuf_i0 ( .CLK(i), .GL(o));
 `endif
 endmodule
+`endif
 
 `else
 
-`ifdef ALTERA 
+`ifdef ALTERA
+`ifdef GBUF
 //altera
-module vl_gbuf ( i, o);
+`define MODULE gbuf
+module `BASE`MODULE ( i, o);
+`undef MODULE
 input i;
 output o;
 assign o = i;
 endmodule
+`endif
 
 `else
 
+`ifdef GBUF
 `timescale 1 ns/100 ps
-module vl_gbuf ( i, o);
+`define MODULE
+module `BASE`MODULE ( i, o);
+`undef MODULE
 input i;
 output o;
 assign o = i;
 endmodule
+`endif
 `endif // ALTERA
 `endif //ACTEL
 
+`ifdef SYNC_RST
 // sync reset
 // input active lo async reset, normally from external reset generator and/or switch
 // output active high global reset sync with two DFFs 
 `timescale 1 ns/100 ps
-module vl_sync_rst ( rst_n_i, rst_o, clk);
+`define MODULE sync_rst
+module `BASE`MODULE ( rst_n_i, rst_o, clk);
+`undef MODULE
 input rst_n_i, clk;
 output rst_o;
 reg [1:0] tmp;
@@ -104,14 +329,20 @@ if (!rst_n_i)
 	tmp <= 2'b11;
 else
 	tmp <= {1'b0,tmp[1]};
-vl_gbuf buf_i0( .i(tmp[0]), .o(rst_o));
+`define MODULE gbuf
+`BASE`MODULE buf_i0( .i(tmp[0]), .o(rst_o));
+`undef MODULE
 endmodule
+`endif
 
+`ifdef PLL
 // vl_pll
 `ifdef ACTEL
 ///////////////////////////////////////////////////////////////////////////////
 `timescale 1 ps/1 ps
-module vl_pll ( clk_i, rst_n_i, lock, clk_o, rst_o);
+`define MODULE pll
+module `BASE`MODULE ( clk_i, rst_n_i, lock, clk_o, rst_o);
+`undef MODULE
 parameter index = 0;
 parameter number_of_clk = 1;
 parameter period_time_0 = 20000;
@@ -201,7 +432,9 @@ endgenerate // index==0
 
 genvar i;
 generate for (i=0;i<number_of_clk;i=i+1) begin: clock
-	vl_sync_rst rst_i0 ( .rst_n_i(rst_n_i | lock), .rst_o(rst_o), .clk(clk_o[i]));	
+`define MODULE sync_rst
+	`BASE`MODULE rst_i0 ( .rst_n_i(rst_n_i | lock), .rst_o(rst_o), .clk(clk_o[i]));
+`undef MODULE
 end
 endgenerate
 endmodule
@@ -214,7 +447,9 @@ endmodule
 `ifdef ALTERA
 
 `timescale 1 ps/1 ps
-module vl_pll ( clk_i, rst_n_i, lock, clk_o, rst_o);
+`define MODULE pll
+module `BASE`MODULE ( clk_i, rst_n_i, lock, clk_o, rst_o);
+`undef MODULE
 parameter index = 0;
 parameter number_of_clk = 1;
 parameter period_time_0 = 20000;
@@ -339,7 +574,9 @@ endmodule
 
 genvar i;
 generate for (i=0;i<number_of_clk;i=i+1) begin: clock
-	vl_sync_rst rst_i0 ( .rst_n_i(rst_n_i | lock), .rst_o(rst_o[i]), .clk(clk_o[i]));	
+`define MODULE sync_rst
+	`BASE`MODULE rst_i0 ( .rst_n_i(rst_n_i | lock), .rst_o(rst_o[i]), .clk(clk_o[i]));
+`undef MODULE
 end
 endgenerate
 endmodule
@@ -350,7 +587,9 @@ endmodule
 
 // generic PLL
 `timescale 1 ps/1 ps
-module vl_pll ( clk_i, rst_n_i, lock, clk_o, rst_o);
+`define MODULE pll
+module `BASE`MODULE ( clk_i, rst_n_i, lock, clk_o, rst_o);
+`undef MODULE
 parameter index = 0;
 parameter number_of_clk = 1;
 parameter period_time_0 = 20000;
@@ -377,7 +616,9 @@ endgenerate
 
 genvar i;
 generate for (i=0;i<number_of_clk;i=i+1) begin: clock
-     vl_sync_rst rst_i0 ( .rst_n_i(rst_n_i | lock), .rst_o(rst_o[i]), .clk(clk_o[i]));
+`define MODULE sync_rst
+     `BASE`MODULE rst_i0 ( .rst_n_i(rst_n_i | lock), .rst_o(rst_o[i]), .clk(clk_o[i]));
+`undef MODULE
 end
 endgenerate
 
@@ -387,7 +628,8 @@ endmodule
 
 `endif //altera
 `endif //actel
-//////////////////////////////////////////////////////////////////////
+`undef MODULE
+`endif//////////////////////////////////////////////////////////////////////
 ////                                                              ////
 ////  Versatile library, registers                                ////
 ////                                                              ////
@@ -429,8 +671,10 @@ endmodule
 ////                                                              ////
 //////////////////////////////////////////////////////////////////////
 
-module vl_dff ( d, q, clk, rst);
-
+`ifdef DFF
+`define MODULE dff
+module `BASE`MODULE ( d, q, clk, rst);
+`undef MODULE
 	parameter width = 1;	
 	parameter reset_value = 0;
 
@@ -445,8 +689,12 @@ module vl_dff ( d, q, clk, rst);
 		q <= d;
 
 endmodule
+`endif
 
-module vl_dff_array ( d, q, clk, rst);
+`ifdef DFF_ARRAY
+`define MODULE dff_array
+module `BASE`MODULE ( d, q, clk, rst);
+`undef MODULE
 
 	parameter width = 1;
         parameter depth = 2;
@@ -470,8 +718,12 @@ module vl_dff_array ( d, q, clk, rst);
     assign q = q_tmp[depth-1];
     
 endmodule
+`endif
 
-module vl_dff_ce ( d, ce, q, clk, rst);
+`ifdef DFF_CE
+`define MODULE dff_ce
+module `BASE`MODULE ( d, ce, q, clk, rst);
+`undef MODULE
 
 	parameter width = 1;	
 	parameter reset_value = 0;
@@ -488,8 +740,12 @@ module vl_dff_ce ( d, ce, q, clk, rst);
 			q <= d;
 
 endmodule
+`endif
 
-module vl_dff_ce_clear ( d, ce, clear, q, clk, rst);
+`ifdef DFF_CE_CLEAR
+`define MODULE dff_ce_clear
+module `BASE`MODULE ( d, ce, clear, q, clk, rst);
+`undef MODULE
 
 	parameter width = 1;	
 	parameter reset_value = 0;
@@ -509,8 +765,12 @@ module vl_dff_ce_clear ( d, ce, clear, q, clk, rst);
                     q <= d;
 
 endmodule
+`endif
 
-module vl_dff_ce_set ( d, ce, set, q, clk, rst);
+`ifdef DF_CE_SET
+`define MODULE dff_ce_set
+module `BASE`MODULE ( d, ce, set, q, clk, rst);
+`undef MODULE
 
 	parameter width = 1;	
 	parameter reset_value = 0;
@@ -530,9 +790,13 @@ module vl_dff_ce_set ( d, ce, set, q, clk, rst);
                     q <= d;
 
 endmodule
+`endif
 
-module vl_spr ( sp, r, q, clk, rst);
-        
+`ifdef SPR
+`define MODULE spr
+module `BASE`MODULE ( sp, r, q, clk, rst);
+`undef MODULE
+
         parameter width = 1;
         parameter reset_value = 0;
         
@@ -550,9 +814,13 @@ module vl_spr ( sp, r, q, clk, rst);
                 q <= 1'b0;
 
 endmodule
+`endif
 
-module vl_srp ( s, rp, q, clk, rst);
-        
+`ifdef SRP
+`define MODULE srp
+module `BASE`MODULE ( s, rp, q, clk, rst);
+`undef MODULE
+
         parameter width = 1;
         parameter reset_value = 0;
         
@@ -570,9 +838,11 @@ module vl_srp ( s, rp, q, clk, rst);
                 q <= 1'b1;
 
 endmodule
-
+`endif
 
 `ifdef ALTERA
+
+`ifdef DFF_SR
 // megafunction wizard: %LPM_FF%
 // GENERATION: STANDARD
 // VERSION: WM1.0
@@ -611,7 +881,10 @@ endmodule
 // synopsys translate_off
 `timescale 1 ps / 1 ps
 // synopsys translate_on
-module vl_dff_sr (
+`define MODULE dff_sr
+module `BASE`MODULE (
+`undef MODULE
+
 	aclr,
 	aset,
 	clock,
@@ -691,12 +964,14 @@ endmodule
 // Retrieval info: GEN_FILE: TYPE_NORMAL dff_sr_inst.v FALSE
 // Retrieval info: GEN_FILE: TYPE_NORMAL dff_sr_bb.v FALSE
 // Retrieval info: LIB_FILE: lpm
-
+`endif
 
 `else
 
-
-module vl_dff_sr ( aclr, aset, clock, data, q);
+`ifdef DFF_SR
+`define MODULE dff_sr
+module `BASE`MODULE ( aclr, aset, clock, data, q);
+`undef MODULE
 
     input	  aclr;
     input	  aset;
@@ -713,20 +988,31 @@ module vl_dff_sr ( aclr, aset, clock, data, q);
        q <= data;
 
 endmodule
+`endif
 
 `endif
 
 // LATCH
 // For targtes not supporting LATCH use dff_sr with clk=1 and data=1
 `ifdef ALTERA
-module vl_latch ( d, le, q, clk);
+
+`ifdef LATCH
+`define MODULE latch
+module `BASE`MODULE ( d, le, q, clk);
+`undef MODULE
 input d, le;
 output q;
 input clk;
 dff_sr i0 (.aclr(), .aset(), .clock(1'b1), .data(1'b1), .q(q));
 endmodule
+`endif
+
 `else
-module latch ( d, le, q, clk);
+
+`ifdef LATCH
+`define MODULE latch
+module `BASE`MODULE ( d, le, q, clk);
+`undef MODULE
 input d, le;
 output q;
 input clk;/*
@@ -738,7 +1024,13 @@ input clk;/*
 endmodule
 `endif
 
-module vl_shreg ( d, q, clk, rst);
+`endif
+
+`ifdef SHREG
+`define MODULE shreg
+module `BASE`MODULE ( d, q, clk, rst);
+`undef MODULE
+
 parameter depth = 10;
 input d;
 output q;
@@ -753,8 +1045,12 @@ else
     dffs <= {d,dffs[1:depth-1]};
 assign q = dffs[depth];
 endmodule
+`endif
 
-module vl_shreg_ce ( d, ce, q, clk, rst);
+`ifdef SHREG_CE
+`define MODULE shreg_ce
+module `BASE`MODULE ( d, ce, q, clk, rst);
+`undef MODULE
 parameter depth = 10;
 input d, ce;
 output q;
@@ -770,8 +1066,12 @@ else
         dffs <= {d,dffs[1:depth-1]};
 assign q = dffs[depth];
 endmodule
+`endif
 
-module vl_delay ( d, q, clk, rst);
+`ifdef DELAY
+`define MODULE delay
+module `BASE`MODULE ( d, q, clk, rst);
+`undef MODULE
 parameter depth = 10;
 input d;
 output q;
@@ -786,8 +1086,12 @@ else
     dffs <= {d,dffs[1:depth-1]};
 assign q = dffs[depth];
 endmodule
+`endif
 
+`ifdef DELAY_EMPTYFLAG
+`define MODULE delay_emptyflag
 module vl_delay_emptyflag ( d, q, emptyflag, clk, rst);
+`undef MODULE
 parameter depth = 10;
 input d;
 output q, emptyflag;
@@ -803,6 +1107,7 @@ else
 assign q = dffs[depth];
 assign emptyflag = !(|dffs);
 endmodule
+`endif
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
 ////  Logic functions                                             ////
@@ -844,7 +1149,10 @@ endmodule
 //// from http://www.opencores.org/lgpl.shtml                     ////
 ////                                                              ////
 //////////////////////////////////////////////////////////////////////
-module vl_mux_andor ( a, sel, dout);
+`ifdef MUX_ANDOR
+`define MODULE mux_andor
+module `BASE`MODULE ( a, sel, dout);
+`undef MODULE
 
 parameter width = 32;
 parameter nr_of_ports = 4;
@@ -864,8 +1172,12 @@ begin
 end
 
 endmodule
+`endif
 
-module vl_mux2_andor ( a1, a0, sel, dout);
+`ifdef MUX2_ANDOR
+`define MODULE mux2_andor
+module `BASE`MODULE ( a1, a0, sel, dout);
+`undef MODULE
 
 parameter width = 32;
 localparam nr_of_ports = 2;
@@ -873,13 +1185,19 @@ input [width-1:0] a1, a0;
 input [nr_of_ports-1:0] sel;
 output [width-1:0] dout;
 
-vl_mux_andor
+`define MODULE mux_andor
+`BASE`MODULE
     # ( .width(width), .nr_of_ports(nr_of_ports))
     mux0( .a({a1,a0}), .sel(sel), .dout(dout));
-    
-endmodule
+`undef MODULE
 
-module vl_mux3_andor ( a2, a1, a0, sel, dout);
+endmodule
+`endif
+
+`ifdef MUX3_ANDOR
+`define MODULE mux3_andor
+module `BASE`MODULE ( a2, a1, a0, sel, dout);
+`undef MODULE
 
 parameter width = 32;
 localparam nr_of_ports = 3;
@@ -887,13 +1205,18 @@ input [width-1:0] a2, a1, a0;
 input [nr_of_ports-1:0] sel;
 output [width-1:0] dout;
 
-vl_mux_andor
+`define MODULE mux_andor
+`BASE`MODULE
     # ( .width(width), .nr_of_ports(nr_of_ports))
     mux0( .a({a2,a1,a0}), .sel(sel), .dout(dout));
-    
+`undef MODULE    
 endmodule
+`endif
 
-module vl_mux4_andor ( a3, a2, a1, a0, sel, dout);
+`ifdef MUX4_ANDOR
+`define MODULE mux4_andor
+module `BASE`MODULE ( a3, a2, a1, a0, sel, dout);
+`undef MODULE
 
 parameter width = 32;
 localparam nr_of_ports = 4;
@@ -901,13 +1224,19 @@ input [width-1:0] a3, a2, a1, a0;
 input [nr_of_ports-1:0] sel;
 output [width-1:0] dout;
 
-vl_mux_andor
+`define MODULE mux_andor
+`BASE`MODULE
     # ( .width(width), .nr_of_ports(nr_of_ports))
     mux0( .a({a3,a2,a1,a0}), .sel(sel), .dout(dout));
+`undef MODULE
 
 endmodule
+`endif
 
-module vl_mux5_andor ( a4, a3, a2, a1, a0, sel, dout);
+`ifdef MUX5_ANDOR
+`define MODULE mux5_andor
+module `BASE`MODULE ( a4, a3, a2, a1, a0, sel, dout);
+`undef MODULE
 
 parameter width = 32;
 localparam nr_of_ports = 5;
@@ -915,13 +1244,19 @@ input [width-1:0] a4, a3, a2, a1, a0;
 input [nr_of_ports-1:0] sel;
 output [width-1:0] dout;
 
-vl_mux_andor
+`define MODULE mux_andor
+`BASE`MODULE
     # ( .width(width), .nr_of_ports(nr_of_ports))
     mux0( .a({a4,a3,a2,a1,a0}), .sel(sel), .dout(dout));
+`undef MODULE
 
 endmodule
+`endif
 
-module vl_mux6_andor ( a5, a4, a3, a2, a1, a0, sel, dout);
+`ifdef MUX6_ANDOR
+`define MODULE mux6_andor
+module `BASE`MODULE ( a5, a4, a3, a2, a1, a0, sel, dout);
+`undef MODULE
 
 parameter width = 32;
 localparam nr_of_ports = 6;
@@ -929,11 +1264,15 @@ input [width-1:0] a5, a4, a3, a2, a1, a0;
 input [nr_of_ports-1:0] sel;
 output [width-1:0] dout;
 
-vl_mux_andor
+`define MODULE mux_andor
+`BASE`MODULE
     # ( .width(width), .nr_of_ports(nr_of_ports))
     mux0( .a({a5,a4,a3,a2,a1,a0}), .sel(sel), .dout(dout));
+`undef MODULE
 
 endmodule
+`endif
+`ifdef CNT_BIN
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
 ////  Versatile counter                                           ////
@@ -977,7 +1316,11 @@ endmodule
 //////////////////////////////////////////////////////////////////////
 
 // binary counter
-module vl_cnt_bin ( q, rst, clk);
+
+`define MODULE cnt_bin
+module `BASE`MODULE (
+`undef MODULE
+ q, rst, clk);
 
    parameter length = 4;
    output [length:1] q;
@@ -1002,6 +1345,8 @@ module vl_cnt_bin ( q, rst, clk);
    assign q = qi;
 
 endmodule
+`endif
+`ifdef CNT_BIN_CLEAR
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
 ////  Versatile counter                                           ////
@@ -1045,7 +1390,11 @@ endmodule
 //////////////////////////////////////////////////////////////////////
 
 // binary counter
-module vl_cnt_bin_clear ( clear, q, rst, clk);
+
+`define MODULE cnt_bin_clear
+module `BASE`MODULE (
+`undef MODULE
+ clear, q, rst, clk);
 
    parameter length = 4;
    input clear;
@@ -1071,6 +1420,8 @@ module vl_cnt_bin_clear ( clear, q, rst, clk);
    assign q = qi;
 
 endmodule
+`endif
+`ifdef CNT_BIN_CE
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
 ////  Versatile counter                                           ////
@@ -1114,7 +1465,11 @@ endmodule
 //////////////////////////////////////////////////////////////////////
 
 // binary counter
-module vl_cnt_bin_ce ( cke, q, rst, clk);
+
+`define MODULE cnt_bin_ce
+module `BASE`MODULE (
+`undef MODULE
+ cke, q, rst, clk);
 
    parameter length = 4;
    input cke;
@@ -1141,6 +1496,8 @@ module vl_cnt_bin_ce ( cke, q, rst, clk);
    assign q = qi;
 
 endmodule
+`endif
+`ifdef CNT_BIN_CE_CLEAR
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
 ////  Versatile counter                                           ////
@@ -1184,7 +1541,11 @@ endmodule
 //////////////////////////////////////////////////////////////////////
 
 // binary counter
-module vl_cnt_bin_ce_clear ( clear, cke, q, rst, clk);
+
+`define MODULE cnt_bin_ce_clear
+module `BASE`MODULE (
+`undef MODULE
+ clear, cke, q, rst, clk);
 
    parameter length = 4;
    input clear;
@@ -1212,6 +1573,8 @@ module vl_cnt_bin_ce_clear ( clear, cke, q, rst, clk);
    assign q = qi;
 
 endmodule
+`endif
+`ifdef CNT_BIN_CE_CLEAR_L1_L2
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
 ////  Versatile counter                                           ////
@@ -1255,7 +1618,11 @@ endmodule
 //////////////////////////////////////////////////////////////////////
 
 // binary counter
-module vl_cnt_bin_ce_clear_l1_l2 ( clear, cke, q, level1, level2, rst, clk);
+
+`define MODULE cnt_bin_ce_clear_l1_l2
+module `BASE`MODULE (
+`undef MODULE
+ clear, cke, q, level1, level2, rst, clk);
 
    parameter length = 4;
    input clear;
@@ -1312,6 +1679,8 @@ module vl_cnt_bin_ce_clear_l1_l2 ( clear, cke, q, level1, level2, rst, clk);
     else if (qi == level2_value & rew)
         level2 <= 1'b0;
 endmodule
+`endif
+`ifdef CNT_BIN_CE_CLEAR_SET_REW
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
 ////  Versatile counter                                           ////
@@ -1355,7 +1724,11 @@ endmodule
 //////////////////////////////////////////////////////////////////////
 
 // binary counter
-module vl_cnt_bin_ce_clear_set_rew ( clear, set, cke, rew, q, rst, clk);
+
+`define MODULE cnt_bin_ce_clear_set_rew
+module `BASE`MODULE (
+`undef MODULE
+ clear, set, cke, rew, q, rst, clk);
 
    parameter length = 4;
    input clear;
@@ -1387,6 +1760,8 @@ module vl_cnt_bin_ce_clear_set_rew ( clear, set, cke, rew, q, rst, clk);
    assign q = qi;
 
 endmodule
+`endif
+`ifdef CNT_BIN_CE_REW_L1
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
 ////  Versatile counter                                           ////
@@ -1430,7 +1805,11 @@ endmodule
 //////////////////////////////////////////////////////////////////////
 
 // binary counter
-module vl_cnt_bin_ce_rew_l1 ( cke, rew, level1, rst, clk);
+
+`define MODULE cnt_bin_ce_rew_l1
+module `BASE`MODULE (
+`undef MODULE
+ cke, rew, level1, rst, clk);
 
    parameter length = 4;
    input cke;
@@ -1473,6 +1852,8 @@ module vl_cnt_bin_ce_rew_l1 ( cke, rew, level1, rst, clk);
     else if (qi == level1_value & rew)
         level1 <= 1'b0;
 endmodule
+`endif
+`ifdef CNT_BIN_CE_REW_ZQ_L1
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
 ////  Versatile counter                                           ////
@@ -1516,7 +1897,11 @@ endmodule
 //////////////////////////////////////////////////////////////////////
 
 // binary counter
-module vl_cnt_bin_ce_rew_zq_l1 ( cke, rew, zq, level1, rst, clk);
+
+`define MODULE cnt_bin_ce_rew_zq_l1
+module `BASE`MODULE (
+`undef MODULE
+ cke, rew, zq, level1, rst, clk);
 
    parameter length = 4;
    input cke;
@@ -1567,6 +1952,8 @@ module vl_cnt_bin_ce_rew_zq_l1 ( cke, rew, zq, level1, rst, clk);
     else if (qi == level1_value & rew)
         level1 <= 1'b0;
 endmodule
+`endif
+`ifdef CNT_BIN_CE_REW_Q_ZQ_L1
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
 ////  Versatile counter                                           ////
@@ -1610,7 +1997,11 @@ endmodule
 //////////////////////////////////////////////////////////////////////
 
 // binary counter
-module vl_cnt_bin_ce_rew_q_zq_l1 ( cke, rew, q, zq, level1, rst, clk);
+
+`define MODULE cnt_bin_ce_rew_q_zq_l1
+module `BASE`MODULE (
+`undef MODULE
+ cke, rew, q, zq, level1, rst, clk);
 
    parameter length = 4;
    input cke;
@@ -1663,6 +2054,8 @@ module vl_cnt_bin_ce_rew_q_zq_l1 ( cke, rew, q, zq, level1, rst, clk);
     else if (qi == level1_value & rew)
         level1 <= 1'b0;
 endmodule
+`endif
+`ifdef CNT_LFSR_ZQ
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
 ////  Versatile counter                                           ////
@@ -1706,7 +2099,11 @@ endmodule
 //////////////////////////////////////////////////////////////////////
 
 // LFSR counter
-module vl_cnt_lfsr_zq ( zq, rst, clk);
+
+`define MODULE cnt_lfsr_zq
+module `BASE`MODULE (
+`undef MODULE
+ zq, rst, clk);
 
    parameter length = 4;
    output reg zq;
@@ -1782,6 +2179,8 @@ module vl_cnt_lfsr_zq ( zq, rst, clk);
      else
        zq <= q_next == {length{1'b0}};
 endmodule
+`endif
+`ifdef CNT_LFSR_CE_ZQ
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
 ////  Versatile counter                                           ////
@@ -1825,7 +2224,11 @@ endmodule
 //////////////////////////////////////////////////////////////////////
 
 // LFSR counter
-module vl_cnt_lfsr_ce_zq ( cke, zq, rst, clk);
+
+`define MODULE cnt_lfsr_ce_zq
+module `BASE`MODULE (
+`undef MODULE
+ cke, zq, rst, clk);
 
    parameter length = 4;
    input cke;
@@ -1904,6 +2307,8 @@ module vl_cnt_lfsr_ce_zq ( cke, zq, rst, clk);
      if (cke)
        zq <= q_next == {length{1'b0}};
 endmodule
+`endif
+`ifdef CNT_LFSR_CE_Q
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
 ////  Versatile counter                                           ////
@@ -1947,7 +2352,11 @@ endmodule
 //////////////////////////////////////////////////////////////////////
 
 // LFSR counter
-module vl_cnt_lfsr_ce_q ( cke, q, rst, clk);
+
+`define MODULE cnt_lfsr_ce_q
+module `BASE`MODULE (
+`undef MODULE
+ cke, q, rst, clk);
 
    parameter length = 4;
    input cke;
@@ -2020,6 +2429,8 @@ module vl_cnt_lfsr_ce_q ( cke, q, rst, clk);
    assign q = qi;
 
 endmodule
+`endif
+`ifdef CNT_LFSR_CE_CLEAR_Q
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
 ////  Versatile counter                                           ////
@@ -2063,7 +2474,11 @@ endmodule
 //////////////////////////////////////////////////////////////////////
 
 // LFSR counter
-module vl_cnt_lfsr_ce_clear_q ( clear, cke, q, rst, clk);
+
+`define MODULE cnt_lfsr_ce_clear_q
+module `BASE`MODULE (
+`undef MODULE
+ clear, cke, q, rst, clk);
 
    parameter length = 4;
    input clear;
@@ -2137,6 +2552,8 @@ module vl_cnt_lfsr_ce_clear_q ( clear, cke, q, rst, clk);
    assign q = qi;
 
 endmodule
+`endif
+`ifdef CNT_LFSR_CE_Q_ZQ
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
 ////  Versatile counter                                           ////
@@ -2180,7 +2597,11 @@ endmodule
 //////////////////////////////////////////////////////////////////////
 
 // LFSR counter
-module vl_cnt_lfsr_ce_q_zq ( cke, q, zq, rst, clk);
+
+`define MODULE cnt_lfsr_ce_q_zq
+module `BASE`MODULE (
+`undef MODULE
+ cke, q, zq, rst, clk);
 
    parameter length = 4;
    input cke;
@@ -2261,6 +2682,8 @@ module vl_cnt_lfsr_ce_q_zq ( cke, q, zq, rst, clk);
      if (cke)
        zq <= q_next == {length{1'b0}};
 endmodule
+`endif
+`ifdef CNT_LFSR_CE_REW_L1
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
 ////  Versatile counter                                           ////
@@ -2304,7 +2727,11 @@ endmodule
 //////////////////////////////////////////////////////////////////////
 
 // LFSR counter
-module vl_cnt_lfsr_ce_rew_l1 ( cke, rew, level1, rst, clk);
+
+`define MODULE cnt_lfsr_ce_rew_l1
+module `BASE`MODULE (
+`undef MODULE
+ cke, rew, level1, rst, clk);
 
    parameter length = 4;
    input cke;
@@ -2439,6 +2866,8 @@ module vl_cnt_lfsr_ce_rew_l1 ( cke, rew, level1, rst, clk);
     else if (qi == level1_value & rew)
         level1 <= 1'b0;
 endmodule
+`endif
+`ifdef CNT_GRAY
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
 ////  Versatile counter                                           ////
@@ -2482,7 +2911,11 @@ endmodule
 //////////////////////////////////////////////////////////////////////
 
 // GRAY counter
-module vl_cnt_gray ( q, rst, clk);
+
+`define MODULE cnt_gray
+module `BASE`MODULE (
+`undef MODULE
+ q, rst, clk);
 
    parameter length = 4;
    output reg [length:1] q;
@@ -2511,6 +2944,8 @@ module vl_cnt_gray ( q, rst, clk);
          q <= (q_next>>1) ^ q_next;
 
 endmodule
+`endif
+`ifdef CNT_GRAY_CE
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
 ////  Versatile counter                                           ////
@@ -2554,7 +2989,11 @@ endmodule
 //////////////////////////////////////////////////////////////////////
 
 // GRAY counter
-module vl_cnt_gray_ce ( cke, q, rst, clk);
+
+`define MODULE cnt_gray_ce
+module `BASE`MODULE (
+`undef MODULE
+ cke, q, rst, clk);
 
    parameter length = 4;
    input cke;
@@ -2586,6 +3025,8 @@ module vl_cnt_gray_ce ( cke, q, rst, clk);
          q <= (q_next>>1) ^ q_next;
 
 endmodule
+`endif
+`ifdef CNT_GRAY_CE_BIN
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
 ////  Versatile counter                                           ////
@@ -2629,7 +3070,11 @@ endmodule
 //////////////////////////////////////////////////////////////////////
 
 // GRAY counter
-module vl_cnt_gray_ce_bin ( cke, q, q_bin, rst, clk);
+
+`define MODULE cnt_gray_ce_bin
+module `BASE`MODULE (
+`undef MODULE
+ cke, q, q_bin, rst, clk);
 
    parameter length = 4;
    input cke;
@@ -2664,6 +3109,7 @@ module vl_cnt_gray_ce_bin ( cke, q, q_bin, rst, clk);
    assign q_bin = qi;
 
 endmodule
+`endif
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
 ////  Versatile library, counters                                 ////
@@ -2706,7 +3152,10 @@ endmodule
 ////                                                              ////
 //////////////////////////////////////////////////////////////////////
 
-module vl_cnt_shreg_wrap ( q, rst, clk);
+`ifdef CNT_SHREG_WRAP
+`define MODULE cnt_shreg_wrap
+module `BASE`MODULE ( q, rst, clk);
+`undef MODULE
 
    parameter length = 4;
    output reg [0:length-1] q;
@@ -2720,8 +3169,12 @@ module vl_cnt_shreg_wrap ( q, rst, clk);
         q <= {q[length-1],q[0:length-2]};
             
 endmodule
+`endif
 
-module vl_cnt_shreg_ce_wrap ( cke, q, rst, clk);
+`ifdef CNT_SHREG_CE_WRAP
+`define MODULE cnt_shreg_ce_wrap
+module `BASE`MODULE ( cke, q, rst, clk);
+`undef MODULE
 
    parameter length = 4;
    input cke;
@@ -2737,8 +3190,12 @@ module vl_cnt_shreg_ce_wrap ( cke, q, rst, clk);
             q <= {q[length-1],q[0:length-2]};
             
 endmodule
+`endif
 
-module vl_cnt_shreg_ce_clear ( cke, clear, q, rst, clk);
+`ifdef CNT_SHREG_CE_CLEAR
+`define MODULE cnt_shreg_ce_clear
+module `BASE`MODULE ( cke, clear, q, rst, clk);
+`undef MODULE
 
    parameter length = 4;
    input cke, clear;
@@ -2757,8 +3214,12 @@ module vl_cnt_shreg_ce_clear ( cke, clear, q, rst, clk);
                 q <= q >> 1;
             
 endmodule
+`endif
 
-module vl_cnt_shreg_ce_clear_wrap ( cke, clear, q, rst, clk);
+`ifdef CNT_SHREG_CE_CLEAR_WRAP
+`define MODULE cnt_shreg_ce_clear_wrap
+module `BASE`MODULE ( cke, clear, q, rst, clk);
+`undef MODULE
 
    parameter length = 4;
    input cke, clear;
@@ -2777,6 +3238,7 @@ module vl_cnt_shreg_ce_clear_wrap ( cke, clear, q, rst, clk);
             q <= {q[length-1],q[0:length-2]};
             
 endmodule
+`endif
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
 ////  Versatile library, memories                                 ////
@@ -2819,9 +3281,12 @@ endmodule
 ////                                                              ////
 //////////////////////////////////////////////////////////////////////
 
+`ifdef ROM_INIT
 /// ROM
+`define MODULE rom_init
+module `BASE`MODULE ( adr, q, clk);
+`undef MODULE
 
-module vl_rom_init ( adr, q, clk);
    parameter data_width = 32;
    parameter addr_width = 8;
    input [(addr_width-1):0] 	 adr;
@@ -2838,6 +3303,7 @@ module vl_rom_init ( adr, q, clk);
      q <= rom[adr];
 
 endmodule
+`endif
 
 /*
 module vl_rom ( adr, q, clk);
@@ -2872,9 +3338,13 @@ always @ (posedge clk)
 
 endmodule
 */
-// Single port RAM
 
-module vl_ram ( d, adr, we, q, clk);
+`ifdef RAM
+`define MODULE ram
+// Single port RAM
+module `BASE`MODULE ( d, adr, we, q, clk);
+`undef MODULE
+
    parameter data_width = 32;
    parameter addr_width = 8;
    input [(data_width-1):0]      d;
@@ -2901,8 +3371,13 @@ module vl_ram ( d, adr, we, q, clk);
    end
 
 endmodule
+`endif
 
-module vl_ram_be ( d, adr, be, we, q, clk);
+`ifdef RAM_BE
+`define MODULE ram_be
+module `BASE`MODULE ( d, adr, be, we, q, clk);
+`undef MODULE
+
    parameter data_width = 32;
    parameter addr_width = 8;
    input [(data_width-1):0]      d;
@@ -2936,7 +3411,7 @@ module vl_ram_be ( d, adr, be, we, q, clk);
       q <= ram[adr];
 
 endmodule
-
+`endif
 
 // Dual port RAM
 
@@ -2947,7 +3422,10 @@ endmodule
         `define SYN 
 `endif
 
-module vl_dpram_1r1w ( d_a, adr_a, we_a, clk_a, q_b, adr_b, clk_b );
+`ifdef DPRAM_1R1W
+`define MODULE dpram_1r1w
+module `BASE`MODULE ( d_a, adr_a, we_a, clk_a, q_b, adr_b, clk_b );
+`undef MODULE
    parameter data_width = 32;
    parameter addr_width = 8;
    input [(data_width-1):0]      d_a;
@@ -2975,9 +3453,15 @@ module vl_dpram_1r1w ( d_a, adr_a, we_a, clk_a, q_b, adr_b, clk_b );
    always @ (posedge clk_b)
    adr_b_reg <= adr_b;   
    assign q_b = ram[adr_b_reg];
+   
 endmodule
+`endif
 
-module vl_dpram_2r1w ( d_a, q_a, adr_a, we_a, clk_a, q_b, adr_b, clk_b );
+`ifdef DPRAM_2R1W
+`define MODULE dpram_2r1w
+module `BASE`MODULE ( d_a, q_a, adr_a, we_a, clk_a, q_b, adr_b, clk_b );
+`undef MODULE
+
    parameter data_width = 32;
    parameter addr_width = 8;
    input [(data_width-1):0]      d_a;
@@ -3009,8 +3493,13 @@ module vl_dpram_2r1w ( d_a, q_a, adr_a, we_a, clk_a, q_b, adr_b, clk_b );
    always @ (posedge clk_b)
 	  q_b <= ram[adr_b];
 endmodule
+`endif
 
-module vl_dpram_2r2w ( d_a, q_a, adr_a, we_a, clk_a, d_b, q_b, adr_b, we_b, clk_b );
+`ifdef DPRAM_2R2W
+`define MODULE dpram_2r2w
+module `BASE`MODULE ( d_a, q_a, adr_a, we_a, clk_a, d_b, q_b, adr_b, we_b, clk_b );
+`undef MODULE
+
    parameter data_width = 32;
    parameter addr_width = 8;
    input [(data_width-1):0]      d_a;
@@ -3048,11 +3537,15 @@ module vl_dpram_2r2w ( d_a, q_a, adr_a, we_a, clk_a, d_b, q_b, adr_b, we_b, clk_
 	  ram[adr_b] <= d_b;
      end
 endmodule
+`endif
 
 // Content addresable memory, CAM
 
+`ifdef FIFO_1R1W_FILL_LEVEL_SYNC
 // FIFO
-module vl_fifo_1r1w_fill_level_sync (
+`define MODULE fifo_1r1w_fill_level_sync
+module `BASE`MODULE (
+`undef MODULE
     d, wr, fifo_full,
     q, rd, fifo_empty,
     fill_level,
@@ -3076,28 +3569,36 @@ input rst, clk;
 
 wire [addr_width:1] wadr, radr;
 
-vl_cnt_bin_ce
+`define MODULE cnt_bin_ce
+`BASE`MODULE
     # ( .length(addr_width))
     fifo_wr_adr( .cke(wr), .q(wadr), .rst(rst), .clk(clk));
-    
-vl_cnt_bin_ce
+`BASE`MODULE
     # (.length(addr_width))
     fifo_rd_adr( .cke(rd), .q(radr), .rst(rst), .clk(clk));
+`undef MODULE
 
-vl_dpram_1r1w
+`define MODULE dpram_1r1w
+`BASE`MODULE
     # (.data_width(data_width), .addr_width(addr_width))
     dpram ( .d_a(d), .adr_a(wadr), .we_a(wr), .clk_a(clk), .q_b(q), .adr_b(radr), .clk_b(clk));
+`undef MODULE
 
-vl_cnt_bin_ce_rew_q_zq_l1
+`define MODULE cnt_bin_ce_rew_q_zq_l1
+`BASE`MODULE
     # (.length(addr_width+1), .level1_value(1<<addr_width))
     fill_level_cnt( .cke(rd ^ wr), .rew(rd), .q(fill_level), .zq(fifo_empty), .level1(fifo_full), .rst(rst), .clk(clk));
-
+`undef MODULE
 endmodule
+`endif
 
+`ifdef FIFO_2R2W_SYNC_SIMPLEX
 // Intended use is two small FIFOs (RX and TX typically) in one FPGA RAM resource
 // RAM is supposed to be larger than the two FIFOs
 // LFSR counters used adr pointers
-module vl_fifo_2r2w_sync_simplex (
+`define MODULE fifo_2r2w_sync_simplex
+module `BASE`MODULE (
+`undef MODULE
     // a side
     a_d, a_wr, a_fifo_full,
     a_q, a_rd, a_fifo_empty,
@@ -3140,42 +3641,52 @@ wire [addr_width:1] b_wadr, b_radr;
 // dpram
 wire [addr_width:0] a_dpram_adr, b_dpram_adr;
 
-vl_cnt_lfsr_ce
+`define MODULE cnt_lfsr_ce
+`BASE`MODULE
     # ( .length(addr_width))
     fifo_a_wr_adr( .cke(a_wr), .q(a_wadr), .rst(rst), .clk(clk));
     
-vl_cnt_lfsr_ce
+`BASE`MODULE
     # (.length(addr_width))
     fifo_a_rd_adr( .cke(a_rd), .q(a_radr), .rst(rst), .clk(clk));
 
-vl_cnt_lfsr_ce
+`BASE`MODULE
     # ( .length(addr_width))
     fifo_b_wr_adr( .cke(b_wr), .q(b_wadr), .rst(rst), .clk(clk));
     
-vl_cnt_lfsr_ce
+`BASE`MODULE
     # (.length(addr_width))
     fifo_b_rd_adr( .cke(b_rd), .q(b_radr), .rst(rst), .clk(clk));
+`undef MODULE
 
 // mux read or write adr to DPRAM
 assign a_dpram_adr = (a_wr) ? {1'b0,a_wadr} : {1'b1,a_radr};
 assign b_dpram_adr = (b_wr) ? {1'b1,b_wadr} : {1'b0,b_radr};
 
-vl_dpram_2r2w
+`define MODULE dpram_2r2w
+`BASE`MODULE
     # (.data_width(data_width), .addr_width(addr_width+1))
     dpram ( .d_a(a_d), .q_a(a_q), .adr_a(a_dpram_adr), .we_a(a_wr), .clk_a(a_clk), 
             .d_b(b_d), .q_b(b_q), .adr_b(b_dpram_adr), .we_b(b_wr), .clk_b(b_clk));
-            
-vl_cnt_bin_ce_rew_zq_l1
+`undef MODULE
+
+`define MODULE cnt_bin_ce_rew_zq_l1
+`BASE`MODULE
     # (.length(addr_width), .level1_value(fifo_full_level))
     a_fill_level_cnt( .cke(a_rd ^ a_wr), .rew(a_rd), .q(a_fill_level), .zq(a_fifo_empty), .level1(a_fifo_full), .rst(rst), .clk(clk));
 
-vl_cnt_bin_ce_rew_zq_l1
+`BASE`MODULE
     # (.length(addr_width), .level1_value(fifo_full_level))
     b_fill_level_cnt( .cke(b_rd ^ b_wr), .rew(b_rd), .q(b_fill_level), .zq(b_fifo_empty), .level1(b_fifo_full), .rst(rst), .clk(clk));
+`undef MODULE
 
 endmodule
+`endif
 
-module vl_fifo_cmp_async ( wptr, rptr, fifo_empty, fifo_full, wclk, rclk, rst );
+`ifdef FIFO_CMP_ASYNC
+`define MODULE fifo_cmp_async
+module `BASE`MODULE ( wptr, rptr, fifo_empty, fifo_full, wclk, rclk, rst );
+`undef MODULE
 
    parameter addr_width = 4;   
    parameter N = addr_width-1;
@@ -3228,8 +3739,9 @@ module vl_fifo_cmp_async ( wptr, rptr, fifo_empty, fifo_full, wclk, rclk, rst );
 	 default : direction_clr <= 1'b0;
        endcase
 
+`define MODULE dff_sr
 `ifndef GENERATE_DIRECTION_AS_LATCH
-    vl_dff_sr dff_sr_dir( .aclr(direction_clr), .aset(direction_set), .clock(1'b1), .data(1'b1), .q(direction));
+    `BASE`MODULE dff_sr_dir( .aclr(direction_clr), .aset(direction_set), .clock(1'b1), .data(1'b1), .q(direction));
 `endif
 
 `ifdef GENERATE_DIRECTION_AS_LATCH
@@ -3243,8 +3755,9 @@ module vl_fifo_cmp_async ( wptr, rptr, fifo_empty, fifo_full, wclk, rclk, rst );
    assign async_empty = (wptr == rptr) && (direction==going_empty);
    assign async_full  = (wptr == rptr) && (direction==going_full);
 
-    vl_dff_sr dff_sr_empty0( .aclr(rst), .aset(async_full), .clock(wclk), .data(async_full), .q(fifo_full2));
-    vl_dff_sr dff_sr_empty1( .aclr(rst), .aset(async_full), .clock(wclk), .data(fifo_full2), .q(fifo_full));
+    `BASE`MODULE dff_sr_empty0( .aclr(rst), .aset(async_full), .clock(wclk), .data(async_full), .q(fifo_full2));
+    `BASE`MODULE dff_sr_empty1( .aclr(rst), .aset(async_full), .clock(wclk), .data(fifo_full2), .q(fifo_full));
+`undef MODULE
 
 /*
    always @ (posedge wclk or posedge rst or posedge async_full)
@@ -3260,12 +3773,17 @@ module vl_fifo_cmp_async ( wptr, rptr, fifo_empty, fifo_full, wclk, rclk, rst );
        {fifo_empty, fifo_empty2} <= 2'b11;
      else
        {fifo_empty,fifo_empty2} <= {fifo_empty2,async_empty}; */
-    vl_dff # ( .reset_value(1'b1)) dff0 ( .d(async_empty), .q(fifo_empty2), .clk(rclk), .rst(async_empty));
-    vl_dff # ( .reset_value(1'b1)) dff1 ( .d(fifo_empty2), .q(fifo_empty),  .clk(rclk), .rst(async_empty));
-
+`define MODULE dff
+    `BASE`MODULE # ( .reset_value(1'b1)) dff0 ( .d(async_empty), .q(fifo_empty2), .clk(rclk), .rst(async_empty));
+    `BASE`MODULE # ( .reset_value(1'b1)) dff1 ( .d(fifo_empty2), .q(fifo_empty),  .clk(rclk), .rst(async_empty));
+`undef MODULE
 endmodule // async_compb
+`endif
 
-module vl_fifo_1r1w_async (
+`ifdef FIFO_1R1W_ASYNC
+`define MODULE fifo_1r1w_async
+module `BASE`MODULE (
+`undef MODULE
     d, wr, fifo_full, wr_clk, wr_rst,
     q, rd, fifo_empty, rd_clk, rd_rst
     );
@@ -3288,25 +3806,35 @@ input                   rd_rst;
 
 wire [addr_width:1] wadr, wadr_bin, radr, radr_bin;
 
-vl_cnt_gray_ce_bin
+`define MODULE cnt_gray_ce_bin
+`BASE`MODULE
     # ( .length(addr_width))
     fifo_wr_adr( .cke(wr), .q(wadr), .q_bin(wadr_bin), .rst(wr_rst), .clk(wr_clk));
     
-vl_cnt_gray_ce_bin
+`BASE`MODULE
     # (.length(addr_width))
     fifo_rd_adr( .cke(rd), .q(radr), .q_bin(radr_bin), .rst(rd_rst), .clk(rd_clk));
+`undef MODULE
 
-vl_dpram_1r1w
+`define MODULE dpram_1r1w
+`BASE`MODULE
     # (.data_width(data_width), .addr_width(addr_width))
     dpram ( .d_a(d), .adr_a(wadr_bin), .we_a(wr), .clk_a(wr_clk), .q_b(q), .adr_b(radr_bin), .clk_b(rd_clk));
+`undef MODULE
 
-vl_fifo_cmp_async
+`define MODULE fifo_cmp_async
+`BASE`MODULE
     # (.addr_width(addr_width))
     cmp ( .wptr(wadr), .rptr(radr), .fifo_empty(fifo_empty), .fifo_full(fifo_full), .wclk(wr_clk), .rclk(rd_clk), .rst(wr_rst) );
+`undef MODULE
 
 endmodule
+`endif
 
-module vl_fifo_2r2w_async (
+`ifdef FIFO_2R2W_ASYNC
+`define MODULE fifo_2r2w_async
+module `BASE`MODULE (
+`undef MODULE
     // a side
     a_d, a_wr, a_fifo_full,
     a_q, a_rd, a_fifo_empty, 
@@ -3340,21 +3868,27 @@ output                  b_fifo_empty;
 input                   b_clk;
 input                   b_rst;
 
-vl_fifo_1r1w_async # (.data_width(data_width), .addr_width(addr_width))
+`define MODULE fifo_1r1w_async
+`BASE`MODULE # (.data_width(data_width), .addr_width(addr_width))
 vl_fifo_1r1w_async_a (
     .d(a_d), .wr(a_wr), .fifo_full(a_fifo_full), .wr_clk(a_clk), .wr_rst(a_rst),
     .q(b_q), .rd(b_rd), .fifo_empty(b_fifo_empty), .rd_clk(b_clk), .rd_rst(b_rst)
     );
 
-vl_fifo_1r1w_async # (.data_width(data_width), .addr_width(addr_width))
+`BASE`MODULE # (.data_width(data_width), .addr_width(addr_width))
 vl_fifo_1r1w_async_b (
     .d(b_d), .wr(b_wr), .fifo_full(b_fifo_full), .wr_clk(b_clk), .wr_rst(b_rst),
     .q(a_q), .rd(a_rd), .fifo_empty(a_fifo_empty), .rd_clk(a_clk), .rd_rst(a_rst)
     );
-    
-endmodule
+`undef MODULE
 
-module vl_fifo_2r2w_async_simplex (
+endmodule
+`endif
+
+`ifdef FIFO_2R2W_ASYNC_SIMPLEX
+`define MODULE fifo_2r2w_async_simplex
+module `BASE`MODULE (
+`undef MODULE
     // a side
     a_d, a_wr, a_fifo_full,
     a_q, a_rd, a_fifo_empty, 
@@ -3394,40 +3928,47 @@ wire [addr_width:1] b_wadr, b_wadr_bin, b_radr, b_radr_bin;
 // dpram
 wire [addr_width:0] a_dpram_adr, b_dpram_adr;
 
-vl_cnt_gray_ce_bin
+`define MODULE cnt_gray_ce_bin
+`BASE`MODULE
     # ( .length(addr_width))
     fifo_a_wr_adr( .cke(a_wr), .q(a_wadr), .q_bin(a_wadr_bin), .rst(a_rst), .clk(a_clk));
     
-vl_cnt_gray_ce_bin
+`BASE`MODULE
     # (.length(addr_width))
     fifo_a_rd_adr( .cke(a_rd), .q(a_radr), .q_bin(a_radr_bin), .rst(a_rst), .clk(a_clk));
 
-vl_cnt_gray_ce_bin
+`BASE`MODULE
     # ( .length(addr_width))
     fifo_b_wr_adr( .cke(b_wr), .q(b_wadr), .q_bin(b_wadr_bin), .rst(b_rst), .clk(b_clk));
     
-vl_cnt_gray_ce_bin
+`BASE`MODULE
     # (.length(addr_width))
     fifo_b_rd_adr( .cke(b_rd), .q(b_radr), .q_bin(b_radr_bin), .rst(b_rst), .clk(b_clk));
+`undef MODULE
 
 // mux read or write adr to DPRAM
 assign a_dpram_adr = (a_wr) ? {1'b0,a_wadr_bin} : {1'b1,a_radr_bin};
 assign b_dpram_adr = (b_wr) ? {1'b1,b_wadr_bin} : {1'b0,b_radr_bin};
 
-vl_dpram_2r2w
+`define MODULE dpram_2r2w
+`BASE`MODULE
     # (.data_width(data_width), .addr_width(addr_width+1))
     dpram ( .d_a(a_d), .q_a(a_q), .adr_a(a_dpram_adr), .we_a(a_wr), .clk_a(a_clk), 
             .d_b(b_d), .q_b(b_q), .adr_b(b_dpram_adr), .we_b(b_wr), .clk_b(b_clk));
+`undef MODULE
 
-vl_fifo_cmp_async
+`define MODULE fifo_cmp_async
+`BASE`MODULE
     # (.addr_width(addr_width))
     cmp1 ( .wptr(a_wadr), .rptr(b_radr), .fifo_empty(b_fifo_empty), .fifo_full(a_fifo_full), .wclk(a_clk), .rclk(b_clk), .rst(a_rst) );
 
-vl_fifo_cmp_async
+`BASE`MODULE
     # (.addr_width(addr_width))
     cmp2 ( .wptr(b_wadr), .rptr(a_radr), .fifo_empty(a_fifo_empty), .fifo_full(b_fifo_full), .wclk(b_clk), .rclk(a_clk), .rst(b_rst) );
+`undef MODULE
 
 endmodule
+`endif
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
 ////  Versatile library, wishbone stuff                           ////
@@ -3470,9 +4011,12 @@ endmodule
 ////                                                              ////
 //////////////////////////////////////////////////////////////////////
 
+`ifdef WB3WB3_BRIDGE
 // async wb3 - wb3 bridge
 `timescale 1ns/1ns
-module vl_wb3wb3_bridge ( 
+`define MODULE wb3wb3_bridge
+module `BASE`MODULE ( 
+`undef MODULE
 	// wishbone slave side
 	wbs_dat_i, wbs_adr_i, wbs_sel_i, wbs_bte_i, wbs_cti_i, wbs_we_i, wbs_cyc_i, wbs_stb_i, wbs_dat_o, wbs_ack_o, wbs_clk, wbs_rst,
 	// wishbone master side
@@ -3549,7 +4093,9 @@ else
 	else if (wbs_eoc_alert & (a_rd | a_wr))
 		wbs_eoc <= 1'b1;
 
-vl_cnt_shreg_ce_clear # ( .length(16))
+`define MODULE cnt_shreg_ce_clear
+`BASE`MODULE # ( .length(16))
+`undef MODULE
     cnt0 (
         .cke(wbs_ack_o),
         .clear(wbs_eoc),
@@ -3635,12 +4181,18 @@ assign b_rd_data = (wbm==wbm_adr1 & !b_fifo_empty & wbm_we_o) ? 1'b1 : // b_q[`W
                    1'b0;
 assign b_rd = b_rd_adr | b_rd_data;
 
-vl_dff dff1 ( .d(b_rd_data), .q(b_rd_data_reg), .clk(wbm_clk), .rst(wbm_rst));
-vl_dff_ce # ( .width(36)) dff2 ( .d(b_q), .ce(b_rd_data_reg), .q(temp), .clk(wbm_clk), .rst(wbm_rst));
+`define MODULE dff
+`BASE`MODULE dff1 ( .d(b_rd_data), .q(b_rd_data_reg), .clk(wbm_clk), .rst(wbm_rst));
+`undef MODULE
+`define MODULE dff_ce
+`BASE`MODULE # ( .width(36)) dff2 ( .d(b_q), .ce(b_rd_data_reg), .q(temp), .clk(wbm_clk), .rst(wbm_rst));
+`undef MODULE
 
 assign {wbm_dat_o,wbm_sel_o} = (b_rd_data_reg) ? b_q : temp;
 
+`define MODULE cnt_shreg_ce_clear
 vl_cnt_shreg_ce_clear # ( .length(16))
+`undef MODULE
     cnt1 (
         .cke(wbm_ack_i),
         .clear(wbm_eoc),
@@ -3662,7 +4214,9 @@ else begin
 end	
 
 //async_fifo_dw_simplex_top
-vl_fifo_2r2w_async_simplex
+`define MODULE fifo_2r2w_async_simplex
+`BASE`MODULE
+`undef MODULE
 # ( .data_width(36), .addr_width(addr_width))
 fifo (
     // a side
@@ -3686,8 +4240,15 @@ fifo (
     );
     
 endmodule
+`undef WE
+`undef BTE
+`undef CTI
+`endif
 
+`ifdef WB3_ARBITER_TYPE1
+`define MODULE wb3_arbiter_type1
 module vl_wb3_arbiter_type1 (
+`undef MODULE
     wbm_dat_o, wbm_adr_o, wbm_sel_o, wbm_cti_o, wbm_bte_o, wbm_we_o, wbm_stb_o, wbm_cyc_o,
     wbm_dat_i, wbm_ack_i, wbm_err_i, wbm_rty_i,
     wbs_dat_i, wbs_adr_i, wbs_sel_i, wbs_cti_i, wbs_bte_i, wbs_we_i, wbs_stb_i, wbs_cyc_i,
@@ -3774,13 +4335,15 @@ endgenerate
 
     assign sel = select | state;
 
-    vl_mux_andor # ( .nr_of_ports(nr_of_ports), .width(32)) mux0 ( .a(wbm_dat_o), .sel(sel), .dout(wbs_dat_i));
-    vl_mux_andor # ( .nr_of_ports(nr_of_ports), .width(adr_size-adr_lo)) mux1 ( .a(wbm_adr_o), .sel(sel), .dout(wbs_adr_i));
-    vl_mux_andor # ( .nr_of_ports(nr_of_ports), .width(sel_size)) mux2 ( .a(wbm_sel_o), .sel(sel), .dout(wbs_sel_i));
-    vl_mux_andor # ( .nr_of_ports(nr_of_ports), .width(3)) mux3 ( .a(wbm_cti_o), .sel(sel), .dout(wbs_cti_i));
-    vl_mux_andor # ( .nr_of_ports(nr_of_ports), .width(2)) mux4 ( .a(wbm_bte_o), .sel(sel), .dout(wbs_bte_i));
-    vl_mux_andor # ( .nr_of_ports(nr_of_ports), .width(1)) mux5 ( .a(wbm_we_o), .sel(sel), .dout(wbs_we_i));
-    vl_mux_andor # ( .nr_of_ports(nr_of_ports), .width(1)) mux6 ( .a(wbm_stb_o), .sel(sel), .dout(wbs_stb_i));
+`define MODULE mux_andor
+    `BASE`MODULE # ( .nr_of_ports(nr_of_ports), .width(32)) mux0 ( .a(wbm_dat_o), .sel(sel), .dout(wbs_dat_i));
+    `BASE`MODULE # ( .nr_of_ports(nr_of_ports), .width(adr_size-adr_lo)) mux1 ( .a(wbm_adr_o), .sel(sel), .dout(wbs_adr_i));
+    `BASE`MODULE # ( .nr_of_ports(nr_of_ports), .width(sel_size)) mux2 ( .a(wbm_sel_o), .sel(sel), .dout(wbs_sel_i));
+    `BASE`MODULE # ( .nr_of_ports(nr_of_ports), .width(3)) mux3 ( .a(wbm_cti_o), .sel(sel), .dout(wbs_cti_i));
+    `BASE`MODULE # ( .nr_of_ports(nr_of_ports), .width(2)) mux4 ( .a(wbm_bte_o), .sel(sel), .dout(wbs_bte_i));
+    `BASE`MODULE # ( .nr_of_ports(nr_of_ports), .width(1)) mux5 ( .a(wbm_we_o), .sel(sel), .dout(wbs_we_i));
+    `BASE`MODULE # ( .nr_of_ports(nr_of_ports), .width(1)) mux6 ( .a(wbm_stb_o), .sel(sel), .dout(wbs_stb_i));
+`undef MODULE
     assign wbs_cyc_i = |sel;
     
     assign wbm_dat_i = {nr_of_ports{wbs_dat_o}};
@@ -3789,9 +4352,13 @@ endgenerate
     assign wbm_rty_i = {nr_of_ports{wbs_rty_o}} & sel;
 
 endmodule
+`endif
 
+`ifdef WB_BOOT_ROM
 // WB ROM
-module vl_wb_boot_rom (
+`define MODULE wb_boot_rom
+module `BASE`MODULE (
+`undef MODULE
     wb_adr_i, wb_stb_i, wb_cyc_i, 
     wb_dat_o, wb_ack_o, hit_o, wb_clk, wb_rst);
 
@@ -3852,8 +4419,12 @@ assign wb_dat_o = wb_dat & {32{wb_ack}};
 assign wb_ack_o = wb_ack;
 
 endmodule
+`endif
 
-module vl_wb_dpram ( 
+`ifdef WB_DPRAM
+`define MODULE wb_dpram
+module `BASE`MODULE ( 
+`undef MODULE
 	// wishbone slave side a
 	wbsa_dat_i, wbsa_adr_i, wbsa_we_i, wbsa_cyc_i, wbsa_stb_i, wbsa_dat_o, wbsa_ack_o,
         wbsa_clk, wbsa_rst,
@@ -3883,7 +4454,9 @@ input wbsb_clk, wbsb_rst;
 
 wire wbsa_dat_tmp, wbsb_dat_tmp;
 
-vl_dpram_2r2w # (
+`define MODULE dpram_2r2w
+`BASE`MODULE # (
+`undef MODULE
     .data_width(data_width), .addr_width(addr_width) )
 dpram0(
     .d_a(wbsa_dat_i),
@@ -3911,10 +4484,13 @@ generate if (dat_o_mask_b==0)
     assign wbsb_dat_o = wbsb_dat_tmp;
 endgenerate
 
-vl_spr ack_a( .sp(wbsa_cyc_i & wbsa_stb_i & !wbsa_ack_o), .r(1'b1), .q(wbsa_ack_o), .clk(wbsa_clk), .rst(wbsa_rst));
-vl_spr ack_b( .sp(wbsb_cyc_i & wbsb_stb_i & !wbsb_ack_o), .r(1'b1), .q(wbsb_ack_o), .clk(wbsb_clk), .rst(wbsb_rst));
+`define MODULE spr
+`BASE`MODULE ack_a( .sp(wbsa_cyc_i & wbsa_stb_i & !wbsa_ack_o), .r(1'b1), .q(wbsa_ack_o), .clk(wbsa_clk), .rst(wbsa_rst));
+`BASE`MODULE ack_b( .sp(wbsb_cyc_i & wbsb_stb_i & !wbsb_ack_o), .r(1'b1), .q(wbsb_ack_o), .clk(wbsb_clk), .rst(wbsb_rst));
+`undef MODULE
 
 endmodule
+`endif
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
 ////  Arithmetic functions                                        ////
@@ -3957,8 +4533,11 @@ endmodule
 ////                                                              ////
 //////////////////////////////////////////////////////////////////////
 
+`ifdef MULTS
 // signed multiplication
-module vl_mults (a,b,p);
+`define MODULE mults
+module `BASE`MODULE (a,b,p);
+`undef MODULE
 parameter operand_a_width = 18;
 parameter operand_b_width = 18;
 parameter result_hi = 35;
@@ -3976,17 +4555,24 @@ wire signed [operand_a_width+operand_b_width-1:0] result;
     assign p = result[result_hi:result_lo];
     
 endmodule
-
-module vl_mults18x18 (a,b,p);
+`endif
+`ifdef MULTS18X18
+`define MODULE mults18x18
+module `BASE`MODULE (a,b,p);
+`undef MODULE
 input [17:0] a,b;
 output [35:0] p;
 vl_mult
     # (.operand_a_width(18), .operand_b_width(18))
     mult0 (.a(a), .b(b), .p(p));
 endmodule
+`endif
 
+`ifdef MULT
+`define MODULE mult
 // unsigned multiplication
-module vl_mult (a,b,p);
+module `BASE`MODULE (a,b,p);
+`undef MODULE
 parameter operand_a_width = 18;
 parameter operand_b_width = 18;
 parameter result_hi = 35;
@@ -4001,14 +4587,18 @@ wire [operand_a_width+operand_b_width-1:0] result;
     assign p = result[result_hi:result_lo];
     
 endmodule
+`endif
 
+`ifdef SHIFT_UNIT_32
+`define MODULE shift_unit_32
 // shift unit
 // supporting the following shift functions
 //   SLL
 //   SRL
 //   SRA
 `define SHIFT_UNIT_MULT # ( .operand_a_width(25), .operand_b_width(16), .result_hi(14), .result_lo(7))
-module vl_shift_unit_32( din, s, dout, opcode);
+module `BASE`MODULE( din, s, dout, opcode);
+`undef MODULE
 input [31:0] din; // data in operand
 input [4:0] s; // shift operand
 input [1:0] opcode;
@@ -4049,11 +4639,12 @@ assign sign[3] = din[31] & sra;
 assign sign[2] = sign[3] & (&din[31:24]);
 assign sign[1] = sign[2] & (&din[23:16]);
 assign sign[0] = sign[1] & (&din[15:8]);
-vl_mults `SHIFT_UNIT_MULT mult_byte3 ( .a({sign[3], {8{sign[3]}},din[31:24], din[23:16]}), .b({1'b0,s1}), .p(tmp[3]));
-vl_mults `SHIFT_UNIT_MULT mult_byte2 ( .a({sign[2], din[31:24]  ,din[23:16],  din[15:8]}), .b({1'b0,s1}), .p(tmp[2]));
-vl_mults `SHIFT_UNIT_MULT mult_byte1 ( .a({sign[1], din[23:16]  ,din[15:8],   din[7:0]}), .b({1'b0,s1}), .p(tmp[1]));
-vl_mults `SHIFT_UNIT_MULT mult_byte0 ( .a({sign[0], din[15:8]   ,din[7:0],    8'h00}),      .b({1'b0,s1}), .p(tmp[0]));
-
+`define MODULE mults
+`BASE`MODULE `SHIFT_UNIT_MULT mult_byte3 ( .a({sign[3], {8{sign[3]}},din[31:24], din[23:16]}), .b({1'b0,s1}), .p(tmp[3]));
+`BASE`MODULE `SHIFT_UNIT_MULT mult_byte2 ( .a({sign[2], din[31:24]  ,din[23:16],  din[15:8]}), .b({1'b0,s1}), .p(tmp[2]));
+`BASE`MODULE `SHIFT_UNIT_MULT mult_byte1 ( .a({sign[1], din[23:16]  ,din[15:8],   din[7:0]}), .b({1'b0,s1}), .p(tmp[1]));
+`BASE`MODULE `SHIFT_UNIT_MULT mult_byte0 ( .a({sign[0], din[15:8]   ,din[7:0],    8'h00}),      .b({1'b0,s1}), .p(tmp[0]));
+`undef MODULE
 // second stage is multiplexer based
 // shift on byte level
 
@@ -4089,14 +4680,18 @@ assign dout[7:0]   = (s[4:3]==2'b00) ? tmp[0] :
                      tmp[3];
 
 endmodule
+`endif
 
+`ifdef LOGIC_UNIT
 // logic unit
 // supporting the following logic functions
 //    a and b
 //    a or  b
 //    a xor b
 //    not b
-module vl_logic_unit( a, b, result, opcode);
+`define MODULE logic_unit
+module `BASE`MODULE( a, b, result, opcode);
+`undef MODULE
 parameter width = 32;
 parameter opcode_and = 2'b00;
 parameter opcode_or  = 2'b01;
@@ -4126,3 +4721,4 @@ assign z = (result=={width{1'b0}});
 assign ovfl = ( a[width-1] &  b[width-1] & ~result[width-1]) |
                (~a[width-1] & ~b[width-1] &  result[width-1]);
 endmodule
+`endif

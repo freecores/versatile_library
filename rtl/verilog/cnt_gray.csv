@@ -1,5 +1,5 @@
 Name,type,,,,
-vl_cnt_gray,GRAY,,,,
+cnt_gray,GRAY,,,,
 ,,,,,
 clear,set,cke,rew,,
 0,0,0,0,,

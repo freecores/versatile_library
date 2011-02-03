@@ -40,7 +40,10 @@
 ////                                                              ////
 //////////////////////////////////////////////////////////////////////
 
-module vl_cnt_shreg_wrap ( q, rst, clk);
+`ifdef CNT_SHREG_WRAP
+`define MODULE cnt_shreg_wrap
+module `BASE`MODULE ( q, rst, clk);
+`undef MODULE
 
    parameter length = 4;
    output reg [0:length-1] q;
@@ -54,8 +57,12 @@ module vl_cnt_shreg_wrap ( q, rst, clk);
         q <= {q[length-1],q[0:length-2]};
             
 endmodule
+`endif
 
-module vl_cnt_shreg_ce_wrap ( cke, q, rst, clk);
+`ifdef CNT_SHREG_CE_WRAP
+`define MODULE cnt_shreg_ce_wrap
+module `BASE`MODULE ( cke, q, rst, clk);
+`undef MODULE
 
    parameter length = 4;
    input cke;
@@ -71,8 +78,12 @@ module vl_cnt_shreg_ce_wrap ( cke, q, rst, clk);
             q <= {q[length-1],q[0:length-2]};
             
 endmodule
+`endif
 
-module vl_cnt_shreg_ce_clear ( cke, clear, q, rst, clk);
+`ifdef CNT_SHREG_CE_CLEAR
+`define MODULE cnt_shreg_ce_clear
+module `BASE`MODULE ( cke, clear, q, rst, clk);
+`undef MODULE
 
    parameter length = 4;
    input cke, clear;
@@ -91,8 +102,12 @@ module vl_cnt_shreg_ce_clear ( cke, clear, q, rst, clk);
                 q <= q >> 1;
             
 endmodule
+`endif
 
-module vl_cnt_shreg_ce_clear_wrap ( cke, clear, q, rst, clk);
+`ifdef CNT_SHREG_CE_CLEAR_WRAP
+`define MODULE cnt_shreg_ce_clear_wrap
+module `BASE`MODULE ( cke, clear, q, rst, clk);
+`undef MODULE
 
    parameter length = 4;
    input cke, clear;
@@ -111,3 +126,4 @@ module vl_cnt_shreg_ce_clear_wrap ( cke, clear, q, rst, clk);
             q <= {q[length-1],q[0:length-2]};
             
 endmodule
+`endif
