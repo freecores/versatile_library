@@ -82,6 +82,9 @@
 `endif
 
 `ifdef WB3_ARBITER_TYPE1
+`ifndef SPR
+`define SPR
+`endif
 `ifndef MUX_ANDOR
 `define MUX_ANDOR
 `endif

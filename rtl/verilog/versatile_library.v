@@ -82,6 +82,9 @@
 `endif
 
 `ifdef WB3_ARBITER_TYPE1
+`ifndef SPR
+`define SPR
+`endif
 `ifndef MUX_ANDOR
 `define MUX_ANDOR
 `endif
@@ -1166,9 +1169,9 @@ integer i,j;
 always @ (a, sel)
 begin
     dout = a[width-1:0] & {width{sel[0]}};
-    for (i=nr_of_ports-2;i<nr_of_ports;i=i+1)
-        for (j=0;j<32;j=j+1)
-            dout[j] = (a[(i-1)*width + j] & sel[i]) | dout[j];
+    for (i=1;i<nr_of_ports;i=i+1)
+        for (j=0;j<width;j=j+1)
+            dout[j] = (a[i*width + j] & sel[i]) | dout[j];
 end
 
 endmodule
@@ -4191,7 +4194,7 @@ assign b_rd = b_rd_adr | b_rd_data;
 assign {wbm_dat_o,wbm_sel_o} = (b_rd_data_reg) ? b_q : temp;
 
 `define MODULE cnt_shreg_ce_clear
-vl_cnt_shreg_ce_clear # ( .length(16))
+`BASE`MODULE # ( .length(16))
 `undef MODULE
     cnt1 (
         .cke(wbm_ack_i),
@@ -4247,7 +4250,7 @@ endmodule
 
 `ifdef WB3_ARBITER_TYPE1
 `define MODULE wb3_arbiter_type1
-module vl_wb3_arbiter_type1 (
+module `BASE`MODULE (
 `undef MODULE
     wbm_dat_o, wbm_adr_o, wbm_sel_o, wbm_cti_o, wbm_bte_o, wbm_we_o, wbm_stb_o, wbm_cyc_o,
     wbm_dat_i, wbm_ack_i, wbm_err_i, wbm_rty_i,
@@ -4329,7 +4332,9 @@ endgenerate
 
 generate
 for (i=0;i<nr_of_ports;i=i+1) begin
-    vl_spr sr0( .sp(select[i]), .r(eoc[i]), .q(state[i]), .clk(wb_clk), .rst(wb_rst));
+`define MODULE spr
+    `BASE`MODULE sr0( .sp(select[i]), .r(eoc[i]), .q(state[i]), .clk(wb_clk), .rst(wb_rst));
+`undef MODULE
 end
 endgenerate
 

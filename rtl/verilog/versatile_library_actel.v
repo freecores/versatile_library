@@ -447,9 +447,9 @@ integer i,j;
 always @ (a, sel)
 begin
     dout = a[width-1:0] & {width{sel[0]}};
-    for (i=nr_of_ports-2;i<nr_of_ports;i=i+1)
-        for (j=0;j<32;j=j+1)
-            dout[j] = (a[(i-1)*width + j] & sel[i]) | dout[j];
+    for (i=1;i<nr_of_ports;i=i+1)
+        for (j=0;j<width;j=j+1)
+            dout[j] = (a[i*width + j] & sel[i]) | dout[j];
 end
 endmodule
 module vl_mux2_andor ( a1, a0, sel, dout);
