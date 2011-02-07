@@ -25,6 +25,7 @@
 `define MUX4_ANDOR
 `define MUX5_ANDOR
 `define MUX6_ANDOR
+`define PARITY
 
 `define ROM_INIT
 `define RAM

@@ -502,6 +502,39 @@ vl_mux_andor
     # ( .width(width), .nr_of_ports(nr_of_ports))
     mux0( .a({a5,a4,a3,a2,a1,a0}), .sel(sel), .dout(dout));
 endmodule
+module vl_parity_generate (data, parity);
+parameter word_size = 32;
+parameter chunk_size = 8;
+parameter parity_type = 1'b0; // 0 - even, 1 - odd parity
+input [word_size-1:0] data;
+output reg [word_size/chunk_size-1:0] parity;
+integer i,j;
+always @ (data)
+for (i=0;i<word_size/chunk_size;i=i+1) begin
+    parity[i] = parity_type;
+    for (j=0;j<chunk_size;j=j+1) begin
+        parity[i] = data[i+j] ^ parity[i];
+    end
+end
+endmodule
+module vl_parity_check( data, parity, parity_error);
+parameter word_size = 32;
+parameter chunk_size = 8;
+parameter parity_type = 1'b0; // 0 - even, 1 - odd parity
+input [word_size-1:0] data;
+input [word_size/chunk_size-1:0] parity;
+output parity_error;
+reg [chunk_size-1:0] error_flag;
+integer i,j;
+always @ (data or parity)
+for (i=0;i<word_size/chunk_size;i=i+1) begin
+    error_flag[i] = parity[i] ^ parity_type;
+    for (j=0;j<chunk_size;j=j+1) begin
+        error_flag[i] = data[i+j] ^ error_flag[i];
+    end
+end
+assign parity_error = |error_flag;
+endmodule
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
 ////  Versatile counter                                           ////

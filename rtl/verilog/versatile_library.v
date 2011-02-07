@@ -25,6 +25,7 @@
 `define MUX4_ANDOR
 `define MUX5_ANDOR
 `define MUX6_ANDOR
+`define PARITY
 
 `define ROM_INIT
 `define RAM
@@ -1275,7 +1276,49 @@ output [width-1:0] dout;
 
 endmodule
 `endif
-`ifdef CNT_BIN
+
+`ifdef PARITY
+
+`define MODULE parity_generate
+module `BASE`MODULE (data, parity);
+`undef MODULE
+parameter word_size = 32;
+parameter chunk_size = 8;
+parameter parity_type = 1'b0; // 0 - even, 1 - odd parity
+input [word_size-1:0] data;
+output reg [word_size/chunk_size-1:0] parity;
+integer i,j;
+always @ (data)
+for (i=0;i<word_size/chunk_size;i=i+1) begin
+    parity[i] = parity_type;
+    for (j=0;j<chunk_size;j=j+1) begin
+        parity[i] = data[i+j] ^ parity[i];
+    end
+end
+endmodule
+
+`define MODULE parity_check
+module `BASE`MODULE( data, parity, parity_error);
+`undef MODULE
+parameter word_size = 32;
+parameter chunk_size = 8;
+parameter parity_type = 1'b0; // 0 - even, 1 - odd parity
+input [word_size-1:0] data;
+input [word_size/chunk_size-1:0] parity;
+output parity_error;
+reg [chunk_size-1:0] error_flag;
+integer i,j;
+always @ (data or parity)
+for (i=0;i<word_size/chunk_size;i=i+1) begin
+    error_flag[i] = parity[i] ^ parity_type;
+    for (j=0;j<chunk_size;j=j+1) begin
+        error_flag[i] = data[i+j] ^ error_flag[i];
+    end
+end
+assign parity_error = |error_flag;
+endmodule
+
+`endif`ifdef CNT_BIN
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
 ////  Versatile counter                                           ////
