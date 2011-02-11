@@ -2,6 +2,10 @@
 `define BASE vl_
 `endif
  
+`ifdef ACTEL
+`define SYN_KEEP /*synthesis syn_keep = 1*/
+`endif
+
 `ifdef ALL
 
 `define GBUF
@@ -58,6 +62,9 @@
 `define WB3_ARBITER_TYPE1
 `define WB_BOOT_ROM
 `define WB_DPRAM
+
+`define IO_DFF_OE
+`define O_DFF
 
 `endif
 

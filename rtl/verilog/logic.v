@@ -192,7 +192,7 @@ parameter parity_type = 1'b0; // 0 - even, 1 - odd parity
 input [word_size-1:0] data;
 input [word_size/chunk_size-1:0] parity;
 output parity_error;
-reg [chunk_size-1:0] error_flag;
+reg [word_size/chunk_size-1:0] error_flag;
 integer i,j;
 always @ (data or parity)
 for (i=0;i<word_size/chunk_size;i=i+1) begin

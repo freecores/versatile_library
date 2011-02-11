@@ -2,6 +2,7 @@ VERILOG_FILES = defines.v
 VERILOG_FILES += clk_and_reset.v
 VERILOG_FILES += registers.v
 VERILOG_FILES += logic.v
+VERILOG_FILES += io.v
 
 VERILOG_FILES_CNT = vl_cnt_bin.v
 VERILOG_FILES_CNT += vl_cnt_bin_clear.v

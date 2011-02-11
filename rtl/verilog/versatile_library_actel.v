@@ -524,7 +524,7 @@ parameter parity_type = 1'b0; // 0 - even, 1 - odd parity
 input [word_size-1:0] data;
 input [word_size/chunk_size-1:0] parity;
 output parity_error;
-reg [chunk_size-1:0] error_flag;
+reg [word_size/chunk_size-1:0] error_flag;
 integer i,j;
 always @ (data or parity)
 for (i=0;i<word_size/chunk_size;i=i+1) begin
@@ -534,6 +534,97 @@ for (i=0;i<word_size/chunk_size;i=i+1) begin
     end
 end
 assign parity_error = |error_flag;
+endmodule
+//////////////////////////////////////////////////////////////////////
+////                                                              ////
+////  IO functions                                                ////
+////                                                              ////
+////  Description                                                 ////
+////  IO functions such as IOB flip-flops                         ////
+////                                                              ////
+////                                                              ////
+////  To Do:                                                      ////
+////   -                                                          ////
+////                                                              ////
+////  Author(s):                                                  ////
+////      - Michael Unneback, unneback@opencores.org              ////
+////        ORSoC AB                                              ////
+////                                                              ////
+//////////////////////////////////////////////////////////////////////
+////                                                              ////
+//// Copyright (C) 2010 Authors and OPENCORES.ORG                 ////
+////                                                              ////
+//// This source file may be used and distributed without         ////
+//// restriction provided that this copyright statement is not    ////
+//// removed from the file and that any derivative work contains  ////
+//// the original copyright notice and the associated disclaimer. ////
+////                                                              ////
+//// This source file is free software; you can redistribute it   ////
+//// and/or modify it under the terms of the GNU Lesser General   ////
+//// Public License as published by the Free Software Foundation; ////
+//// either version 2.1 of the License, or (at your option) any   ////
+//// later version.                                               ////
+////                                                              ////
+//// This source is distributed in the hope that it will be       ////
+//// useful, but WITHOUT ANY WARRANTY; without even the implied   ////
+//// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR      ////
+//// PURPOSE.  See the GNU Lesser General Public License for more ////
+//// details.                                                     ////
+////                                                              ////
+//// You should have received a copy of the GNU Lesser General    ////
+//// Public License along with this source; if not, download it   ////
+//// from http://www.opencores.org/lgpl.shtml                     ////
+////                                                              ////
+//////////////////////////////////////////////////////////////////////
+module vl_o_dff (d_i, o_pad, clk, rst);
+parameter width = 1;
+input [width-1:0]  d_i;
+output [width-1:0] o_pad;
+input clk, rst;
+wire [width-1:0] d_i_int /*synthesis syn_keep = 1*/;
+assign d_i_int = d_i;
+genvar i;
+for (i=0;i<width;i=i+1) begin
+    always @ (posedge clk or posedge rst)
+    if (rst)
+        o_pad[i] <= 1'b0;
+    else
+        o_pad[i] <= d_i_int[i];
+end
+endgenerate
+endmodule
+module vl_io_dff_oe ( d_i, d_o, oe, io_pad, clk, rst);
+parameter width = 1;
+input  [width-1:0] d_o;
+output reg [width-1:0] d_i;
+input oe;
+inout [width-1:0] io_pad;
+input clk, rst;
+wire [width-1:0] oe_d /*synthesis syn_keep = 1*/;
+reg [width-1:0] oe_q;
+reg [width-1:0] d_o_q;
+assign oe_d = {width{oe}};
+genvar i;
+generate
+for (i=0;i<width;i=i+1) begin
+    always @ (posedge clk or posedge rst)
+    if (rst)
+        oe_q[i] <= 1'b0;
+    else
+        oe_q[i] <= oe_d[i];
+    always @ (posedge clk or posedge rst)
+    if (rst)
+        d_o_q[i] <= 1'b0;
+    else
+        d_o_q[i] <= d_o[i];
+    always @ (posedge clk or posedge rst)
+    if (rst)
+        d_i[i] <= 1'b0;
+    else
+        d_i[i] <= io_pad[i];
+    assign io_pad[i] = (oe_q[i]) ? d_o_q[i] : 1'bz;
+end
+endgenerate
 endmodule
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
@@ -1735,7 +1826,7 @@ output wbs_we_i, wbs_stb_i, wbs_cyc_i;
 input  [dat_size-1:0] wbs_dat_o;
 input  wbs_ack_o, wbs_err_o, wbs_rty_o;
 input wb_clk, wb_rst;
-wire [nr_of_ports-1:0] select;
+reg  [nr_of_ports-1:0] select;
 wire [nr_of_ports-1:0] state;
 wire [nr_of_ports-1:0] eoc; // end-of-cycle
 wire [nr_of_ports-1:0] sel;
@@ -1746,7 +1837,16 @@ generate
 if (nr_of_ports == 2) begin
     wire [2:0] wbm1_cti_o, wbm0_cti_o;
     assign {wbm1_cti_o,wbm0_cti_o} = wbm_cti_o;
-    assign select = (idle) ? {wbm_cyc_o[1],!wbm_cyc_o[1] & wbm_cyc_o[0]} : 2'b00;
+    //assign select = (idle) ? {wbm_cyc_o[1],!wbm_cyc_o[1] & wbm_cyc_o[0]} : {nr_of_ports{1'b0}};
+    always @ (idle or wbm_cyc_o)
+    if (idle)
+        casex (wbm_cyc_o)
+        2'b1x : select = 2'b10;
+        2'b01 : select = 2'b01;
+        default : select = {nr_of_ports{1'b0}};
+        endcase
+    else
+        select = {nr_of_ports{1'b0}};
     assign eoc[1] = (wbm_ack_i[1] & (wbm1_cti_o == 3'b000 | wbm1_cti_o == 3'b111)) | !wbm_cyc_o[1];
     assign eoc[0] = (wbm_ack_i[0] & (wbm0_cti_o == 3'b000 | wbm0_cti_o == 3'b111)) | !wbm_cyc_o[0];
 end
@@ -1755,7 +1855,63 @@ generate
 if (nr_of_ports == 3) begin
     wire [2:0] wbm2_cti_o, wbm1_cti_o, wbm0_cti_o;
     assign {wbm2_cti_o,wbm1_cti_o,wbm0_cti_o} = wbm_cti_o;
-    assign select = (idle) ? {wbm_cyc_o[2],!wbm_cyc_o[2] & wbm_cyc_o[1],wbm_cyc_o[2:1]==2'b00 & wbm_cyc_o[0]} : 3'b000;
+    always @ (idle or wbm_cyc_o)
+    if (idle)
+        casex (wbm_cyc_o)
+        3'b1xx : select = 3'b100;
+        3'b01x : select = 3'b010;
+        3'b001 : select = 3'b001;
+        default : select = {nr_of_ports{1'b0}};
+        endcase
+    else
+        select = {nr_of_ports{1'b0}};
+//    assign select = (idle) ? {wbm_cyc_o[2],!wbm_cyc_o[2] & wbm_cyc_o[1],wbm_cyc_o[2:1]==2'b00 & wbm_cyc_o[0]} : {nr_of_ports{1'b0}};
+    assign eoc[2] = (wbm_ack_i[2] & (wbm2_cti_o == 3'b000 | wbm2_cti_o == 3'b111)) | !wbm_cyc_o[2];
+    assign eoc[1] = (wbm_ack_i[1] & (wbm1_cti_o == 3'b000 | wbm1_cti_o == 3'b111)) | !wbm_cyc_o[1];
+    assign eoc[0] = (wbm_ack_i[0] & (wbm0_cti_o == 3'b000 | wbm0_cti_o == 3'b111)) | !wbm_cyc_o[0];
+end
+endgenerate
+generate
+if (nr_of_ports == 4) begin
+    wire [2:0] wbm3_cti_o, wbm2_cti_o, wbm1_cti_o, wbm0_cti_o;
+    assign {wbm3_cti_o, wbm2_cti_o,wbm1_cti_o,wbm0_cti_o} = wbm_cti_o;
+    //assign select = (idle) ? {wbm_cyc_o[3],!wbm_cyc_o[3] & wbm_cyc_o[2],wbm_cyc_o[3:2]==2'b00 & wbm_cyc_o[1],wbm_cyc_o[3:1]==3'b000 & wbm_cyc_o[0]} : {nr_of_ports{1'b0}};
+    always @ (idle or wbm_cyc_o)
+    if (idle)
+        casex (wbm_cyc_o)
+        4'b1xxx : select = 4'b1000;
+        4'b01xx : select = 4'b0100;
+        4'b001x : select = 4'b0010;
+        4'b0001 : select = 4'b0001;
+        default : select = {nr_of_ports{1'b0}};
+        endcase
+    else
+        select = {nr_of_ports{1'b0}};
+    assign eoc[3] = (wbm_ack_i[3] & (wbm3_cti_o == 3'b000 | wbm3_cti_o == 3'b111)) | !wbm_cyc_o[3];
+    assign eoc[2] = (wbm_ack_i[2] & (wbm2_cti_o == 3'b000 | wbm2_cti_o == 3'b111)) | !wbm_cyc_o[2];
+    assign eoc[1] = (wbm_ack_i[1] & (wbm1_cti_o == 3'b000 | wbm1_cti_o == 3'b111)) | !wbm_cyc_o[1];
+    assign eoc[0] = (wbm_ack_i[0] & (wbm0_cti_o == 3'b000 | wbm0_cti_o == 3'b111)) | !wbm_cyc_o[0];
+end
+endgenerate
+generate
+if (nr_of_ports == 5) begin
+    wire [2:0] wbm4_cti_o, wbm3_cti_o, wbm2_cti_o, wbm1_cti_o, wbm0_cti_o;
+    assign {wbm4_cti_o, wbm3_cti_o, wbm2_cti_o,wbm1_cti_o,wbm0_cti_o} = wbm_cti_o;
+    //assign select = (idle) ? {wbm_cyc_o[3],!wbm_cyc_o[3] & wbm_cyc_o[2],wbm_cyc_o[3:2]==2'b00 & wbm_cyc_o[1],wbm_cyc_o[3:1]==3'b000 & wbm_cyc_o[0]} : {nr_of_ports{1'b0}};
+    always @ (idle or wbm_cyc_o)
+    if (idle)
+        casex (wbm_cyc_o)
+        5'b1xxxx : select = 5'b10000;
+        5'b01xxx : select = 5'b01000;
+        5'b001xx : select = 5'b00100;
+        5'b0001x : select = 5'b00010;
+        5'b00001 : select = 5'b00001;
+        default : select = {nr_of_ports{1'b0}};
+        endcase
+    else
+        select = {nr_of_ports{1'b0}};
+    assign eoc[4] = (wbm_ack_i[4] & (wbm4_cti_o == 3'b000 | wbm4_cti_o == 3'b111)) | !wbm_cyc_o[4];
+    assign eoc[3] = (wbm_ack_i[3] & (wbm3_cti_o == 3'b000 | wbm3_cti_o == 3'b111)) | !wbm_cyc_o[3];
     assign eoc[2] = (wbm_ack_i[2] & (wbm2_cti_o == 3'b000 | wbm2_cti_o == 3'b111)) | !wbm_cyc_o[2];
     assign eoc[1] = (wbm_ack_i[1] & (wbm1_cti_o == 3'b000 | wbm1_cti_o == 3'b111)) | !wbm_cyc_o[1];
     assign eoc[0] = (wbm_ack_i[0] & (wbm0_cti_o == 3'b000 | wbm0_cti_o == 3'b111)) | !wbm_cyc_o[0];

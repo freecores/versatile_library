@@ -1,0 +1,101 @@
+//////////////////////////////////////////////////////////////////////
+////                                                              ////
+////  IO functions                                                ////
+////                                                              ////
+////  Description                                                 ////
+////  IO functions such as IOB flip-flops                         ////
+////                                                              ////
+////                                                              ////
+////  To Do:                                                      ////
+////   -                                                          ////
+////                                                              ////
+////  Author(s):                                                  ////
+////      - Michael Unneback, unneback@opencores.org              ////
+////        ORSoC AB                                              ////
+////                                                              ////
+//////////////////////////////////////////////////////////////////////
+////                                                              ////
+//// Copyright (C) 2010 Authors and OPENCORES.ORG                 ////
+////                                                              ////
+//// This source file may be used and distributed without         ////
+//// restriction provided that this copyright statement is not    ////
+//// removed from the file and that any derivative work contains  ////
+//// the original copyright notice and the associated disclaimer. ////
+////                                                              ////
+//// This source file is free software; you can redistribute it   ////
+//// and/or modify it under the terms of the GNU Lesser General   ////
+//// Public License as published by the Free Software Foundation; ////
+//// either version 2.1 of the License, or (at your option) any   ////
+//// later version.                                               ////
+////                                                              ////
+//// This source is distributed in the hope that it will be       ////
+//// useful, but WITHOUT ANY WARRANTY; without even the implied   ////
+//// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR      ////
+//// PURPOSE.  See the GNU Lesser General Public License for more ////
+//// details.                                                     ////
+////                                                              ////
+//// You should have received a copy of the GNU Lesser General    ////
+//// Public License along with this source; if not, download it   ////
+//// from http://www.opencores.org/lgpl.shtml                     ////
+////                                                              ////
+//////////////////////////////////////////////////////////////////////
+
+`ifdef O_DFF
+`define MODULE o_dff
+module `BASE`MODULE (d_i, o_pad, clk, rst);
+`undef MODULE
+parameter width = 1;
+input [width-1:0]  d_i;
+output [width-1:0] o_pad;
+input clk, rst;
+wire [width-1:0] d_i_int `SYN_KEEP;
+assign d_i_int = d_i;
+genvar i;
+for (i=0;i<width;i=i+1) begin
+    always @ (posedge clk or posedge rst)
+    if (rst)
+        o_pad[i] <= 1'b0;
+    else
+        o_pad[i] <= d_i_int[i];
+end
+endgenerate
+endmodule
+`endif
+
+`ifdef IO_DFF_OE
+`define MODULE io_dff_oe
+module `BASE`MODULE ( d_i, d_o, oe, io_pad, clk, rst);
+`undef MODULE
+parameter width = 1;
+input  [width-1:0] d_o;
+output reg [width-1:0] d_i;
+input oe;
+inout [width-1:0] io_pad;
+input clk, rst;
+wire [width-1:0] oe_d `SYN_KEEP;
+reg [width-1:0] oe_q;
+reg [width-1:0] d_o_q;
+assign oe_d = {width{oe}};
+genvar i;
+generate
+for (i=0;i<width;i=i+1) begin
+    always @ (posedge clk or posedge rst)
+    if (rst)
+        oe_q[i] <= 1'b0;
+    else
+        oe_q[i] <= oe_d[i];
+    always @ (posedge clk or posedge rst)
+    if (rst)
+        d_o_q[i] <= 1'b0;
+    else
+        d_o_q[i] <= d_o[i];
+    always @ (posedge clk or posedge rst)
+    if (rst)
+        d_i[i] <= 1'b0;
+    else
+        d_i[i] <= io_pad[i];
+    assign io_pad[i] = (oe_q[i]) ? d_o_q[i] : 1'bz;
+end
+endgenerate
+endmodule
+`endif

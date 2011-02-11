@@ -317,7 +317,7 @@ input  wbs_ack_o, wbs_err_o, wbs_rty_o;
 
 input wb_clk, wb_rst;
 
-wire [nr_of_ports-1:0] select;
+reg  [nr_of_ports-1:0] select;
 wire [nr_of_ports-1:0] state;
 wire [nr_of_ports-1:0] eoc; // end-of-cycle
 wire [nr_of_ports-1:0] sel;
@@ -334,7 +334,18 @@ if (nr_of_ports == 2) begin
 
     assign {wbm1_cti_o,wbm0_cti_o} = wbm_cti_o;
     
-    assign select = (idle) ? {wbm_cyc_o[1],!wbm_cyc_o[1] & wbm_cyc_o[0]} : 2'b00;
+    //assign select = (idle) ? {wbm_cyc_o[1],!wbm_cyc_o[1] & wbm_cyc_o[0]} : {nr_of_ports{1'b0}};
+    
+    always @ (idle or wbm_cyc_o)
+    if (idle)
+        casex (wbm_cyc_o)
+        2'b1x : select = 2'b10;
+        2'b01 : select = 2'b01;
+        default : select = {nr_of_ports{1'b0}};
+        endcase
+    else
+        select = {nr_of_ports{1'b0}};
+        
     assign eoc[1] = (wbm_ack_i[1] & (wbm1_cti_o == 3'b000 | wbm1_cti_o == 3'b111)) | !wbm_cyc_o[1];
     assign eoc[0] = (wbm_ack_i[0] & (wbm0_cti_o == 3'b000 | wbm0_cti_o == 3'b111)) | !wbm_cyc_o[0];
     
@@ -348,7 +359,78 @@ if (nr_of_ports == 3) begin
 
     assign {wbm2_cti_o,wbm1_cti_o,wbm0_cti_o} = wbm_cti_o;
     
-    assign select = (idle) ? {wbm_cyc_o[2],!wbm_cyc_o[2] & wbm_cyc_o[1],wbm_cyc_o[2:1]==2'b00 & wbm_cyc_o[0]} : 3'b000;
+    always @ (idle or wbm_cyc_o)
+    if (idle)
+        casex (wbm_cyc_o)
+        3'b1xx : select = 3'b100;
+        3'b01x : select = 3'b010;
+        3'b001 : select = 3'b001;
+        default : select = {nr_of_ports{1'b0}};
+        endcase
+    else
+        select = {nr_of_ports{1'b0}};
+
+//    assign select = (idle) ? {wbm_cyc_o[2],!wbm_cyc_o[2] & wbm_cyc_o[1],wbm_cyc_o[2:1]==2'b00 & wbm_cyc_o[0]} : {nr_of_ports{1'b0}};
+    assign eoc[2] = (wbm_ack_i[2] & (wbm2_cti_o == 3'b000 | wbm2_cti_o == 3'b111)) | !wbm_cyc_o[2];
+    assign eoc[1] = (wbm_ack_i[1] & (wbm1_cti_o == 3'b000 | wbm1_cti_o == 3'b111)) | !wbm_cyc_o[1];
+    assign eoc[0] = (wbm_ack_i[0] & (wbm0_cti_o == 3'b000 | wbm0_cti_o == 3'b111)) | !wbm_cyc_o[0];
+    
+end
+endgenerate
+
+generate
+if (nr_of_ports == 4) begin
+
+    wire [2:0] wbm3_cti_o, wbm2_cti_o, wbm1_cti_o, wbm0_cti_o;
+
+    assign {wbm3_cti_o, wbm2_cti_o,wbm1_cti_o,wbm0_cti_o} = wbm_cti_o;
+    
+    //assign select = (idle) ? {wbm_cyc_o[3],!wbm_cyc_o[3] & wbm_cyc_o[2],wbm_cyc_o[3:2]==2'b00 & wbm_cyc_o[1],wbm_cyc_o[3:1]==3'b000 & wbm_cyc_o[0]} : {nr_of_ports{1'b0}};
+    
+    always @ (idle or wbm_cyc_o)
+    if (idle)
+        casex (wbm_cyc_o)
+        4'b1xxx : select = 4'b1000;
+        4'b01xx : select = 4'b0100;
+        4'b001x : select = 4'b0010;
+        4'b0001 : select = 4'b0001;
+        default : select = {nr_of_ports{1'b0}};
+        endcase
+    else
+        select = {nr_of_ports{1'b0}};
+    
+    assign eoc[3] = (wbm_ack_i[3] & (wbm3_cti_o == 3'b000 | wbm3_cti_o == 3'b111)) | !wbm_cyc_o[3];
+    assign eoc[2] = (wbm_ack_i[2] & (wbm2_cti_o == 3'b000 | wbm2_cti_o == 3'b111)) | !wbm_cyc_o[2];
+    assign eoc[1] = (wbm_ack_i[1] & (wbm1_cti_o == 3'b000 | wbm1_cti_o == 3'b111)) | !wbm_cyc_o[1];
+    assign eoc[0] = (wbm_ack_i[0] & (wbm0_cti_o == 3'b000 | wbm0_cti_o == 3'b111)) | !wbm_cyc_o[0];
+    
+end
+endgenerate
+
+generate
+if (nr_of_ports == 5) begin
+
+    wire [2:0] wbm4_cti_o, wbm3_cti_o, wbm2_cti_o, wbm1_cti_o, wbm0_cti_o;
+
+    assign {wbm4_cti_o, wbm3_cti_o, wbm2_cti_o,wbm1_cti_o,wbm0_cti_o} = wbm_cti_o;
+    
+    //assign select = (idle) ? {wbm_cyc_o[3],!wbm_cyc_o[3] & wbm_cyc_o[2],wbm_cyc_o[3:2]==2'b00 & wbm_cyc_o[1],wbm_cyc_o[3:1]==3'b000 & wbm_cyc_o[0]} : {nr_of_ports{1'b0}};
+    
+    always @ (idle or wbm_cyc_o)
+    if (idle)
+        casex (wbm_cyc_o)
+        5'b1xxxx : select = 5'b10000;
+        5'b01xxx : select = 5'b01000;
+        5'b001xx : select = 5'b00100;
+        5'b0001x : select = 5'b00010;
+        5'b00001 : select = 5'b00001;
+        default : select = {nr_of_ports{1'b0}};
+        endcase
+    else
+        select = {nr_of_ports{1'b0}};
+    
+    assign eoc[4] = (wbm_ack_i[4] & (wbm4_cti_o == 3'b000 | wbm4_cti_o == 3'b111)) | !wbm_cyc_o[4];
+    assign eoc[3] = (wbm_ack_i[3] & (wbm3_cti_o == 3'b000 | wbm3_cti_o == 3'b111)) | !wbm_cyc_o[3];
     assign eoc[2] = (wbm_ack_i[2] & (wbm2_cti_o == 3'b000 | wbm2_cti_o == 3'b111)) | !wbm_cyc_o[2];
     assign eoc[1] = (wbm_ack_i[1] & (wbm1_cti_o == 3'b000 | wbm1_cti_o == 3'b111)) | !wbm_cyc_o[1];
     assign eoc[0] = (wbm_ack_i[0] & (wbm0_cti_o == 3'b000 | wbm0_cti_o == 3'b111)) | !wbm_cyc_o[0];
