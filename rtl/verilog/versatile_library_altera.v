@@ -684,23 +684,29 @@ endmodule
 //// from http://www.opencores.org/lgpl.shtml                     ////
 ////                                                              ////
 //////////////////////////////////////////////////////////////////////
+`timescale 1ns/1ns
 module vl_o_dff (d_i, o_pad, clk, rst);
 parameter width = 1;
-input [width-1:0]  d_i;
+parameter reset_value = {width{1'b0}};
+input  [width-1:0]  d_i;
 output [width-1:0] o_pad;
 input clk, rst;
 wire [width-1:0] d_i_int `SYN_KEEP;
+reg  [width-1:0] o_pad_int;
 assign d_i_int = d_i;
 genvar i;
+generate
 for (i=0;i<width;i=i+1) begin
     always @ (posedge clk or posedge rst)
     if (rst)
-        o_pad[i] <= 1'b0;
+        o_pad_int[i] <= reset_value[i];
     else
-        o_pad[i] <= d_i_int[i];
+        o_pad_int[i] <= d_i_int[i];
+    assign #1 o_pad[i] = o_pad_int[i];
 end
 endgenerate
 endmodule
+`timescale 1ns/1ns
 module vl_io_dff_oe ( d_i, d_o, oe, io_pad, clk, rst);
 parameter width = 1;
 input  [width-1:0] d_o;
@@ -730,7 +736,7 @@ for (i=0;i<width;i=i+1) begin
         d_i[i] <= 1'b0;
     else
         d_i[i] <= io_pad[i];
-    assign io_pad[i] = (oe_q[i]) ? d_o_q[i] : 1'bz;
+    assign #1 io_pad[i] = (oe_q[i]) ? d_o_q[i] : 1'bz;
 end
 endgenerate
 endmodule
