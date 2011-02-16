@@ -621,7 +621,7 @@ always @ (data)
 for (i=0;i<word_size/chunk_size;i=i+1) begin
     parity[i] = parity_type;
     for (j=0;j<chunk_size;j=j+1) begin
-        parity[i] = data[i+j] ^ parity[i];
+        parity[i] = data[i*chunk_size+j] ^ parity[i];
     end
 end
 endmodule
@@ -638,7 +638,7 @@ always @ (data or parity)
 for (i=0;i<word_size/chunk_size;i=i+1) begin
     error_flag[i] = parity[i] ^ parity_type;
     for (j=0;j<chunk_size;j=j+1) begin
-        error_flag[i] = data[i+j] ^ error_flag[i];
+        error_flag[i] = data[i*chunk_size+j] ^ error_flag[i];
     end
 end
 assign parity_error = |error_flag;
