@@ -39,9 +39,6 @@
 //// from http://www.opencores.org/lgpl.shtml                     ////
 ////                                                              ////
 //////////////////////////////////////////////////////////////////////
-// Global buffer
-// usage:
-// use to enable global buffers for high fan out signals such as clock and reset
 //altera
 module vl_gbuf ( i, o);
 input i;
@@ -1203,34 +1200,6 @@ module vl_rom_init ( adr, q, clk);
    always @ (posedge clk)
      q <= rom[adr];
 endmodule
-/*
-module vl_rom ( adr, q, clk);
-parameter data_width = 32;
-parameter addr_width = 4;
-parameter [0:1>>addr_width-1] data [data_width-1:0] = {
-    {32'h18000000},
-    {32'hA8200000},
-    {32'hA8200000},
-    {32'hA8200000},
-    {32'h44003000},
-    {32'h15000000},
-    {32'h15000000},
-    {32'h15000000},
-    {32'h15000000},
-    {32'h15000000},
-    {32'h15000000},
-    {32'h15000000},
-    {32'h15000000},
-    {32'h15000000},
-    {32'h15000000},
-    {32'h15000000}};
-input [addr_width-1:0] adr;
-output reg [data_width-1:0] q;
-input clk;
-always @ (posedge clk)
-    q <= data[adr];
-endmodule
-*/
 // Single port RAM
 module vl_ram ( d, adr, we, q, clk);
    parameter data_width = 32;
@@ -1286,8 +1255,6 @@ module vl_ram_be ( d, adr, be, we, q, clk);
    always @ (posedge clk)
       q <= ram[adr];
 endmodule
-// Dual port RAM
-// ACTEL FPGA should not use logic to handle rw collision
 module vl_dpram_1r1w ( d_a, adr_a, we_a, clk_a, q_b, adr_b, clk_b );
    parameter data_width = 32;
    parameter addr_width = 8;
@@ -1678,6 +1645,37 @@ vl_fifo_cmp_async
     # (.addr_width(addr_width))
     cmp2 ( .wptr(b_wadr), .rptr(a_radr), .fifo_empty(a_fifo_empty), .fifo_full(b_fifo_full), .wclk(b_clk), .rclk(a_clk), .rst(b_rst) );
 endmodule
+module vl_reg_file (
+    a1, a2, a3, wd3, we3, rd1, rd2, clk
+);
+parameter data_width = 32;
+parameter addr_width = 5;
+input [addr_width-1:0] a1, a2, a3;
+input [data_width-1:0] wd3;
+input we3;
+output [data_width-1:0] rd1, rd2;
+input clk;
+vl_dpram_1r1w
+    # ( .data_width(data_width), .addr_width(addr_width))
+    ram1 (
+        .d_a(wd3),
+        .adr_a(a3),
+        .we_a(we3),
+        .clk_a(clk),
+        .q_b(rd1),
+        .adr_b(a1),
+        .clk_b(clk) );
+vl_dpram_1r1w
+    # ( .data_width(data_width), .addr_width(addr_width))
+    ram2 (
+        .d_a(wd3),
+        .adr_a(a3),
+        .we_a(we3),
+        .clk_a(clk),
+        .q_b(rd2),
+        .adr_b(a2),
+        .clk_b(clk) );
+endmodule
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
 ////  Versatile library, wishbone stuff                           ////
@@ -2051,6 +2049,46 @@ endgenerate
     assign wbm_rty_i = {nr_of_ports{wbs_rty_o}} & sel;
 endmodule
 // WB ROM
+module vl_wb_b4_rom (
+    wb_adr_i, wb_stb_i, wb_cyc_i, 
+    wb_dat_o, stall_o, wb_ack_o, wb_clk, wb_rst);
+    parameter dat_width = 32;
+    parameter dat_default = 32'h15000000;
+    parameter adr_width = 32;
+/*
+`ifndef ROM
+`define ROM "rom.v"
+`endif
+*/   
+    input [adr_width-1:2]   wb_adr_i;
+    input 		    wb_stb_i;
+    input 		    wb_cyc_i;
+    output [dat_width-1:0]  wb_dat_o;
+    reg [dat_width-1:0]     wb_dat_o;
+    output  		    wb_ack_o;
+    reg                     wb_ack_o;
+    output                  stall_o;
+    input 		    wb_clk;
+    input 		    wb_rst;
+always @ (posedge wb_clk or posedge wb_rst)
+    if (wb_rst)
+        wb_dat_o <= {dat_width{1'b0}};
+    else
+	 case (wb_adr_i[adr_width-1:2])
+`ifdef ROM
+`include `ROM
+`endif
+	   default:
+	     wb_dat_o <= dat_default;
+	 endcase // case (wb_adr_i)
+always @ (posedge wb_clk or posedge wb_rst)
+    if (wb_rst)
+        wb_ack_o <= 1'b0;
+    else
+        wb_ack_o <= wb_stb_i & wb_cyc_i;
+assign stall_o = 1'b0;
+endmodule
+// WB ROM
 module vl_wb_boot_rom (
     wb_adr_i, wb_stb_i, wb_cyc_i, 
     wb_dat_o, wb_ack_o, hit_o, wb_clk, wb_rst);
@@ -2326,17 +2364,4 @@ assign result = (opcode==opcode_and) ? a & b :
                 (opcode==opcode_or)  ? a | b :
                 (opcode==opcode_xor) ? a ^ b :
                 b;
-endmodule
-module vl_arith_unit ( a, b, c_in, add_sub, sign, result, c_out, z, ovfl);
-parameter width = 32;
-parameter opcode_add = 1'b0;
-parameter opcode_sub = 1'b1;
-input [width-1:0] a,b;
-input c_in, add_sub, sign;
-output [width-1:0] result;
-output c_out, z, ovfl;
-assign {c_out,result} = {(a[width-1] & sign),a} + ({a[width-1] & sign,b} ^ {(width+1){(add_sub==opcode_sub)}}) + {{(width-1){1'b0}},(c_in | (add_sub==opcode_sub))};
-assign z = (result=={width{1'b0}});
-assign ovfl = ( a[width-1] &  b[width-1] & ~result[width-1]) |
-               (~a[width-1] & ~b[width-1] &  result[width-1]);
 endmodule

@@ -383,13 +383,10 @@ endmodule
 module `BASE`MODULE ( d, le, q, clk);
 `undef MODULE
 input d, le;
-output q;
-input clk;/*
-   always @ (posedge direction_set or posedge direction_clr)
-     if (direction_clr)
-       direction <= going_empty;
-     else
-       direction <= going_full;*/
+input clk;
+always @ (le or d)
+if le
+    d <= q;
 endmodule
 `endif
 

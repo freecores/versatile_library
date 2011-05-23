@@ -43,6 +43,7 @@
 `define FIFO_1R1W_ASYNC
 `define FIFO_2R2W_ASYNC
 `define FIFO_2R2W_ASYNC_SIMPLEX
+`define REG_FILE
 
 `define DFF
 `define DFF_ARRAY
@@ -60,6 +61,7 @@
 
 `define WB3WB3_BRIDGE
 `define WB3_ARBITER_TYPE1
+`define WB_B4_ROM
 `define WB_BOOT_ROM
 `define WB_DPRAM
 
@@ -220,6 +222,12 @@
 `define DFF
 `endif
 `endif
+
+`ifdef REG_FILE
+`ifndef DPRAM_1R1W
+`define DPRAM_1R1W
+`endif
+`endif
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
 ////  Versatile library, clock and reset                          ////
@@ -262,13 +270,12 @@
 ////                                                              ////
 //////////////////////////////////////////////////////////////////////
 
-// Global buffer
-// usage:
-// use to enable global buffers for high fan out signals such as clock and reset
-
 `ifdef ACTEL
 `ifdef GBUF
 `timescale 1 ns/100 ps
+// Global buffer
+// usage:
+// use to enable global buffers for high fan out signals such as clock and reset
 // Version: 8.4 8.4.0.33
 module gbuf(GL,CLK);
 output GL;
@@ -1025,13 +1032,10 @@ endmodule
 module `BASE`MODULE ( d, le, q, clk);
 `undef MODULE
 input d, le;
-output q;
-input clk;/*
-   always @ (posedge direction_set or posedge direction_clr)
-     if (direction_clr)
-       direction <= going_empty;
-     else
-       direction <= going_full;*/
+input clk;
+always @ (le or d)
+if le
+    d <= q;
 endmodule
 `endif
 
@@ -3464,40 +3468,6 @@ module `BASE`MODULE ( adr, q, clk);
 endmodule
 `endif
 
-/*
-module vl_rom ( adr, q, clk);
-
-parameter data_width = 32;
-parameter addr_width = 4;
-
-parameter [0:1>>addr_width-1] data [data_width-1:0] = {
-    {32'h18000000},
-    {32'hA8200000},
-    {32'hA8200000},
-    {32'hA8200000},
-    {32'h44003000},
-    {32'h15000000},
-    {32'h15000000},
-    {32'h15000000},
-    {32'h15000000},
-    {32'h15000000},
-    {32'h15000000},
-    {32'h15000000},
-    {32'h15000000},
-    {32'h15000000},
-    {32'h15000000},
-    {32'h15000000}};
-
-input [addr_width-1:0] adr;
-output reg [data_width-1:0] q;
-input clk;
-
-always @ (posedge clk)
-    q <= data[adr];
-
-endmodule
-*/
-
 `ifdef RAM
 `define MODULE ram
 // Single port RAM
@@ -3572,10 +3542,8 @@ module `BASE`MODULE ( d, adr, be, we, q, clk);
 endmodule
 `endif
 
-// Dual port RAM
-
-// ACTEL FPGA should not use logic to handle rw collision
 `ifdef ACTEL
+        // ACTEL FPGA should not use logic to handle rw collision
 	`define SYN /*synthesis syn_ramstyle = "no_rw_check"*/
 `else
         `define SYN 
@@ -4128,6 +4096,77 @@ assign b_dpram_adr = (b_wr) ? {1'b1,b_wadr_bin} : {1'b0,b_radr_bin};
 
 endmodule
 `endif
+
+`ifdef REG_FILE
+`define MODULE reg_file
+module `BASE`MODULE (
+`undef MODULE
+    a1, a2, a3, wd3, we3, rd1, rd2, clk
+);
+parameter data_width = 32;
+parameter addr_width = 5;
+input [addr_width-1:0] a1, a2, a3;
+input [data_width-1:0] wd3;
+input we3;
+output [data_width-1:0] rd1, rd2;
+input clk;
+
+`ifdef ACTEL
+reg [data_width-1:0] wd3_reg;
+reg [addr_width-1:0] a1_reg, a2_reg, a3_reg;
+reg we3_reg;
+reg [data_width-1:0] ram1 [(1<<addr_width)-1:0] `SYN;
+reg [data_width-1:0] ram2 [(1<<addr_width)-1:0] `SYN;
+always @ (posedge clk or posedge rst)
+if (rst)
+    {wd3_reg, a3_reg, we3_reg} <= {(data_width+addr_width+1){1'b0}};
+else
+    {wd3_reg, a3_reg, we3_reg} <= {wd3,a3,wd3};
+
+    always @ (negedge clk)
+    if (we3_reg)
+        ram1[a3_reg] <= wd3;
+    always @ (posedge clk)
+        a1_reg <= a1;   
+    assign rd1 = ram1[a1_reg];
+    
+    always @ (negedge clk)
+    if (we3_reg)
+        ram2[a3_reg] <= wd3;
+    always @ (posedge clk)
+        a2_reg <= a2;   
+    assign rd2 = ram2[a2_reg];
+
+`else
+
+`define MODULE dpram_1r1w
+`BASE`MODULE
+    # ( .data_width(data_width), .addr_width(addr_width))
+    ram1 (
+        .d_a(wd3),
+        .adr_a(a3),
+        .we_a(we3),
+        .clk_a(clk),
+        .q_b(rd1),
+        .adr_b(a1),
+        .clk_b(clk) );
+        
+`BASE`MODULE
+    # ( .data_width(data_width), .addr_width(addr_width))
+    ram2 (
+        .d_a(wd3),
+        .adr_a(a3),
+        .we_a(we3),
+        .clk_a(clk),
+        .q_b(rd2),
+        .adr_b(a2),
+        .clk_b(clk) );
+`undef MODULE
+
+`endif
+
+endmodule
+`endif
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
 ////  Versatile library, wishbone stuff                           ////
@@ -4597,6 +4636,60 @@ endgenerate
 endmodule
 `endif
 
+`ifdef WB_B4_ROM
+// WB ROM
+`define MODULE wb_b4_rom
+module `BASE`MODULE (
+`undef MODULE
+    wb_adr_i, wb_stb_i, wb_cyc_i, 
+    wb_dat_o, stall_o, wb_ack_o, wb_clk, wb_rst);
+
+    parameter dat_width = 32;
+    parameter dat_default = 32'h15000000;
+    parameter adr_width = 32;
+
+/*
+`ifndef ROM
+`define ROM "rom.v"
+`endif
+*/   
+    input [adr_width-1:2]   wb_adr_i;
+    input 		    wb_stb_i;
+    input 		    wb_cyc_i;
+    output [dat_width-1:0]  wb_dat_o;
+    reg [dat_width-1:0]     wb_dat_o;
+    output  		    wb_ack_o;
+    reg                     wb_ack_o;
+    output                  stall_o;
+    input 		    wb_clk;
+    input 		    wb_rst;
+
+always @ (posedge wb_clk or posedge wb_rst)
+    if (wb_rst)
+        wb_dat_o <= {dat_width{1'b0}};
+    else
+	 case (wb_adr_i[adr_width-1:2])
+`ifdef ROM
+`include `ROM
+`endif
+	   default:
+	     wb_dat_o <= dat_default;
+	     
+	 endcase // case (wb_adr_i)
+
+   
+always @ (posedge wb_clk or posedge wb_rst)
+    if (wb_rst)
+        wb_ack_o <= 1'b0;
+    else
+        wb_ack_o <= wb_stb_i & wb_cyc_i;
+
+assign stall_o = 1'b0;
+
+endmodule
+`endif
+
+
 `ifdef WB_BOOT_ROM
 // WB ROM
 `define MODULE wb_boot_rom
@@ -4949,8 +5042,12 @@ assign result = (opcode==opcode_and) ? a & b :
                 b;
 
 endmodule
+`endif
 
-module vl_arith_unit ( a, b, c_in, add_sub, sign, result, c_out, z, ovfl);
+`ifdef ARITH_UNIT
+`define MODULE arith_unit
+module `BASE`MODULE ( a, b, c_in, add_sub, sign, result, c_out, z, ovfl);
+`undef MODULE
 parameter width = 32;
 parameter opcode_add = 1'b0;
 parameter opcode_sub = 1'b1;
@@ -4963,5 +5060,91 @@ assign {c_out,result} = {(a[width-1] & sign),a} + ({a[width-1] & sign,b} ^ {(wid
 assign z = (result=={width{1'b0}});
 assign ovfl = ( a[width-1] &  b[width-1] & ~result[width-1]) |
                (~a[width-1] & ~b[width-1] &  result[width-1]);
+endmodule
+`endif
+
+`ifdef COUNT_UNIT
+`define MODULE count_unit
+module `BASE`MODULE (din, dout, opcode);
+`undef MODULE
+parameter width = 32;
+input [width-1:0] din;
+output [width-1:0] dout;
+input opcode;
+
+integer i;
+reg [width/32+3:0] ff1, fl1;
+
+always @(din) begin
+    ff1 = 0; i = 0;
+    while (din[i] == 0 && i < width) begin // complex condition
+        ff1 = ff1 + 1;
+        i = i + 1;
+    end
+end
+
+always @(din) begin
+    fl1 = width; i = width-1;
+    while (din[i] == 0 && i >= width) begin // complex condition
+        fl1 = fl1 - 1;
+        i = i - 1;
+    end
+end
+
+generate
+if (width==32) begin
+    assign dout = (!opcode) ? {{58{1'b0}}, ff1} : {{58{1'b0}}, fl1};
+end
+endgenerate
+generate
+if (width==64) begin
+    assign dout = (!opcode) ? {{27{1'b0}}, ff1} : {{27{1'b0}}, fl1};
+end
+endgenerate
+
+endmodule
+`endif
+
+`ifdef EXT_UNIT
+`define MODULE ext_unit
+module `BASE`MODULE ( a, b, F, result, opcode);
+`undef MODULE
+parameter width = 32;
+input [width-1:0] a, b;
+input F;
+output reg [width-1:0] result;
+input [2:0] opcode;
+
+generate
+if (width==32) begin
+always @ (a or b or F or opcode)
+begin
+    case (opcode)
+    3'b000: result = {{24{1'b0}},a[7:0]};
+    3'b001: result = {{24{a[7]}},a[7:0]};
+    3'b010: result = {{16{1'b0}},a[7:0]};
+    3'b011: result = {{16{a[15]}},a[15:0]};
+    3'b110: result = (F) ? a : b;
+    default: result = {b[15:0],16'h0000};
+    endcase
+end
+end
+endgenerate
+
+generate
+if (width==64) begin
+always @ (a or b or F or opcode)
+begin
+    case (opcode)
+    3'b000: result = {{56{1'b0}},a[7:0]};
+    3'b001: result = {{56{a[7]}},a[7:0]};
+    3'b010: result = {{48{1'b0}},a[7:0]};
+    3'b011: result = {{48{a[15]}},a[15:0]};
+    3'b110: result = (SR.F) ? a : b;
+    default: result = {32'h00000000,b[15:0],16'h0000};
+    endcase
+end
+end
+endgenerate
 endmodule
 `endif

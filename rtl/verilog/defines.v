@@ -43,6 +43,7 @@
 `define FIFO_1R1W_ASYNC
 `define FIFO_2R2W_ASYNC
 `define FIFO_2R2W_ASYNC_SIMPLEX
+`define REG_FILE
 
 `define DFF
 `define DFF_ARRAY
@@ -60,6 +61,7 @@
 
 `define WB3WB3_BRIDGE
 `define WB3_ARBITER_TYPE1
+`define WB_B4_ROM
 `define WB_BOOT_ROM
 `define WB_DPRAM
 
@@ -218,5 +220,11 @@
 `endif
 `ifndef DFF
 `define DFF
+`endif
+`endif
+
+`ifdef REG_FILE
+`ifndef DPRAM_1R1W
+`define DPRAM_1R1W
 `endif
 `endif

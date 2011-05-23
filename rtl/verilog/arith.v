@@ -213,8 +213,12 @@ assign result = (opcode==opcode_and) ? a & b :
                 b;
 
 endmodule
+`endif
 
-module vl_arith_unit ( a, b, c_in, add_sub, sign, result, c_out, z, ovfl);
+`ifdef ARITH_UNIT
+`define MODULE arith_unit
+module `BASE`MODULE ( a, b, c_in, add_sub, sign, result, c_out, z, ovfl);
+`undef MODULE
 parameter width = 32;
 parameter opcode_add = 1'b0;
 parameter opcode_sub = 1'b1;
@@ -227,5 +231,91 @@ assign {c_out,result} = {(a[width-1] & sign),a} + ({a[width-1] & sign,b} ^ {(wid
 assign z = (result=={width{1'b0}});
 assign ovfl = ( a[width-1] &  b[width-1] & ~result[width-1]) |
                (~a[width-1] & ~b[width-1] &  result[width-1]);
+endmodule
+`endif
+
+`ifdef COUNT_UNIT
+`define MODULE count_unit
+module `BASE`MODULE (din, dout, opcode);
+`undef MODULE
+parameter width = 32;
+input [width-1:0] din;
+output [width-1:0] dout;
+input opcode;
+
+integer i;
+reg [width/32+3:0] ff1, fl1;
+
+always @(din) begin
+    ff1 = 0; i = 0;
+    while (din[i] == 0 && i < width) begin // complex condition
+        ff1 = ff1 + 1;
+        i = i + 1;
+    end
+end
+
+always @(din) begin
+    fl1 = width; i = width-1;
+    while (din[i] == 0 && i >= width) begin // complex condition
+        fl1 = fl1 - 1;
+        i = i - 1;
+    end
+end
+
+generate
+if (width==32) begin
+    assign dout = (!opcode) ? {{58{1'b0}}, ff1} : {{58{1'b0}}, fl1};
+end
+endgenerate
+generate
+if (width==64) begin
+    assign dout = (!opcode) ? {{27{1'b0}}, ff1} : {{27{1'b0}}, fl1};
+end
+endgenerate
+
+endmodule
+`endif
+
+`ifdef EXT_UNIT
+`define MODULE ext_unit
+module `BASE`MODULE ( a, b, F, result, opcode);
+`undef MODULE
+parameter width = 32;
+input [width-1:0] a, b;
+input F;
+output reg [width-1:0] result;
+input [2:0] opcode;
+
+generate
+if (width==32) begin
+always @ (a or b or F or opcode)
+begin
+    case (opcode)
+    3'b000: result = {{24{1'b0}},a[7:0]};
+    3'b001: result = {{24{a[7]}},a[7:0]};
+    3'b010: result = {{16{1'b0}},a[7:0]};
+    3'b011: result = {{16{a[15]}},a[15:0]};
+    3'b110: result = (F) ? a : b;
+    default: result = {b[15:0],16'h0000};
+    endcase
+end
+end
+endgenerate
+
+generate
+if (width==64) begin
+always @ (a or b or F or opcode)
+begin
+    case (opcode)
+    3'b000: result = {{56{1'b0}},a[7:0]};
+    3'b001: result = {{56{a[7]}},a[7:0]};
+    3'b010: result = {{48{1'b0}},a[7:0]};
+    3'b011: result = {{48{a[15]}},a[15:0]};
+    3'b110: result = (SR.F) ? a : b;
+    default: result = {32'h00000000,b[15:0],16'h0000};
+    endcase
+end
+end
+endgenerate
 endmodule
 `endif

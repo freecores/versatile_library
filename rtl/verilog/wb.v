@@ -467,6 +467,60 @@ endgenerate
 endmodule
 `endif
 
+`ifdef WB_B4_ROM
+// WB ROM
+`define MODULE wb_b4_rom
+module `BASE`MODULE (
+`undef MODULE
+    wb_adr_i, wb_stb_i, wb_cyc_i, 
+    wb_dat_o, stall_o, wb_ack_o, wb_clk, wb_rst);
+
+    parameter dat_width = 32;
+    parameter dat_default = 32'h15000000;
+    parameter adr_width = 32;
+
+/*
+//E2_ifndef ROM
+//E2_define ROM "rom.v"
+//E2_endif
+*/   
+    input [adr_width-1:2]   wb_adr_i;
+    input 		    wb_stb_i;
+    input 		    wb_cyc_i;
+    output [dat_width-1:0]  wb_dat_o;
+    reg [dat_width-1:0]     wb_dat_o;
+    output  		    wb_ack_o;
+    reg                     wb_ack_o;
+    output                  stall_o;
+    input 		    wb_clk;
+    input 		    wb_rst;
+
+always @ (posedge wb_clk or posedge wb_rst)
+    if (wb_rst)
+        wb_dat_o <= {dat_width{1'b0}};
+    else
+	 case (wb_adr_i[adr_width-1:2])
+//E2_ifdef ROM
+//E2_include `ROM
+//E2_endif
+	   default:
+	     wb_dat_o <= dat_default;
+	     
+	 endcase // case (wb_adr_i)
+
+   
+always @ (posedge wb_clk or posedge wb_rst)
+    if (wb_rst)
+        wb_ack_o <= 1'b0;
+    else
+        wb_ack_o <= wb_stb_i & wb_cyc_i;
+
+assign stall_o = 1'b0;
+
+endmodule
+`endif
+
+
 `ifdef WB_BOOT_ROM
 // WB ROM
 `define MODULE wb_boot_rom

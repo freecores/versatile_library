@@ -40,13 +40,12 @@
 ////                                                              ////
 //////////////////////////////////////////////////////////////////////
 
-// Global buffer
-// usage:
-// use to enable global buffers for high fan out signals such as clock and reset
-
 `ifdef ACTEL
 `ifdef GBUF
 `timescale 1 ns/100 ps
+// Global buffer
+// usage:
+// use to enable global buffers for high fan out signals such as clock and reset
 // Version: 8.4 8.4.0.33
 module gbuf(GL,CLK);
 output GL;

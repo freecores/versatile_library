@@ -64,40 +64,6 @@ module `BASE`MODULE ( adr, q, clk);
 endmodule
 `endif
 
-/*
-module vl_rom ( adr, q, clk);
-
-parameter data_width = 32;
-parameter addr_width = 4;
-
-parameter [0:1>>addr_width-1] data [data_width-1:0] = {
-    {32'h18000000},
-    {32'hA8200000},
-    {32'hA8200000},
-    {32'hA8200000},
-    {32'h44003000},
-    {32'h15000000},
-    {32'h15000000},
-    {32'h15000000},
-    {32'h15000000},
-    {32'h15000000},
-    {32'h15000000},
-    {32'h15000000},
-    {32'h15000000},
-    {32'h15000000},
-    {32'h15000000},
-    {32'h15000000}};
-
-input [addr_width-1:0] adr;
-output reg [data_width-1:0] q;
-input clk;
-
-always @ (posedge clk)
-    q <= data[adr];
-
-endmodule
-*/
-
 `ifdef RAM
 `define MODULE ram
 // Single port RAM
@@ -172,10 +138,8 @@ module `BASE`MODULE ( d, adr, be, we, q, clk);
 endmodule
 `endif
 
-// Dual port RAM
-
-// ACTEL FPGA should not use logic to handle rw collision
 `ifdef ACTEL
+        // ACTEL FPGA should not use logic to handle rw collision
 	`define SYN /*synthesis syn_ramstyle = "no_rw_check"*/
 `else
         `define SYN 
@@ -725,6 +689,77 @@ assign b_dpram_adr = (b_wr) ? {1'b1,b_wadr_bin} : {1'b0,b_radr_bin};
     # (.addr_width(addr_width))
     cmp2 ( .wptr(b_wadr), .rptr(a_radr), .fifo_empty(a_fifo_empty), .fifo_full(b_fifo_full), .wclk(b_clk), .rclk(a_clk), .rst(b_rst) );
 `undef MODULE
+
+endmodule
+`endif
+
+`ifdef REG_FILE
+`define MODULE reg_file
+module `BASE`MODULE (
+`undef MODULE
+    a1, a2, a3, wd3, we3, rd1, rd2, clk
+);
+parameter data_width = 32;
+parameter addr_width = 5;
+input [addr_width-1:0] a1, a2, a3;
+input [data_width-1:0] wd3;
+input we3;
+output [data_width-1:0] rd1, rd2;
+input clk;
+
+`ifdef ACTEL
+reg [data_width-1:0] wd3_reg;
+reg [addr_width-1:0] a1_reg, a2_reg, a3_reg;
+reg we3_reg;
+reg [data_width-1:0] ram1 [(1<<addr_width)-1:0] `SYN;
+reg [data_width-1:0] ram2 [(1<<addr_width)-1:0] `SYN;
+always @ (posedge clk or posedge rst)
+if (rst)
+    {wd3_reg, a3_reg, we3_reg} <= {(data_width+addr_width+1){1'b0}};
+else
+    {wd3_reg, a3_reg, we3_reg} <= {wd3,a3,wd3};
+
+    always @ (negedge clk)
+    if (we3_reg)
+        ram1[a3_reg] <= wd3;
+    always @ (posedge clk)
+        a1_reg <= a1;   
+    assign rd1 = ram1[a1_reg];
+    
+    always @ (negedge clk)
+    if (we3_reg)
+        ram2[a3_reg] <= wd3;
+    always @ (posedge clk)
+        a2_reg <= a2;   
+    assign rd2 = ram2[a2_reg];
+
+`else
+
+`define MODULE dpram_1r1w
+`BASE`MODULE
+    # ( .data_width(data_width), .addr_width(addr_width))
+    ram1 (
+        .d_a(wd3),
+        .adr_a(a3),
+        .we_a(we3),
+        .clk_a(clk),
+        .q_b(rd1),
+        .adr_b(a1),
+        .clk_b(clk) );
+        
+`BASE`MODULE
+    # ( .data_width(data_width), .addr_width(addr_width))
+    ram2 (
+        .d_a(wd3),
+        .adr_a(a3),
+        .we_a(we3),
+        .clk_a(clk),
+        .q_b(rd2),
+        .adr_b(a2),
+        .clk_b(clk) );
+`undef MODULE
+
+`endif
 
 endmodule
 `endif
