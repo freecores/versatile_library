@@ -2051,7 +2051,7 @@ endmodule
 // WB RAM with byte enable
 module vl_wb_b4_ram_be (
     wb_dat_i, wb_adr_i, wb_sel_i, wb_we_i, wb_stb_i, wb_cyc_i, 
-    wb_dat_o, stall_o, wb_ack_o, wb_clk, wb_rst);
+    wb_dat_o, wb_stall_o, wb_ack_o, wb_clk, wb_rst);
     parameter dat_width = 32;
     parameter adr_width = 8;
 input [dat_width-1:0] wb_dat_i;
@@ -2060,8 +2060,9 @@ input [dat_width/8-1:0] wb_sel_i;
 input wb_we_i, wb_stb_i, wb_cyc_i;
 output [dat_width-1:0] wb_dat_o;
 reg [dat_width-1:0] wb_dat_o;
-output stall_o;
+output wb_stall_o;
 output wb_ack_o;
+reg wb_ack_o;
 reg wb_ack_o;
 input wb_clk, wb_rst;
 generate
@@ -2080,6 +2081,12 @@ reg [7:0] ram0 [1<<(adr_width-2)-1:0];
     end
 end
 endgenerate
+always @ (posedge wb_clk or posedge wb_rst)
+if (rst)
+    wb_ack_o <= 1'b0;
+else
+    wb_ack_o <= wb_stb_i & wb_cyc_i
+assign wb_stall_o = 1'b0;
 endmodule
 // WB ROM
 module vl_wb_b4_rom (
