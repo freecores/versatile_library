@@ -2048,6 +2048,35 @@ endgenerate
     assign wbm_err_i = {nr_of_ports{wbs_err_o}} & sel;
     assign wbm_rty_i = {nr_of_ports{wbs_rty_o}} & sel;
 endmodule
+// WB RAM with byte enable
+module vl_wb_b4_ram_be (
+    wb_dat_i, wb_adr_i, wb_sel_i, wb_we_i, wb_stb_i, wb_cyc_i, 
+    wb_dat_o, stall_o, wb_ack_o, wb_clk, wb_rst);
+    parameter dat_width = 32;
+    parameter adr_width = 8;
+input [dat_width-1:0] wb_dat_i;
+input [adr_width-1:0] wb_adr_i;
+input [dat_width/8-1:0] wb_sel_i;
+input wb_we_i, wb_stb_i, wb_cyc_i;
+output [dat_width-1:0] wb_dat_o;
+output stall_o;
+output wb_ack_o;
+reg wb_ack_o;
+input wb_clk, wb_rst;
+generate
+if (dat_width==32) begin
+reg [31:0] ram [1<<(addr_width-2))-1:0];
+    always @ (posedge wb_clk)
+    begin
+        if (wb_sel_i[3]) ram[wb_adr_i[adr_width-1:2]] <= wb_dat_i[31:24];
+        if (wb_sel_i[2]) ram[wb_adr_i[adr_width-1:2]] <= wb_dat_i[23:16];
+        if (wb_sel_i[1]) ram[wb_adr_i[adr_width-1:2]] <= wb_dat_i[15:8];
+        if (wb_sel_i[0]) ram[wb_adr_i[adr_width-1:2]] <= wb_dat_i[7:0];
+        wb_dat_o <= ram[adr_width-1:2];
+    end
+end
+endgenerate
+endmodule
 // WB ROM
 module vl_wb_b4_rom (
     wb_adr_i, wb_stb_i, wb_cyc_i, 
