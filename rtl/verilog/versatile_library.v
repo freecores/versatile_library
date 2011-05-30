@@ -4660,14 +4660,14 @@ input wb_clk, wb_rst;
 
 generate
 if (dat_width==32) begin
-reg [31:0] ram [1<<(addr_width-2))-1:0];
+reg [7:0] ram3, ram2, ram1, ram0 [1<<(adr_width-2)-1:0];
     always @ (posedge wb_clk)
     begin
-        if (wb_sel_i[3]) ram[wb_adr_i[adr_width-1:2]] <= wb_dat_i[31:24];
-        if (wb_sel_i[2]) ram[wb_adr_i[adr_width-1:2]] <= wb_dat_i[23:16];
-        if (wb_sel_i[1]) ram[wb_adr_i[adr_width-1:2]] <= wb_dat_i[15:8];
-        if (wb_sel_i[0]) ram[wb_adr_i[adr_width-1:2]] <= wb_dat_i[7:0];
-        wb_dat_o <= ram[adr_width-1:2];
+        if (wb_sel_i[3]) ram3[wb_adr_i[adr_width-1:2]] <= wb_dat_i[31:24];
+        if (wb_sel_i[2]) ram2[wb_adr_i[adr_width-1:2]] <= wb_dat_i[23:16];
+        if (wb_sel_i[1]) ram1[wb_adr_i[adr_width-1:2]] <= wb_dat_i[15:8];
+        if (wb_sel_i[0]) ram0[wb_adr_i[adr_width-1:2]] <= wb_dat_i[7:0];
+        wb_dat_o <= {ram3[adr_width-1:2],ram2[adr_width-1:2],ram1[adr_width-1:2],ram0[adr_width-1:2]};
     end
 end
 endgenerate
