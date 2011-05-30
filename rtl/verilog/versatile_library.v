@@ -4657,7 +4657,6 @@ reg [dat_width-1:0] wb_dat_o;
 output wb_stall_o;
 output wb_ack_o;
 reg wb_ack_o;
-reg wb_ack_o;
 input wb_clk, wb_rst;
 
 generate
