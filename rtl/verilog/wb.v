@@ -510,7 +510,7 @@ always @ (posedge wb_clk or posedge wb_rst)
 if (rst)
     wb_ack_o <= 1'b0;
 else
-    wb_ack_o <= wb_stb_i & wb_cyc_i
+    wb_ack_o <= wb_stb_i & wb_cyc_i;
 
 assign wb_stall_o = 1'b0;
 
