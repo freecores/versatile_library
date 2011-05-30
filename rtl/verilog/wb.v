@@ -507,7 +507,7 @@ end
 endgenerate
 
 always @ (posedge wb_clk or posedge wb_rst)
-if (rst)
+if (wb_rst)
     wb_ack_o <= 1'b0;
 else
     wb_ack_o <= wb_stb_i & wb_cyc_i;

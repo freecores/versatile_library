@@ -2081,7 +2081,7 @@ reg [7:0] ram0 [1<<(adr_width-2)-1:0];
 end
 endgenerate
 always @ (posedge wb_clk or posedge wb_rst)
-if (rst)
+if (wb_rst)
     wb_ack_o <= 1'b0;
 else
     wb_ack_o <= wb_stb_i & wb_cyc_i;
