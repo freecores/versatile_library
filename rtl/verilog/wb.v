@@ -489,18 +489,21 @@ output wb_ack_o;
 reg wb_ack_o;
 input wb_clk, wb_rst;
 
+wire [dat_width/8-1:0] cke;
+
 generate
 if (dat_width==32) begin
 reg [7:0] ram3 [1<<(adr_width-2)-1:0];
 reg [7:0] ram2 [1<<(adr_width-2)-1:0];
 reg [7:0] ram1 [1<<(adr_width-2)-1:0];
 reg [7:0] ram0 [1<<(adr_width-2)-1:0];
+assign cke = wb_sel_i & {(dat_width/8){wb_we_i}};
     always @ (posedge wb_clk)
     begin
-        if (wb_sel_i[3]) ram3[wb_adr_i[adr_width-1:2]] <= wb_dat_i[31:24];
-        if (wb_sel_i[2]) ram2[wb_adr_i[adr_width-1:2]] <= wb_dat_i[23:16];
-        if (wb_sel_i[1]) ram1[wb_adr_i[adr_width-1:2]] <= wb_dat_i[15:8];
-        if (wb_sel_i[0]) ram0[wb_adr_i[adr_width-1:2]] <= wb_dat_i[7:0];
+        if (cke[3]) ram3[wb_adr_i[adr_width-1:2]] <= wb_dat_i[31:24];
+        if (cke[2]) ram2[wb_adr_i[adr_width-1:2]] <= wb_dat_i[23:16];
+        if (cke[1]) ram1[wb_adr_i[adr_width-1:2]] <= wb_dat_i[15:8];
+        if (cke[0]) ram0[wb_adr_i[adr_width-1:2]] <= wb_dat_i[7:0];
         wb_dat_o <= {ram3[wb_adr_i[adr_width-1:2]],ram2[wb_adr_i[adr_width-1:2]],ram1[wb_adr_i[adr_width-1:2]],ram0[wb_adr_i[adr_width-1:2]]};
     end
 end
