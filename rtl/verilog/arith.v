@@ -244,7 +244,7 @@ output [width-1:0] dout;
 input opcode;
 
 integer i;
-reg [width/32+4:0] ff1, fl1;
+wire [width/32+4:0] ff1, fl1;
 
 /*
 always @(din) begin
