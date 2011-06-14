@@ -244,8 +244,9 @@ output [width-1:0] dout;
 input opcode;
 
 integer i;
-reg [width/32+3:0] ff1, fl1;
+reg [width/32+4:0] ff1, fl1;
 
+/*
 always @(din) begin
     ff1 = 0; i = 0;
     while (din[i] == 0 && i < width) begin // complex condition
@@ -261,15 +262,88 @@ always @(din) begin
         i = i - 1;
     end
 end
+*/
 
 generate
 if (width==32) begin
-    assign dout = (!opcode) ? {{58{1'b0}}, ff1} : {{58{1'b0}}, fl1};
+
+    assign ff1 = din[0] ? 6'd1 :
+                 din[1] ? 6'd2 :
+                 din[2] ? 6'd3 :
+                 din[3] ? 6'd4 :
+                 din[4] ? 6'd5 :
+                 din[5] ? 6'd6 :
+                 din[6] ? 6'd7 :
+                 din[7] ? 6'd8 :
+                 din[8] ? 6'd9 :
+                 din[9] ? 6'd10 :
+                 din[10] ? 6'd11 :
+                 din[11] ? 6'd12 :
+                 din[12] ? 6'd13 :
+                 din[13] ? 6'd14 :
+                 din[14] ? 6'd15 :
+                 din[15] ? 6'd16 :
+                 din[16] ? 6'd17 :
+                 din[17] ? 6'd18 :
+                 din[18] ? 6'd19 :
+                 din[19] ? 6'd20 :
+                 din[20] ? 6'd21 :
+                 din[21] ? 6'd22 :
+                 din[22] ? 6'd23 :
+                 din[23] ? 6'd24 :
+                 din[24] ? 6'd25 :
+                 din[25] ? 6'd26 :
+                 din[26] ? 6'd27 :
+                 din[27] ? 6'd28 :
+                 din[28] ? 6'd29 :
+                 din[29] ? 6'd30 :
+                 din[30] ? 6'd31 :
+                 din[31] ? 6'd32 :
+                 6'd0;
+
+    assign fl1 = din[31] ? 6'd32 :
+                 din[30] ? 6'd31 :
+                 din[29] ? 6'd30 :
+                 din[28] ? 6'd29 :
+                 din[27] ? 6'd28 :
+                 din[26] ? 6'd27 :
+                 din[25] ? 6'd26 :
+                 din[24] ? 6'd25 :
+                 din[23] ? 6'd24 :
+                 din[22] ? 6'd23 :
+                 din[21] ? 6'd22 :
+                 din[20] ? 6'd21 :
+                 din[19] ? 6'd20 :
+                 din[18] ? 6'd19 :
+                 din[17] ? 6'd18 :
+                 din[16] ? 6'd17 :
+                 din[15] ? 6'd16 :
+                 din[14] ? 6'd15 :
+                 din[13] ? 6'd14 :
+                 din[12] ? 6'd13 :
+                 din[11] ? 6'd12 :
+                 din[10] ? 6'd11 :
+                 din[9] ? 6'd10 :
+                 din[8] ? 6'd9 :
+                 din[7] ? 6'd8 :
+                 din[6] ? 6'd7 :
+                 din[5] ? 6'd6 :
+                 din[4] ? 6'd5 :
+                 din[3] ? 6'd4 :
+                 din[2] ? 6'd3 :
+                 din[1] ? 6'd2 :
+                 din[0] ? 6'd1 :
+                 6'd0;
+                 
+    assign dout = (!opcode) ? {{26{1'b0}}, ff1} : {{26{1'b0}}, fl1};
 end
 endgenerate
+
 generate
 if (width==64) begin
-    assign dout = (!opcode) ? {{27{1'b0}}, ff1} : {{27{1'b0}}, fl1};
+    assign ff1 = 7'd0;
+    assign fl1 = 7'd0;
+    assign dout = (!opcode) ? {{57{1'b0}}, ff1} : {{57{1'b0}}, fl1};
 end
 endgenerate
 
@@ -311,7 +385,7 @@ begin
     3'b001: result = {{56{a[7]}},a[7:0]};
     3'b010: result = {{48{1'b0}},a[7:0]};
     3'b011: result = {{48{a[15]}},a[15:0]};
-    3'b110: result = (SR.F) ? a : b;
+    3'b110: result = (F) ? a : b;
     default: result = {32'h00000000,b[15:0],16'h0000};
     endcase
 end
