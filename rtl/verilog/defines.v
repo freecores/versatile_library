@@ -61,6 +61,7 @@
 
 `define WB3WB3_BRIDGE
 `define WB3_ARBITER_TYPE1
+`define WB_B3_RAM_BE
 `define WB_B4_RAM_BE
 `define WB_B4_ROM
 `define WB_BOOT_ROM
