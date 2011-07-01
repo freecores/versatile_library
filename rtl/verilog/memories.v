@@ -114,15 +114,33 @@ module `BASE`MODULE ( d, adr, be, we, q, clk);
 
    reg [data_width-1:0] ram [(1<<addr_width)-1:0];
    
-   parameter init = 0;
+   parameter memory_init = 0;
    parameter memory_file = "vl_ram.vmem";
-   generate if (init) begin : init_mem
+   generate if (memory_init) begin : init_mem
    initial
      begin
 	$readmemh(memory_file, ram);
      end
    end
    endgenerate 
+
+//E2_ifdef SYSTEMVERILOG
+// use a multi-dimensional packed array
+//to model individual bytes within the word
+
+logic [dat_width/8-1:0][7:0] ram[0:1<<(adr_width-2)-1];// # words = 1 << address width
+always_ff@(posedge clk)
+begin
+    if(we) begin // note: we should have a for statement to support any bus width
+        if(be[3]) ram[adr[adr_size-2:0]][3] <= d[31:24];
+        if(be[2]) ram[adr[adr_size-2:0]][2] <= d[23:16];
+        if(be[1]) ram[adr[adr_size-2:0]][1] <= d[15:8];
+        if(be[0]) ram[adr[adr_size-2:0]][0] <= d[7:0];
+    end
+    q <= ram[raddr];
+end
+
+//E2_else
 
    genvar i;
    generate for (i=0;i<addr_width/4;i=i+1) begin : be_ram
@@ -134,6 +152,8 @@ module `BASE`MODULE ( d, adr, be, we, q, clk);
 
    always @ (posedge clk)
       q <= ram[adr];
+
+//E2_endif
 
 endmodule
 `endif

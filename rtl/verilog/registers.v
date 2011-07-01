@@ -385,7 +385,7 @@ module `BASE`MODULE ( d, le, q, clk);
 input d, le;
 input clk;
 always @ (le or d)
-if le
+if (le)
     d <= q;
 endmodule
 `endif

@@ -2,7 +2,11 @@
 `define BASE vl_
 `endif
  
+// default SYN_KEEP definition
+`define SYN_KEEP /*synthesis syn_keep = 1*/
+
 `ifdef ACTEL
+`undef SYN_KEEP
 `define SYN_KEEP /*synthesis syn_keep = 1*/
 `endif
 

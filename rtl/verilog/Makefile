@@ -71,6 +71,10 @@ $(OUT_FILE): $(VERILOG_FILES)
 
 all: $(VERSATILE_LIBRARIES)
 
+test: all
+	iverilog -DALL -tnull -svl_shift_unit_32 versatile_library.v
+	iverilog -tnull -svl_shift_unit_32 versatile_library_actel.v
+	iverilog -tnull -svl_shift_unit_32 versatile_library_altera.v
 clean:
 	rm $(VERSATILE_LIBRARIES)
 	rm  $(VERILOG_FILES_CNT)

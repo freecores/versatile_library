@@ -467,7 +467,7 @@ endgenerate
 endmodule
 `endif
 
-`ifdef WB_B4_RAM_BE
+`ifdef WB_B3_RAM_BE
 // WB RAM with byte enable
 `define MODULE wb_b3_ram_be
 module `BASE`MODULE (
@@ -475,55 +475,116 @@ module `BASE`MODULE (
     wb_dat_i, wb_adr_i, wb_cti_i, wb_sel_i, wb_we_i, wb_stb_i, wb_cyc_i, 
     wb_dat_o, wb_ack_o, wb_clk, wb_rst);
 
-    parameter dat_width = 32;
-    parameter adr_width = 8;
+parameter nr_of_ports = 3;
+parameter wb_arbiter_type = 1;
+parameter adr_size = 26;
+parameter adr_lo   = 2;
+parameter dat_size = 32;
+parameter memory_init = 1;
+parameter memory_file = "vl_ram.vmem";
 
-input [dat_width-1:0] wb_dat_i;
-input [adr_width-1:0] wb_adr_i;
-input [2:0] wb_cti_i;
-input [dat_width/8-1:0] wb_sel_i;
-input wb_we_i, wb_stb_i, wb_cyc_i;
-output [dat_width-1:0] wb_dat_o;
-reg [dat_width-1:0] wb_dat_o;
-output wb_stall_o;
+localparam aw = (adr_size - adr_lo) * nr_of_ports;
+localparam dw = dat_size * nr_of_ports;
+localparam sw = dat_size/8 * nr_of_ports;
+localparam cw = 3 * nr_of_ports;
+localparam bw = 2 * nr_of_ports;
+
+input [dw-1:0] wb_dat_i;
+input [aw-1:0] wb_adr_i;
+input [cw-1:0] wb_cti_i;
+input [sw-1:0] wb_sel_i;
+input [nr_of_ports-1:0] wb_we_i, wb_stb_i, wb_cyc_i;
+output [dw-1:0] wb_dat_o;
+reg [dw-1:0] wb_dat_o;
 output wb_ack_o;
 reg wb_ack_o;
 input wb_clk, wb_rst;
 
-wire [dat_width/8-1:0] cke;
+wire [sw-1:0] cke;
+
+// local wb slave
+wire [dat_size-1:0] wbs_dat_i;
+wire [adr_size-1:0] wbs_adr_i;
+wire [2:0] wbs_cti_i;
+wire [(dat_size/8)-1:0] wbs_sel_i;
+wire  wbs_we_i, wbs_stb_i, wbs_cyc_i;
+wire [dat_size-1:0] wbs_dat_o;
+reg wbs_ack_o;
 
 generate
-if (dat_width==32) begin
-reg [7:0] ram3 [1<<(adr_width-2)-1:0];
-reg [7:0] ram2 [1<<(adr_width-2)-1:0];
-reg [7:0] ram1 [1<<(adr_width-2)-1:0];
-reg [7:0] ram0 [1<<(adr_width-2)-1:0];
-assign cke = wb_sel_i & {(dat_width/8){wb_we_i}};
-    always @ (posedge wb_clk)
-    begin
-        if (cke[3]) ram3[wb_adr_i[adr_width-1:2]] <= wb_dat_i[31:24];
-        if (cke[2]) ram2[wb_adr_i[adr_width-1:2]] <= wb_dat_i[23:16];
-        if (cke[1]) ram1[wb_adr_i[adr_width-1:2]] <= wb_dat_i[15:8];
-        if (cke[0]) ram0[wb_adr_i[adr_width-1:2]] <= wb_dat_i[7:0];
-    end
-    always @ (posedge wb_clk or posedge wb_rst)
-    begin
-        if (wb_rst)
-            wb_dat_o <= 32'h0;
-        else
-            wb_dat_o <= {ram3[wb_adr_i[adr_width-1:2]],ram2[wb_adr_i[adr_width-1:2]],ram1[wb_adr_i[adr_width-1:2]],ram0[wb_adr_i[adr_width-1:2]]};
-    end
+if (nr_of_ports == 1) begin
+    assign wbs_dat_i = wb_dat_i;
+    assign wbs_adr_i = wb_adr_i;
+    assign wbs_cti_i = wb_cti_i;
+    assign wbs_sel_i = wb_sel_i;
+    assign wbs_we_i  = wb_we_i;
+    assign wbs_stb_i = wb_stb_i;
+    assign wbs_cyc_i = wb_cyc_i;
+    assign wb_dat_o  = wbs_dat_o;
+    assign wb_ack_o  = wbs_ack_o;
 end
 endgenerate
 
+generate
+if (nr_of_ports > 1 & wb_arbiter_type == 1) begin
+`define MODULE wb3_arbiter_type1
+`BASE`MODULE wb_arbiter0(
+`undef MODULE
+    .wbm_dat_o(wb_dat_i),
+    .wbm_adr_o(wb_adr_i),
+    .wbm_sel_o(wb_sel_i),
+    .wbm_cti_o(wb_cti_i),
+    .wbm_bte_o(wb_bte_i),
+    .wbm_we_o(wb_we_i),
+    .wbm_stb_o(wb_stb_i),
+    .wbm_cyc_o(wb_cyc_i),
+    .wbm_dat_i(wb_dat_o),
+    .wbm_ack_i(wb_ack_o),
+    .wbm_err_i(),
+    .wbm_rty_i(),
+    .wbs_dat_i(wbs_dat_i),
+    .wbs_adr_i(wbs_adr_i),
+    .wbs_sel_i(wbs_sel_i),
+    .wbs_cti_i(wbs_cti_i),
+    .wbs_bte_i(wbs_bte_i),
+    .wbs_we_i(wbs_we_i),
+    .wbs_stb_i(wbs_stb_i),
+    .wbs_cyc_i(wbs_cyc_i),
+    .wbs_dat_o(wbs_dat_o),
+    .wbs_ack_o(wbs_ack_o),
+    .wbs_err_o(1'b0),
+    .wbs_rty_o(1'b0),
+    .wb_clk(wb_clk),
+    .wb_rst(wb_rst)
+);
+end
+endgenerate
+
+`define MODULE ram_be
+`BASE`MODULE # (
+    .data_width(dat_size),
+    .addr_width(adr_size),
+    .memory_init(1),
+    .memory_file("memory_file"))
+ram0(
+`undef MODULE
+    .d(wbs_dat_i),
+    .adr(wbs_adr_i[adr_size-1:2]),
+    .be(wbs_sel_i),
+    .we(wbs_we_i),
+    .q(wbs_dat_o),
+    .clk(wb_clk)
+);
+
 always @ (posedge wb_clk or posedge wb_rst)
 if (wb_rst)
-    wb_ack_o <= 1'b0;
+    wbs_ack_o <= 1'b0;
 else
-    if (wb_cti_i=3'b000 | wb_cti_i=3'b111)
-        wb_ack_o <= wb_stb_i & wb_cyc_i & !wb_ack_o;
+    if (wbs_cti_i==3'b000 | wbs_cti_i==3'b111)
+        wbs_ack_o <= wbs_stb_i & wbs_cyc_i & !wbs_ack_o;
     else
-        wb_ack_o <= wb_stb_i & wb_cyc_i;
+        wbs_ack_o <= wbs_stb_i & wbs_cyc_i;
+
 endmodule
 `endif
 
