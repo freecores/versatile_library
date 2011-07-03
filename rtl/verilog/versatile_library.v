@@ -4703,7 +4703,7 @@ input [bw-1:0] wb_bte_i;
 input [sw-1:0] wb_sel_i;
 input [nr_of_ports-1:0] wb_we_i, wb_stb_i, wb_cyc_i;
 output [dw-1:0] wb_dat_o;
-output wb_ack_o;
+output [nr_of_ports-1:0] wb_ack_o;
 input wb_clk, wb_rst;
 
 wire [sw-1:0] cke;
