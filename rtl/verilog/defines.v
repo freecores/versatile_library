@@ -97,6 +97,15 @@
 `endif
 `endif
 
+`ifdef WB_B3_RAM_BE
+`ifndef WB3_ARBITER_TYPE1
+`define WB3_ARBITER_TYPE1
+`endif
+`ifndef RAM_BE
+`define RAM_BE
+`endif
+`endif
+
 `ifdef WB3_ARBITER_TYPE1
 `ifndef SPR
 `define SPR
@@ -232,14 +241,5 @@
 `ifdef REG_FILE
 `ifndef DPRAM_1R1W
 `define DPRAM_1R1W
-`endif
-`endif
-
-`ifdef WB_B3_RAM_BE
-`ifndef WB3_ARBITER_TYPE1
-`define WB3_ARBITER_TYPE1
-`endif
-`ifndef RAM_BE
-`define RAM_BE
 `endif
 `endif
