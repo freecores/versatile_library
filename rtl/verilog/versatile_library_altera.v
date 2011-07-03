@@ -2067,7 +2067,7 @@ endgenerate
 endmodule
 // WB RAM with byte enable
 module vl_wb_b3_ram_be (
-    wb_dat_i, wb_adr_i, wb_cti_i, wb_sel_i, wb_we_i, wb_stb_i, wb_cyc_i, 
+    wb_dat_i, wb_adr_i, wb_cti_i, wb_bte_i, wb_sel_i, wb_we_i, wb_stb_i, wb_cyc_i, 
     wb_dat_o, wb_ack_o, wb_clk, wb_rst);
 parameter nr_of_ports = 3;
 parameter wb_arbiter_type = 1;
@@ -2084,6 +2084,7 @@ localparam bw = 2 * nr_of_ports;
 input [dw-1:0] wb_dat_i;
 input [aw-1:0] wb_adr_i;
 input [cw-1:0] wb_cti_i;
+input [bw-1:0] wb_bte_i;
 input [sw-1:0] wb_sel_i;
 input [nr_of_ports-1:0] wb_we_i, wb_stb_i, wb_cyc_i;
 output [dw-1:0] wb_dat_o;
@@ -2096,6 +2097,7 @@ wire [sw-1:0] cke;
 wire [dat_size-1:0] wbs_dat_i;
 wire [adr_size-1:0] wbs_adr_i;
 wire [2:0] wbs_cti_i;
+wire [1:0] wbs_bte_i;
 wire [(dat_size/8)-1:0] wbs_sel_i;
 wire  wbs_we_i, wbs_stb_i, wbs_cyc_i;
 wire [dat_size-1:0] wbs_dat_o;

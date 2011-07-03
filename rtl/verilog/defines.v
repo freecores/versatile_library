@@ -234,3 +234,12 @@
 `define DPRAM_1R1W
 `endif
 `endif
+
+`ifdef WB_B3_RAM_BE
+`ifndef WB3_ARBITER_TYPE1
+`define WB3_ARBITER_TYPE1
+`endif
+`ifndef RAM_BE
+`define RAM_BE
+`endif
+`endif
