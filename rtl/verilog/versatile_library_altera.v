@@ -304,8 +304,8 @@ module vl_dff_ce_set ( d, ce, set, q, clk, rst);
                     q <= d;
 endmodule
 module vl_spr ( sp, r, q, clk, rst);
-        parameter width = 1;
-        parameter reset_value = 0;
+        //parameter width = 1;
+        parameter reset_value = 1'b0;
         input sp, r;
         output reg q;
         input clk, rst;

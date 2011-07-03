@@ -830,8 +830,8 @@ endmodule
 module `BASE`MODULE ( sp, r, q, clk, rst);
 `undef MODULE
 
-        parameter width = 1;
-        parameter reset_value = 0;
+        //parameter width = 1;
+        parameter reset_value = 1'b0;
         
         input sp, r;
         output reg q;
