@@ -4643,7 +4643,7 @@ end
 endgenerate
 
 generate
-for (i=0;i<nr_of_ports;i=i+1) begin
+for (i=0;i<nr_of_ports;i=i+1) begin : spr0
 `define MODULE spr
     `BASE`MODULE sr0( .sp(select[i]), .r(eoc[i]), .q(state[i]), .clk(wb_clk), .rst(wb_rst));
 `undef MODULE
@@ -4700,9 +4700,7 @@ input [bw-1:0] wb_bte_i;
 input [sw-1:0] wb_sel_i;
 input [nr_of_ports-1:0] wb_we_i, wb_stb_i, wb_cyc_i;
 output [dw-1:0] wb_dat_o;
-reg [dw-1:0] wb_dat_o;
 output wb_ack_o;
-reg wb_ack_o;
 input wb_clk, wb_rst;
 
 wire [sw-1:0] cke;
