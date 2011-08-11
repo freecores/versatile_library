@@ -2176,7 +2176,7 @@ input [sw-1:0] wbs_sel_i;
 input wbs_we_i, wbs_stb_i, wbs_cyc_i;
 output [dw-1:0] wbs_dat_o;
 output wbs_ack_o;
-input wbs_clk, wbs_rst;
+input wb_clk, wb_rst;
 wire [sw-1:0] cke;
 reg wbs_ack_o;
 vl_ram_be # (
