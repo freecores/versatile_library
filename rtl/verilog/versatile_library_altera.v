@@ -1230,6 +1230,7 @@ endmodule
 module vl_ram_be ( d, adr, be, we, q, clk);
    parameter data_width = 32;
    parameter addr_width = 8;
+   parameter mem_size = 256;
    input [(data_width-1):0]      d;
    input [(addr_width-1):0] 	 adr;
    input [(addr_width/4)-1:0]    be;
@@ -1237,9 +1238,9 @@ module vl_ram_be ( d, adr, be, we, q, clk);
    output reg [(data_width-1):0] q;
    input 			 clk;
 `ifdef SYSTEMVERILOG
-   logic [data_width/8-1:0][7:0] ram[0:1<<(addr_width-2)-1];// # words = 1 << address width
+   logic [data_width/8-1:0][7:0] ram[0:mem_size-1];// # words = 1 << address width
 `else
-   reg [data_width-1:0] ram [(1<<addr_width)-1:0];
+   reg [data_width-1:0] ram [mem_size-1:0];
 `endif
    parameter memory_init = 0;
    parameter memory_file = "vl_ram.vmem";
@@ -2158,8 +2159,9 @@ module vl_wb_b3_ram_be (
     wb_dat_o, wb_ack_o, wb_clk, wb_rst);
 parameter nr_of_ports = 3;
 parameter wb_arbiter_type = 1;
-parameter adr_size = 26;
+parameter adr_size = 16;
 parameter adr_lo   = 2;
+parameter mem_size = 1<<16;
 parameter dat_size = 32;
 parameter memory_init = 1;
 parameter memory_file = "vl_ram.vmem";
@@ -2235,8 +2237,8 @@ endgenerate
 vl_ram_be # (
     .data_width(dat_size),
     .addr_width(adr_size),
-    .memory_init(1),
-    .memory_file("memory_file"))
+    .memory_init(memory_init),
+    .memory_file(memory_file))
 ram0(
     .d(wbs_dat_i),
     .adr(wbs_adr_i[adr_size-1:2]),

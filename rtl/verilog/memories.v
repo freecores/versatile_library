@@ -105,6 +105,7 @@ module `BASE`MODULE ( d, adr, be, we, q, clk);
 
    parameter data_width = 32;
    parameter addr_width = 8;
+   parameter mem_size = 256;
    input [(data_width-1):0]      d;
    input [(addr_width-1):0] 	 adr;
    input [(addr_width/4)-1:0]    be;
@@ -113,9 +114,9 @@ module `BASE`MODULE ( d, adr, be, we, q, clk);
    input 			 clk;
 
 //E2_ifdef SYSTEMVERILOG
-   logic [data_width/8-1:0][7:0] ram[0:1<<(addr_width-2)-1];// # words = 1 << address width
+   logic [data_width/8-1:0][7:0] ram[0:mem_size-1];// # words = 1 << address width
 //E2_else
-   reg [data_width-1:0] ram [(1<<addr_width)-1:0];
+   reg [data_width-1:0] ram [mem_size-1:0];
 //E2_endif
 
    parameter memory_init = 0;

@@ -582,8 +582,9 @@ module `BASE`MODULE (
 
 parameter nr_of_ports = 3;
 parameter wb_arbiter_type = 1;
-parameter adr_size = 26;
+parameter adr_size = 16;
 parameter adr_lo   = 2;
+parameter mem_size = 1<<16;
 parameter dat_size = 32;
 parameter memory_init = 1;
 parameter memory_file = "vl_ram.vmem";
@@ -669,8 +670,8 @@ endgenerate
 `BASE`MODULE # (
     .data_width(dat_size),
     .addr_width(adr_size),
-    .memory_init(1),
-    .memory_file("memory_file"))
+    .memory_init(memory_init),
+    .memory_file(memory_file))
 ram0(
 `undef MODULE
     .d(wbs_dat_i),
