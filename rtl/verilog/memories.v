@@ -104,7 +104,7 @@ module `BASE`MODULE ( d, adr, be, we, q, clk);
 `undef MODULE
 
    parameter data_width = 32;
-   parameter addr_width = 8;
+   parameter addr_width = 6;
    parameter mem_size = 256;
    input [(data_width-1):0]      d;
    input [(addr_width-1):0] 	 adr;

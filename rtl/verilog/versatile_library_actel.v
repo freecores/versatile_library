@@ -1121,7 +1121,7 @@ module vl_ram ( d, adr, we, q, clk);
 endmodule
 module vl_ram_be ( d, adr, be, we, q, clk);
    parameter data_width = 32;
-   parameter addr_width = 8;
+   parameter addr_width = 6;
    parameter mem_size = 256;
    input [(data_width-1):0]      d;
    input [(addr_width-1):0] 	 adr;
@@ -2076,7 +2076,7 @@ wire [sw-1:0] cke;
 reg wbs_ack_o;
 vl_ram_be # (
     .data_width(dat_size),
-    .addr_width(adr_size),
+    .addr_width(adr_size-2),
     .mem_size(mem_size),
     .memory_init(memory_init),
     .memory_file(memory_file))
