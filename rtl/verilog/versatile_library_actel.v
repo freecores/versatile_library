@@ -1125,7 +1125,7 @@ module vl_ram_be ( d, adr, be, we, q, clk);
    parameter mem_size = 256;
    input [(data_width-1):0]      d;
    input [(addr_width-1):0] 	 adr;
-   input [(addr_width/4)-1:0]    be;
+   input [(data_width/8)-1:0]    be;
    input 			 we;
    output reg [(data_width-1):0] q;
    input 			 clk;
