@@ -4785,11 +4785,9 @@ endmodule
 `define MODULE wb_b3_ram_be
 module `BASE`MODULE (
 `undef MODULE
-    wb_dat_i, wb_adr_i, wb_cti_i, wb_bte_i, wb_sel_i, wb_we_i, wb_stb_i, wb_cyc_i, 
-    wb_dat_o, wb_ack_o, wb_clk, wb_rst);
+    wbs_dat_i, wbs_adr_i, wbs_cti_i, wbs_bte_i, wbs_sel_i, wbs_we_i, wbs_stb_i, wbs_cyc_i, 
+    wbs_dat_o, wbs_ack_o, wb_clk, wb_rst);
 
-parameter nr_of_ports = 3;
-parameter wb_arbiter_type = 1;
 parameter adr_size = 16;
 parameter adr_lo   = 2;
 parameter mem_size = 1<<16;
@@ -4797,87 +4795,31 @@ parameter dat_size = 32;
 parameter memory_init = 1;
 parameter memory_file = "vl_ram.vmem";
 
-localparam aw = (adr_size - adr_lo) * nr_of_ports;
-localparam dw = dat_size * nr_of_ports;
-localparam sw = dat_size/8 * nr_of_ports;
-localparam cw = 3 * nr_of_ports;
-localparam bw = 2 * nr_of_ports;
+localparam aw = (adr_size - adr_lo);
+localparam dw = dat_size;
+localparam sw = dat_size/8;
+localparam cw = 3;
+localparam bw = 2;
 
 input [dw-1:0] wb_dat_i;
 input [aw-1:0] wb_adr_i;
 input [cw-1:0] wb_cti_i;
 input [bw-1:0] wb_bte_i;
 input [sw-1:0] wb_sel_i;
-input [nr_of_ports-1:0] wb_we_i, wb_stb_i, wb_cyc_i;
+input wb_we_i, wb_stb_i, wb_cyc_i;
 output [dw-1:0] wb_dat_o;
-output [nr_of_ports-1:0] wb_ack_o;
+output wb_ack_o;
 input wb_clk, wb_rst;
 
 wire [sw-1:0] cke;
 
-// local wb slave
-wire [dat_size-1:0] wbs_dat_i;
-wire [adr_size-1:0] wbs_adr_i;
-wire [2:0] wbs_cti_i;
-wire [1:0] wbs_bte_i;
-wire [(dat_size/8)-1:0] wbs_sel_i;
-wire  wbs_we_i, wbs_stb_i, wbs_cyc_i;
-wire [dat_size-1:0] wbs_dat_o;
 reg wbs_ack_o;
-
-generate
-if (nr_of_ports == 1) begin
-    assign wbs_dat_i = wb_dat_i;
-    assign wbs_adr_i = wb_adr_i;
-    assign wbs_cti_i = wb_cti_i;
-    assign wbs_sel_i = wb_sel_i;
-    assign wbs_we_i  = wb_we_i;
-    assign wbs_stb_i = wb_stb_i;
-    assign wbs_cyc_i = wb_cyc_i;
-    assign wb_dat_o  = wbs_dat_o;
-    assign wb_ack_o  = wbs_ack_o;
-end
-endgenerate
-
-generate
-if (nr_of_ports > 1 & wb_arbiter_type == 1) begin
-`define MODULE wb3_arbiter_type1
-`BASE`MODULE wb_arbiter0(
-`undef MODULE
-    .wbm_dat_o(wb_dat_i),
-    .wbm_adr_o(wb_adr_i),
-    .wbm_sel_o(wb_sel_i),
-    .wbm_cti_o(wb_cti_i),
-    .wbm_bte_o(wb_bte_i),
-    .wbm_we_o(wb_we_i),
-    .wbm_stb_o(wb_stb_i),
-    .wbm_cyc_o(wb_cyc_i),
-    .wbm_dat_i(wb_dat_o),
-    .wbm_ack_i(wb_ack_o),
-    .wbm_err_i(),
-    .wbm_rty_i(),
-    .wbs_dat_i(wbs_dat_i),
-    .wbs_adr_i(wbs_adr_i),
-    .wbs_sel_i(wbs_sel_i),
-    .wbs_cti_i(wbs_cti_i),
-    .wbs_bte_i(wbs_bte_i),
-    .wbs_we_i(wbs_we_i),
-    .wbs_stb_i(wbs_stb_i),
-    .wbs_cyc_i(wbs_cyc_i),
-    .wbs_dat_o(wbs_dat_o),
-    .wbs_ack_o(wbs_ack_o),
-    .wbs_err_o(1'b0),
-    .wbs_rty_o(1'b0),
-    .wb_clk(wb_clk),
-    .wb_rst(wb_rst)
-);
-end
-endgenerate
 
 `define MODULE ram_be
 `BASE`MODULE # (
     .data_width(dat_size),
     .addr_width(adr_size),
+    .mem_size(mem_size),
     .memory_init(memory_init),
     .memory_file(memory_file))
 ram0(
