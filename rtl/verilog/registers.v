@@ -474,3 +474,58 @@ assign q = dffs[depth];
 assign emptyflag = !(|dffs);
 endmodule
 `endif
+
+`ifdef ASYNC_REG_REQ_ACK
+`define MODULE async_reg_req_ack
+module `BASE`MODULE ( d, q, req_i, req_o, ack_i, ack_o, clk_a, rst_a, clk_b, rst_b);
+`undef MODULE
+parameter data_width = 8;
+input [data_width-1:0] d;
+output [data_width-1:0] q;
+input req_i;
+output req_o;
+input ack_i;
+output ack_o;
+input clk_a, rst_a, clk_b, rst_b;
+
+reg [3:0] reqi; // 3: last req in clk_a, 2: input dff, 1-0: sync
+wire rst;
+
+always @ (posedge clk_a or rst_a)
+if (rst_a)
+    q <= {data_width{1'b0}};
+else
+    if (req_i)
+        q <= d;
+    
+assign rst = ack_i | rst_a;
+always @ (posedge clk_a or posedge rst)
+if (rst)
+    req[2] <= 1'b0;
+else
+    req[2] <= req_i & !ack_o;
+
+always @ (posedge clk_a or posedge rst_a)
+if (rst_a)
+    req[3] <= 1'b0;
+else
+    req[3] <= req[2];
+
+always @ (posedge clk_b or posedge rst_b)
+if (rst_b)
+    req[1:0] <= 2'b00;
+else
+    if (ack_i)
+        req[1:0] <= 2'b00;
+    else
+        req[1:0] <= req[2:1];
+assign req_o = req[0];
+
+always @ (posedge clk_a or posedge rst_a)
+if (rst_a)
+    ack_o <= 1'b0;
+else
+    ack_o <= req[3] & req[2];
+
+endmodule
+`endif

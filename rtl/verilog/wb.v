@@ -40,6 +40,36 @@
 ////                                                              ////
 //////////////////////////////////////////////////////////////////////
 
+`ifdef WB_ADR_INC
+// async wb3 - wb3 bridge
+`timescale 1ns/1ns
+`define MODULE wb_adr_inc
+module `BASE`MODULE ( 
+`undef MODULE
+
+    always @ (posedge clk or posedge rst)
+	if (rst)
+           col_reg <= {col_reg_width{1'b0}};
+        else
+            case (state)
+	    `FSM_IDLE:
+	       col_reg <= col[col_reg_width-1:0];
+            `FSM_RW:
+               if (~stall)
+                  case (bte_i)
+`ifdef SDR_BEAT4
+                        beat4:  col_reg[2:0] <= col_reg[2:0] + 3'd1;
+`endif
+`ifdef SDR_BEAT8    
+                        beat8:  col_reg[3:0] <= col_reg[3:0] + 4'd1;
+`endif
+`ifdef SDR_BEAT16   
+                        beat16: col_reg[4:0] <= col_reg[4:0] + 5'd1;
+`endif
+                  endcase
+            endcase
+`endif
+
 `ifdef WB3WB3_BRIDGE
 // async wb3 - wb3 bridge
 `timescale 1ns/1ns
@@ -136,14 +166,14 @@ always @ (posedge wbs_clk or posedge wbs_rst)
 if (wbs_rst)
 	wbs <= wbs_adr;
 else
-	if ((wbs==wbs_adr) & wbs_cyc_i & wbs_stb_i & !a_fifo_full)
+	if ((wbs==wbs_adr) & wbs_cyc_i & wbs_stb_i & a_fifo_empty)
 		wbs <= wbs_data;
 	else if (wbs_eoc & wbs_ack_o)
 		wbs <= wbs_adr;
 
 // wbs FIFO
-assign a_d = (wbs==wbs_adr) ? {wbs_adr_i[31:2],wbs_we_i,wbs_bte_i,wbs_cti_i} : {wbs_dat_i,wbs_sel_i};
-assign a_wr = (wbs==wbs_adr)  ? wbs_cyc_i & wbs_stb_i & !a_fifo_full :
+assign a_d = (wbs==wbs_adr) ? {wbs_adr_i[31:2],wbs_we_i,((wbs_cti_i==3'b111) ? {2'b00,3'b000} : {wbs_bte_i,wbs_cti_i})} : {wbs_dat_i,wbs_sel_i};
+assign a_wr = (wbs==wbs_adr)  ? wbs_cyc_i & wbs_stb_i & a_fifo_empty :
               (wbs==wbs_data) ? wbs_we_i  & wbs_stb_i & !a_fifo_full :
               1'b0;
 assign a_rd = !a_fifo_empty;
@@ -272,6 +302,91 @@ endmodule
 `undef WE
 `undef BTE
 `undef CTI
+`endif
+
+`ifdef WB3AVALON_BRIDGE
+`define MODULE wb3avalon_bridge
+module `BASE`MODULE ( 
+`undef MODULE
+	// wishbone slave side
+	wbs_dat_i, wbs_adr_i, wbs_sel_i, wbs_bte_i, wbs_cti_i, wbs_we_i, wbs_cyc_i, wbs_stb_i, wbs_dat_o, wbs_ack_o, wbs_clk, wbs_rst,
+	// wishbone master side
+	readdata, readdatavalid, address, read, be, write, burstcount, writedata, waitrequest, beginbursttransfer, clk, rst);
+
+input [31:0] wbs_dat_i;
+input [31:2] wbs_adr_i;
+input [3:0]  wbs_sel_i;
+input [1:0]  wbs_bte_i;
+input [2:0]  wbs_cti_i;
+input wbs_we_i, wbs_cyc_i, wbs_stb_i;
+output [31:0] wbs_dat_o;
+output wbs_ack_o;
+input wbs_clk, wbs_rst;
+
+input [31:0] readdata;
+output [31:0] writedata;
+output [31:2] address;
+output [3:0]  be;
+output write;
+output read;
+output beginbursttransfer;
+output [3:0] burstcount;
+input readdatavalid;
+input waitrequest;
+input clk;
+input rst;
+
+wire [1:0] wbm_bte_o;
+wire [2:0] wbm_cti_o;
+wire wbm_we_o, wbm_cyc_o, wbm_stb_o, wbm_ack_i;
+reg last_cyc;
+
+always @ (posedge clk or posedge rst)
+if (rst)
+    last_cyc <= 1'b0;
+else
+    last_cyc <= wbm_cyc_o;
+
+assign beginbursttransfer = (!last_cyc & wbm_cyc_o) & wbm_cti_o==3'b010;
+assign burstcount = (wbm_bte_o==2'b01) ? 4'd4 :
+                    (wbm_bte_o==2'b10) ? 4'd8 :
+                    4'd16;
+assign write = wbm_cyc_o & wbm_stb_o &  wbm_we_o;
+assign read  = wbm_cyc_o & wbm_stb_o & !wbm_we_o;
+assign wbm_ack_i = (readdatavalid & !waitrequest) | (write & !waitrequest);
+
+`define MODULE wb3wb3_bridge
+`BASE`MODULE (
+`undef MODULE
+    // wishbone slave side
+    .wbs_dat_i(wbs_dat_i),
+    .wbs_adr_i(wbs_adr_i),
+    .wbs_sel_i(wbs_sel_i),
+    .wbs_bte_i(wbs_bte_i),
+    .wbs_cti_i(wbs_cti_i),
+    .wbs_we_i(wbs_we_i),
+    .wbs_cyc_i(wbs_cyc_i),
+    .wbs_stb_i(wbs_stb_i),
+    .wbs_dat_o(wbs_dat_o),
+    .wbs_ack_o(wbs_ack_o),
+    .wbs_clk(wbs_clk),
+    .wbs_rst(wbs_rst),
+    // wishbone master side
+    .wbm_dat_o(writedata),
+    .wbm_adr_o(adress),
+    .wbm_sel_o(be),
+    .wbm_bte_o(wbm_bte_o),
+    .wbm_cti_o(wbm_cti_o),
+    .wbm_we_o(wbm_we_o),
+    .wbm_cyc_o(wbm_cyc_o),
+    .wbm_stb_o(wbm_stb_o),
+    .wbm_dat_i(readdata),
+    .wbm_ack_i(wbm_ack_i),
+    .wbm_clk(clk),
+    .wbm_rst(rst));
+
+
+endmodule
 `endif
 
 `ifdef WB3_ARBITER_TYPE1

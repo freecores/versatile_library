@@ -41,6 +41,7 @@
 `define DPRAM_1R1W
 `define DPRAM_2R1W
 `define DPRAM_2R2W
+`define DPRAM_BE_2R2W
 `define FIFO_1R1W_FILL_LEVEL_SYNC
 `define FIFO_2R2W_SYNC_SIMPLEX
 `define FIFO_CMP_ASYNC
@@ -63,6 +64,7 @@
 `define DELAY
 `define DELAY_EMPTYFLAG
 
+`define WB3AVALON_BRIDGE
 `define WB3WB3_BRIDGE
 `define WB3_ARBITER_TYPE1
 `define WB_B3_RAM_BE

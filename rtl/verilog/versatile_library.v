@@ -41,6 +41,7 @@
 `define DPRAM_1R1W
 `define DPRAM_2R1W
 `define DPRAM_2R2W
+`define DPRAM_BE_2R2W
 `define FIFO_1R1W_FILL_LEVEL_SYNC
 `define FIFO_2R2W_SYNC_SIMPLEX
 `define FIFO_CMP_ASYNC
@@ -63,6 +64,7 @@
 `define DELAY
 `define DELAY_EMPTYFLAG
 
+`define WB3AVALON_BRIDGE
 `define WB3WB3_BRIDGE
 `define WB3_ARBITER_TYPE1
 `define WB_B3_RAM_BE
@@ -1136,6 +1138,61 @@ else
     dffs <= {d,dffs[1:depth-1]};
 assign q = dffs[depth];
 assign emptyflag = !(|dffs);
+endmodule
+`endif
+
+`ifdef ASYNC_REG_REQ_ACK
+`define MODULE async_reg_req_ack
+module `BASE`MODULE ( d, q, req_i, req_o, ack_i, ack_o, clk_a, rst_a, clk_b, rst_b);
+`undef MODULE
+parameter data_width = 8;
+input [data_width-1:0] d;
+output [data_width-1:0] q;
+input req_i;
+output req_o;
+input ack_i;
+output ack_o;
+input clk_a, rst_a, clk_b, rst_b;
+
+reg [3:0] reqi; // 3: last req in clk_a, 2: input dff, 1-0: sync
+wire rst;
+
+always @ (posedge clk_a or rst_a)
+if (rst_a)
+    q <= {data_width{1'b0}};
+else
+    if (req_i)
+        q <= d;
+    
+assign rst = ack_i | rst_a;
+always @ (posedge clk_a or posedge rst)
+if (rst)
+    req[2] <= 1'b0;
+else
+    req[2] <= req_i & !ack_o;
+
+always @ (posedge clk_a or posedge rst_a)
+if (rst_a)
+    req[3] <= 1'b0;
+else
+    req[3] <= req[2];
+
+always @ (posedge clk_b or posedge rst_b)
+if (rst_b)
+    req[1:0] <= 2'b00;
+else
+    if (ack_i)
+        req[1:0] <= 2'b00;
+    else
+        req[1:0] <= req[2:1];
+assign req_o = req[0];
+
+always @ (posedge clk_a or posedge rst_a)
+if (rst_a)
+    ack_o <= 1'b0;
+else
+    ack_o <= req[3] & req[2];
+
 endmodule
 `endif
 //////////////////////////////////////////////////////////////////////
@@ -2358,6 +2415,134 @@ module `BASE`MODULE (
        zq <= q_next == {length{1'b0}};
 endmodule
 `endif
+`ifdef CNT_LFSR_CE
+//////////////////////////////////////////////////////////////////////
+////                                                              ////
+////  Versatile counter                                           ////
+////                                                              ////
+////  Description                                                 ////
+////  Versatile counter, a reconfigurable binary, gray or LFSR    ////
+////  counter                                                     ////
+////                                                              ////
+////  To Do:                                                      ////
+////   - add LFSR with more taps                                  ////
+////                                                              ////
+////  Author(s):                                                  ////
+////      - Michael Unneback, unneback@opencores.org              ////
+////        ORSoC AB                                              ////
+////                                                              ////
+//////////////////////////////////////////////////////////////////////
+////                                                              ////
+//// Copyright (C) 2009 Authors and OPENCORES.ORG                 ////
+////                                                              ////
+//// This source file may be used and distributed without         ////
+//// restriction provided that this copyright statement is not    ////
+//// removed from the file and that any derivative work contains  ////
+//// the original copyright notice and the associated disclaimer. ////
+////                                                              ////
+//// This source file is free software; you can redistribute it   ////
+//// and/or modify it under the terms of the GNU Lesser General   ////
+//// Public License as published by the Free Software Foundation; ////
+//// either version 2.1 of the License, or (at your option) any   ////
+//// later version.                                               ////
+////                                                              ////
+//// This source is distributed in the hope that it will be       ////
+//// useful, but WITHOUT ANY WARRANTY; without even the implied   ////
+//// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR      ////
+//// PURPOSE.  See the GNU Lesser General Public License for more ////
+//// details.                                                     ////
+////                                                              ////
+//// You should have received a copy of the GNU Lesser General    ////
+//// Public License along with this source; if not, download it   ////
+//// from http://www.opencores.org/lgpl.shtml                     ////
+////                                                              ////
+//////////////////////////////////////////////////////////////////////
+
+// LFSR counter
+
+`define MODULE cnt_lfsr_ce
+module `BASE`MODULE (
+`undef MODULE
+ cke, zq, rst, clk);
+
+   parameter length = 4;
+   input cke;
+   output reg zq;
+   input rst;
+   input clk;
+
+   parameter clear_value = 0;
+   parameter set_value = 1;
+   parameter wrap_value = 0;
+   parameter level1_value = 15;
+
+   reg  [length:1] qi;
+   reg lfsr_fb;
+   wire [length:1] q_next;
+   reg [32:1] polynom;
+   integer i;
+
+   always @ (qi)
+   begin
+        case (length) 
+         2: polynom = 32'b11;                               // 0x3
+         3: polynom = 32'b110;                              // 0x6
+         4: polynom = 32'b1100;                             // 0xC
+         5: polynom = 32'b10100;                            // 0x14
+         6: polynom = 32'b110000;                           // 0x30
+         7: polynom = 32'b1100000;                          // 0x60
+         8: polynom = 32'b10111000;                         // 0xb8
+         9: polynom = 32'b100010000;                        // 0x110
+        10: polynom = 32'b1001000000;                       // 0x240
+        11: polynom = 32'b10100000000;                      // 0x500
+        12: polynom = 32'b100000101001;                     // 0x829
+        13: polynom = 32'b1000000001100;                    // 0x100C
+        14: polynom = 32'b10000000010101;                   // 0x2015
+        15: polynom = 32'b110000000000000;                  // 0x6000
+        16: polynom = 32'b1101000000001000;                 // 0xD008
+        17: polynom = 32'b10010000000000000;                // 0x12000
+        18: polynom = 32'b100000010000000000;               // 0x20400
+        19: polynom = 32'b1000000000000100011;              // 0x40023
+        20: polynom = 32'b10010000000000000000;             // 0x90000
+        21: polynom = 32'b101000000000000000000;            // 0x140000
+        22: polynom = 32'b1100000000000000000000;           // 0x300000
+        23: polynom = 32'b10000100000000000000000;          // 0x420000
+        24: polynom = 32'b111000010000000000000000;         // 0xE10000
+        25: polynom = 32'b1001000000000000000000000;        // 0x1200000
+        26: polynom = 32'b10000000000000000000100011;       // 0x2000023
+        27: polynom = 32'b100000000000000000000010011;      // 0x4000013
+        28: polynom = 32'b1100100000000000000000000000;     // 0xC800000
+        29: polynom = 32'b10100000000000000000000000000;    // 0x14000000
+        30: polynom = 32'b100000000000000000000000101001;   // 0x20000029
+        31: polynom = 32'b1001000000000000000000000000000;  // 0x48000000
+        32: polynom = 32'b10000000001000000000000000000011; // 0x80200003
+        default: polynom = 32'b0;
+        endcase
+        lfsr_fb = qi[length];
+        for (i=length-1; i>=1; i=i-1) begin
+            if (polynom[i])
+                lfsr_fb = lfsr_fb  ~^ qi[i];
+        end
+    end
+   assign q_next = (qi == wrap_value) ? {length{1'b0}} :{qi[length-1:1],lfsr_fb};
+
+   always @ (posedge clk or posedge rst)
+     if (rst)
+       qi <= {length{1'b0}};
+     else
+     if (cke)
+       qi <= q_next;
+
+
+
+   always @ (posedge clk or posedge rst)
+     if (rst)
+       zq <= 1'b1;
+     else
+     if (cke)
+       zq <= q_next == {length{1'b0}};
+endmodule
+`endif
 `ifdef CNT_LFSR_CE_ZQ
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
@@ -3467,10 +3652,11 @@ module `BASE`MODULE ( adr, q, clk);
 
    parameter data_width = 32;
    parameter addr_width = 8;
+   parameter mem_size = 1<<addr_width;
    input [(addr_width-1):0] 	 adr;
    output reg [(data_width-1):0] q;
    input 			 clk;
-   reg [data_width-1:0] rom [(1<<addr_width)-1:0];
+   reg [data_width-1:0] rom [mem_size-1:0];
    parameter memory_file = "vl_rom.vmem";
    initial
      begin
@@ -3491,12 +3677,13 @@ module `BASE`MODULE ( d, adr, we, q, clk);
 
    parameter data_width = 32;
    parameter addr_width = 8;
+   parameter mem_size = 1<<addr_width;
    input [(data_width-1):0]      d;
    input [(addr_width-1):0] 	 adr;
    input 			 we;
    output reg [(data_width-1):0] q;
    input 			 clk;
-   reg [data_width-1:0] ram [(1<<addr_width)-1:0];
+   reg [data_width-1:0] ram [mem_szie-1:0];
    parameter init = 0;
    parameter memory_file = "vl_ram.vmem";
    generate if (init) begin : init_mem
@@ -3524,7 +3711,7 @@ module `BASE`MODULE ( d, adr, be, we, q, clk);
 
    parameter data_width = 32;
    parameter addr_width = 6;
-   parameter mem_size = 256;
+   parameter mem_size = 1<<addr_width;
    input [(data_width-1):0]      d;
    input [(addr_width-1):0] 	 adr;
    input [(data_width/8)-1:0]    be;
@@ -3594,6 +3781,7 @@ module `BASE`MODULE ( d_a, adr_a, we_a, clk_a, q_b, adr_b, clk_b );
 `undef MODULE
    parameter data_width = 32;
    parameter addr_width = 8;
+   parameter mem_size = 1<<addr_width;
    input [(data_width-1):0]      d_a;
    input [(addr_width-1):0] 	 adr_a;
    input [(addr_width-1):0] 	 adr_b;
@@ -3601,7 +3789,7 @@ module `BASE`MODULE ( d_a, adr_a, we_a, clk_a, q_b, adr_b, clk_b );
    output [(data_width-1):0] 	 q_b;
    input 			 clk_a, clk_b;
    reg [(addr_width-1):0] 	 adr_b_reg;
-   reg [data_width-1:0] ram [(1<<addr_width)-1:0] `SYN;
+   reg [data_width-1:0] ram [mem_szie-1:0] `SYN;
 
    parameter init = 0;
    parameter memory_file = "vl_ram.vmem";
@@ -3630,6 +3818,7 @@ module `BASE`MODULE ( d_a, q_a, adr_a, we_a, clk_a, q_b, adr_b, clk_b );
 
    parameter data_width = 32;
    parameter addr_width = 8;
+   parameter mem_size = 1<<addr_width;
    input [(data_width-1):0]      d_a;
    input [(addr_width-1):0] 	 adr_a;
    input [(addr_width-1):0] 	 adr_b;
@@ -3638,7 +3827,7 @@ module `BASE`MODULE ( d_a, q_a, adr_a, we_a, clk_a, q_b, adr_b, clk_b );
    output reg [(data_width-1):0] q_a;
    input 			 clk_a, clk_b;
    reg [(data_width-1):0] 	 q_b;   
-   reg [data_width-1:0] ram [(1<<addr_width)-1:0] `SYN;
+   reg [data_width-1:0] ram [mem_szie-1:0] `SYN;
 
    parameter init = 0;
    parameter memory_file = "vl_ram.vmem";
@@ -3668,6 +3857,7 @@ module `BASE`MODULE ( d_a, q_a, adr_a, we_a, clk_a, d_b, q_b, adr_b, we_b, clk_b
 
    parameter data_width = 32;
    parameter addr_width = 8;
+   parameter mem_size = 1<<addr_width;
    input [(data_width-1):0]      d_a;
    input [(addr_width-1):0] 	 adr_a;
    input [(addr_width-1):0] 	 adr_b;
@@ -3678,7 +3868,7 @@ module `BASE`MODULE ( d_a, q_a, adr_a, we_a, clk_a, d_b, q_b, adr_b, we_b, clk_b
    input 			 we_b;
    input 			 clk_a, clk_b;
    reg [(data_width-1):0] 	 q_b;   
-   reg [data_width-1:0] ram [(1<<addr_width)-1:0] `SYN;
+   reg [data_width-1:0] ram [mem_size-1:0] `SYN;
 
    parameter init = 0;
    parameter memory_file = "vl_ram.vmem";
@@ -3702,6 +3892,197 @@ module `BASE`MODULE ( d_a, q_a, adr_a, we_a, clk_a, d_b, q_b, adr_b, we_b, clk_b
 	if (we_b)
 	  ram[adr_b] <= d_b;
      end
+endmodule
+`endif
+
+`ifdef DPRAM_BE_2R2W
+`define MODULE dpram_be_2r2w
+module `BASE`MODULE ( d_a, q_a, adr_a, be_a, we_a, clk_a, d_b, q_b, adr_b, be_b, we_b, clk_b );
+`undef MODULE
+
+   parameter a_data_width = 32;
+   parameter a_addr_width = 8;
+   parameter b_data_width = 64;
+   parameter b_addr_width = 7;
+   //parameter mem_size = (a_addr_width>b_addr_width) ? (1<<a_addr_width) : (1<<b_addr_width);
+   parameter mem_size = 1024;
+   input [(a_data_width-1):0]      d_a;
+   input [(a_addr_width-1):0] 	 adr_a;
+   input [(b_addr_width-1):0] 	 adr_b;
+   input [(a_data_width/4-1):0]    be_a;
+   input 			 we_a;
+   output [(b_data_width-1):0] 	 q_b;
+   input [(b_data_width-1):0] 	 d_b;
+   output reg [(a_data_width-1):0] q_a;
+   input [(b_data_width/4-1):0]    be_b;
+   input 			 we_b;
+   input 			 clk_a, clk_b;
+   reg [(b_data_width-1):0] 	 q_b;   
+
+generate
+if (a_data_width==32 & b_data_width==64) begin : inst32to64
+
+    wire [63:0] temp;
+    `define MODULE dpram_2r2w
+    `BASE`MODULE
+    # (.data_width(8), .addr_width(b_addr_width-3))
+    ram0 (
+        .d_a(d_a[7:0]),
+        .q_a(tmp[7:0]),
+        .adr_a(adr_a[a_addr_width-3-1:0]),
+        .we_a(we_a & be_a[0] & !adr_a[0]),
+        .clk_a(clk_a),
+        .d_b(d_b[7:0]),
+        .q_b(q_b[7:0]),
+        .adr_b(adr_b[b_addr_width-3-1:0]),
+        .we_b(we_b),
+        .clk_b(clk_b) );
+    `BASE`MODULE
+    # (.data_width(8), .addr_width(b_addr_width-3))
+    ram1 (
+        .d_a(d_a[7:0]),
+        .q_a(tmp[7:0]),
+        .adr_a(adr_a[a_addr_width-3-1:0]),
+        .we_a(we_a),
+        .clk_a(clk_a),
+        .d_b(d_b[7:0]),
+        .q_b(q_b[7:0]),
+        .adr_b(adr_b[b_addr_width-3-1:0]),
+        .we_b(we_b),
+        .clk_b(clk_b) );
+    `BASE`MODULE
+    # (.data_width(8), .addr_width(b_addr_width-3))
+    ram2 (
+        .d_a(d_a[15:8]),
+        .q_a(tmp[7:0]),
+        .adr_a(adr_a[a_addr_width-3-1:0]),
+        .we_a(we_a),
+        .clk_a(clk_a),
+        .d_b(d_b[7:0]),
+        .q_b(q_b[7:0]),
+        .adr_b(adr_b[b_addr_width-3-1:0]),
+        .we_b(we_b),
+        .clk_b(clk_b) );
+    `BASE`MODULE
+    # (.data_width(8), .addr_width(b_addr_width-3))
+    ram3 (
+        .d_a(d_a[15:8]),
+        .q_a(tmp[7:0]),
+        .adr_a(adr_a[a_addr_width-3-1:0]),
+        .we_a(we_a),
+        .clk_a(clk_a),
+        .d_b(d_b[7:0]),
+        .q_b(q_b[7:0]),
+        .adr_b(adr_b[b_addr_width-3-1:0]),
+        .we_b(we_b),
+        .clk_b(clk_b) );
+    `BASE`MODULE
+    # (.data_width(8), .addr_width(b_addr_width-3))
+    ram4 (
+        .d_a(d_a[23:16]),
+        .q_a(tmp[7:0]),
+        .adr_a(adr_a[a_addr_width-3-1:0]),
+        .we_a(we_a),
+        .clk_a(clk_a),
+        .d_b(d_b[7:0]),
+        .q_b(q_b[7:0]),
+        .adr_b(adr_b[b_addr_width-3-1:0]),
+        .we_b(we_b),
+        .clk_b(clk_b) );
+    `BASE`MODULE
+    # (.data_width(8), .addr_width(b_addr_width-3))
+    ram5 (
+        .d_a(d_a[23:16]),
+        .q_a(tmp[7:0]),
+        .adr_a(adr_a[a_addr_width-3-1:0]),
+        .we_a(we_a),
+        .clk_a(clk_a),
+        .d_b(d_b[7:0]),
+        .q_b(q_b[7:0]),
+        .adr_b(adr_b[b_addr_width-3-1:0]),
+        .we_b(we_b),
+        .clk_b(clk_b) );
+    `BASE`MODULE
+    # (.data_width(8), .addr_width(b_addr_width-3))
+    ram6 (
+        .d_a(d_a[31:24]),
+        .q_a(tmp[7:0]),
+        .adr_a(adr_a[a_addr_width-3-1:0]),
+        .we_a(we_a),
+        .clk_a(clk_a),
+        .d_b(d_b[7:0]),
+        .q_b(q_b[7:0]),
+        .adr_b(adr_b[b_addr_width-3-1:0]),
+        .we_b(we_b),
+        .clk_b(clk_b) );
+    `BASE`MODULE
+    # (.data_width(8), .addr_width(b_addr_width-3))
+    ram7 (
+        .d_a(d_a[31:24]),
+        .q_a(tmp[7:0]),
+        .adr_a(adr_a[a_addr_width-3-1:0]),
+        .we_a(we_a),
+        .clk_a(clk_a),
+        .d_b(d_b[7:0]),
+        .q_b(q_b[7:0]),
+        .adr_b(adr_b[b_addr_width-3-1:0]),
+        .we_b(we_b),
+        .clk_b(clk_b) );
+`undef MODULE
+/*
+   reg [7:0] ram0 [mem_size/8-1:0];
+   wire [7:0] wea, web;
+   assign wea = we_a & be_a[0];
+   assign web = we_b & be_b[0];
+   always @ (posedge clk_a)
+    if (wea)
+        ram0[adr_a] <= d_a[7:0];
+    always @ (posedge clk_a)
+        q_a[7:0] <= ram0[adr_a];
+   always @ (posedge clk_a)
+    if (web)
+        ram0[adr_b] <= d_b[7:0];
+    always @ (posedge clk_b)
+        q_b[7:0] <= ram0[adr_b];
+*/
+end
+endgenerate
+/*
+   generate for (i=0;i<addr_width/4;i=i+1) begin : be_rama
+      always @ (posedge clk_a)
+      if (we_a & be_a[i])
+        ram[adr_a][(i+1)*8-1:i*8] <= d_a[(i+1)*8-1:i*8];
+   end
+   endgenerate
+
+   always @ (posedge clk_a)
+      q_a <= ram[adr_a];
+
+   genvar i;
+   generate for (i=0;i<addr_width/4;i=i+1) begin : be_ramb
+      always @ (posedge clk_a)
+      if (we_b & be_b[i])
+        ram[adr_b][(i+1)*8-1:i*8] <= d_b[(i+1)*8-1:i*8];
+   end
+   endgenerate
+
+   always @ (posedge clk_b)
+      q_b <= ram[adr_b];
+*/
+/*
+   always @ (posedge clk_a)
+     begin 
+	q_a <= ram[adr_a];
+	if (we_a)
+	     ram[adr_a] <= d_a;
+     end 
+   always @ (posedge clk_b)
+     begin 
+	q_b <= ram[adr_b];
+	if (we_b)
+	  ram[adr_b] <= d_b;
+     end
+*/
 endmodule
 `endif
 
@@ -4248,6 +4629,36 @@ endmodule
 ////                                                              ////
 //////////////////////////////////////////////////////////////////////
 
+`ifdef WB_ADR_INC
+// async wb3 - wb3 bridge
+`timescale 1ns/1ns
+`define MODULE wb_adr_inc
+module `BASE`MODULE ( 
+`undef MODULE
+
+    always @ (posedge clk or posedge rst)
+	if (rst)
+           col_reg <= {col_reg_width{1'b0}};
+        else
+            case (state)
+	    `FSM_IDLE:
+	       col_reg <= col[col_reg_width-1:0];
+            `FSM_RW:
+               if (~stall)
+                  case (bte_i)
+`ifdef SDR_BEAT4
+                        beat4:  col_reg[2:0] <= col_reg[2:0] + 3'd1;
+`endif
+`ifdef SDR_BEAT8    
+                        beat8:  col_reg[3:0] <= col_reg[3:0] + 4'd1;
+`endif
+`ifdef SDR_BEAT16   
+                        beat16: col_reg[4:0] <= col_reg[4:0] + 5'd1;
+`endif
+                  endcase
+            endcase
+`endif
+
 `ifdef WB3WB3_BRIDGE
 // async wb3 - wb3 bridge
 `timescale 1ns/1ns
@@ -4344,14 +4755,14 @@ always @ (posedge wbs_clk or posedge wbs_rst)
 if (wbs_rst)
 	wbs <= wbs_adr;
 else
-	if ((wbs==wbs_adr) & wbs_cyc_i & wbs_stb_i & !a_fifo_full)
+	if ((wbs==wbs_adr) & wbs_cyc_i & wbs_stb_i & a_fifo_empty)
 		wbs <= wbs_data;
 	else if (wbs_eoc & wbs_ack_o)
 		wbs <= wbs_adr;
 
 // wbs FIFO
-assign a_d = (wbs==wbs_adr) ? {wbs_adr_i[31:2],wbs_we_i,wbs_bte_i,wbs_cti_i} : {wbs_dat_i,wbs_sel_i};
-assign a_wr = (wbs==wbs_adr)  ? wbs_cyc_i & wbs_stb_i & !a_fifo_full :
+assign a_d = (wbs==wbs_adr) ? {wbs_adr_i[31:2],wbs_we_i,((wbs_cti_i==3'b111) ? {2'b00,3'b000} : {wbs_bte_i,wbs_cti_i})} : {wbs_dat_i,wbs_sel_i};
+assign a_wr = (wbs==wbs_adr)  ? wbs_cyc_i & wbs_stb_i & a_fifo_empty :
               (wbs==wbs_data) ? wbs_we_i  & wbs_stb_i & !a_fifo_full :
               1'b0;
 assign a_rd = !a_fifo_empty;
@@ -4480,6 +4891,91 @@ endmodule
 `undef WE
 `undef BTE
 `undef CTI
+`endif
+
+`ifdef WB3AVALON_BRIDGE
+`define MODULE wb3avalon_bridge
+module `BASE`MODULE ( 
+`undef MODULE
+	// wishbone slave side
+	wbs_dat_i, wbs_adr_i, wbs_sel_i, wbs_bte_i, wbs_cti_i, wbs_we_i, wbs_cyc_i, wbs_stb_i, wbs_dat_o, wbs_ack_o, wbs_clk, wbs_rst,
+	// wishbone master side
+	readdata, readdatavalid, address, read, be, write, burstcount, writedata, waitrequest, beginbursttransfer, clk, rst);
+
+input [31:0] wbs_dat_i;
+input [31:2] wbs_adr_i;
+input [3:0]  wbs_sel_i;
+input [1:0]  wbs_bte_i;
+input [2:0]  wbs_cti_i;
+input wbs_we_i, wbs_cyc_i, wbs_stb_i;
+output [31:0] wbs_dat_o;
+output wbs_ack_o;
+input wbs_clk, wbs_rst;
+
+input [31:0] readdata;
+output [31:0] writedata;
+output [31:2] address;
+output [3:0]  be;
+output write;
+output read;
+output beginbursttransfer;
+output [3:0] burstcount;
+input readdatavalid;
+input waitrequest;
+input clk;
+input rst;
+
+wire [1:0] wbm_bte_o;
+wire [2:0] wbm_cti_o;
+wire wbm_we_o, wbm_cyc_o, wbm_stb_o, wbm_ack_i;
+reg last_cyc;
+
+always @ (posedge clk or posedge rst)
+if (rst)
+    last_cyc <= 1'b0;
+else
+    last_cyc <= wbm_cyc_o;
+
+assign beginbursttransfer = (!last_cyc & wbm_cyc_o) & wbm_cti_o==3'b010;
+assign burstcount = (wbm_bte_o==2'b01) ? 4'd4 :
+                    (wbm_bte_o==2'b10) ? 4'd8 :
+                    4'd16;
+assign write = wbm_cyc_o & wbm_stb_o &  wbm_we_o;
+assign read  = wbm_cyc_o & wbm_stb_o & !wbm_we_o;
+assign wbm_ack_i = (readdatavalid & !waitrequest) | (write & !waitrequest);
+
+`define MODULE wb3wb3_bridge
+`BASE`MODULE (
+`undef MODULE
+    // wishbone slave side
+    .wbs_dat_i(wbs_dat_i),
+    .wbs_adr_i(wbs_adr_i),
+    .wbs_sel_i(wbs_sel_i),
+    .wbs_bte_i(wbs_bte_i),
+    .wbs_cti_i(wbs_cti_i),
+    .wbs_we_i(wbs_we_i),
+    .wbs_cyc_i(wbs_cyc_i),
+    .wbs_stb_i(wbs_stb_i),
+    .wbs_dat_o(wbs_dat_o),
+    .wbs_ack_o(wbs_ack_o),
+    .wbs_clk(wbs_clk),
+    .wbs_rst(wbs_rst),
+    // wishbone master side
+    .wbm_dat_o(writedata),
+    .wbm_adr_o(adress),
+    .wbm_sel_o(be),
+    .wbm_bte_o(wbm_bte_o),
+    .wbm_cti_o(wbm_cti_o),
+    .wbm_we_o(wbm_we_o),
+    .wbm_cyc_o(wbm_cyc_o),
+    .wbm_stb_o(wbm_stb_o),
+    .wbm_dat_i(readdata),
+    .wbm_ack_i(wbm_ack_i),
+    .wbm_clk(clk),
+    .wbm_rst(rst));
+
+
+endmodule
 `endif
 
 `ifdef WB3_ARBITER_TYPE1

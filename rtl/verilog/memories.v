@@ -48,10 +48,11 @@ module `BASE`MODULE ( adr, q, clk);
 
    parameter data_width = 32;
    parameter addr_width = 8;
+   parameter mem_size = 1<<addr_width;
    input [(addr_width-1):0] 	 adr;
    output reg [(data_width-1):0] q;
    input 			 clk;
-   reg [data_width-1:0] rom [(1<<addr_width)-1:0];
+   reg [data_width-1:0] rom [mem_size-1:0];
    parameter memory_file = "vl_rom.vmem";
    initial
      begin
@@ -72,12 +73,13 @@ module `BASE`MODULE ( d, adr, we, q, clk);
 
    parameter data_width = 32;
    parameter addr_width = 8;
+   parameter mem_size = 1<<addr_width;
    input [(data_width-1):0]      d;
    input [(addr_width-1):0] 	 adr;
    input 			 we;
    output reg [(data_width-1):0] q;
    input 			 clk;
-   reg [data_width-1:0] ram [(1<<addr_width)-1:0];
+   reg [data_width-1:0] ram [mem_szie-1:0];
    parameter init = 0;
    parameter memory_file = "vl_ram.vmem";
    generate if (init) begin : init_mem
@@ -105,7 +107,7 @@ module `BASE`MODULE ( d, adr, be, we, q, clk);
 
    parameter data_width = 32;
    parameter addr_width = 6;
-   parameter mem_size = 256;
+   parameter mem_size = 1<<addr_width;
    input [(data_width-1):0]      d;
    input [(addr_width-1):0] 	 adr;
    input [(data_width/8)-1:0]    be;
@@ -175,6 +177,7 @@ module `BASE`MODULE ( d_a, adr_a, we_a, clk_a, q_b, adr_b, clk_b );
 `undef MODULE
    parameter data_width = 32;
    parameter addr_width = 8;
+   parameter mem_size = 1<<addr_width;
    input [(data_width-1):0]      d_a;
    input [(addr_width-1):0] 	 adr_a;
    input [(addr_width-1):0] 	 adr_b;
@@ -182,7 +185,7 @@ module `BASE`MODULE ( d_a, adr_a, we_a, clk_a, q_b, adr_b, clk_b );
    output [(data_width-1):0] 	 q_b;
    input 			 clk_a, clk_b;
    reg [(addr_width-1):0] 	 adr_b_reg;
-   reg [data_width-1:0] ram [(1<<addr_width)-1:0] `SYN;
+   reg [data_width-1:0] ram [mem_szie-1:0] `SYN;
 
    parameter init = 0;
    parameter memory_file = "vl_ram.vmem";
@@ -211,6 +214,7 @@ module `BASE`MODULE ( d_a, q_a, adr_a, we_a, clk_a, q_b, adr_b, clk_b );
 
    parameter data_width = 32;
    parameter addr_width = 8;
+   parameter mem_size = 1<<addr_width;
    input [(data_width-1):0]      d_a;
    input [(addr_width-1):0] 	 adr_a;
    input [(addr_width-1):0] 	 adr_b;
@@ -219,7 +223,7 @@ module `BASE`MODULE ( d_a, q_a, adr_a, we_a, clk_a, q_b, adr_b, clk_b );
    output reg [(data_width-1):0] q_a;
    input 			 clk_a, clk_b;
    reg [(data_width-1):0] 	 q_b;   
-   reg [data_width-1:0] ram [(1<<addr_width)-1:0] `SYN;
+   reg [data_width-1:0] ram [mem_szie-1:0] `SYN;
 
    parameter init = 0;
    parameter memory_file = "vl_ram.vmem";
@@ -249,6 +253,7 @@ module `BASE`MODULE ( d_a, q_a, adr_a, we_a, clk_a, d_b, q_b, adr_b, we_b, clk_b
 
    parameter data_width = 32;
    parameter addr_width = 8;
+   parameter mem_size = 1<<addr_width;
    input [(data_width-1):0]      d_a;
    input [(addr_width-1):0] 	 adr_a;
    input [(addr_width-1):0] 	 adr_b;
@@ -259,7 +264,7 @@ module `BASE`MODULE ( d_a, q_a, adr_a, we_a, clk_a, d_b, q_b, adr_b, we_b, clk_b
    input 			 we_b;
    input 			 clk_a, clk_b;
    reg [(data_width-1):0] 	 q_b;   
-   reg [data_width-1:0] ram [(1<<addr_width)-1:0] `SYN;
+   reg [data_width-1:0] ram [mem_size-1:0] `SYN;
 
    parameter init = 0;
    parameter memory_file = "vl_ram.vmem";
@@ -283,6 +288,197 @@ module `BASE`MODULE ( d_a, q_a, adr_a, we_a, clk_a, d_b, q_b, adr_b, we_b, clk_b
 	if (we_b)
 	  ram[adr_b] <= d_b;
      end
+endmodule
+`endif
+
+`ifdef DPRAM_BE_2R2W
+`define MODULE dpram_be_2r2w
+module `BASE`MODULE ( d_a, q_a, adr_a, be_a, we_a, clk_a, d_b, q_b, adr_b, be_b, we_b, clk_b );
+`undef MODULE
+
+   parameter a_data_width = 32;
+   parameter a_addr_width = 8;
+   parameter b_data_width = 64;
+   parameter b_addr_width = 7;
+   //parameter mem_size = (a_addr_width>b_addr_width) ? (1<<a_addr_width) : (1<<b_addr_width);
+   parameter mem_size = 1024;
+   input [(a_data_width-1):0]      d_a;
+   input [(a_addr_width-1):0] 	 adr_a;
+   input [(b_addr_width-1):0] 	 adr_b;
+   input [(a_data_width/4-1):0]    be_a;
+   input 			 we_a;
+   output [(b_data_width-1):0] 	 q_b;
+   input [(b_data_width-1):0] 	 d_b;
+   output reg [(a_data_width-1):0] q_a;
+   input [(b_data_width/4-1):0]    be_b;
+   input 			 we_b;
+   input 			 clk_a, clk_b;
+   reg [(b_data_width-1):0] 	 q_b;   
+
+generate
+if (a_data_width==32 & b_data_width==64) begin : inst32to64
+
+    wire [63:0] temp;
+    `define MODULE dpram_2r2w
+    `BASE`MODULE
+    # (.data_width(8), .addr_width(b_addr_width-3))
+    ram0 (
+        .d_a(d_a[7:0]),
+        .q_a(tmp[7:0]),
+        .adr_a(adr_a[a_addr_width-3-1:0]),
+        .we_a(we_a & be_a[0] & !adr_a[0]),
+        .clk_a(clk_a),
+        .d_b(d_b[7:0]),
+        .q_b(q_b[7:0]),
+        .adr_b(adr_b[b_addr_width-3-1:0]),
+        .we_b(we_b),
+        .clk_b(clk_b) );
+    `BASE`MODULE
+    # (.data_width(8), .addr_width(b_addr_width-3))
+    ram1 (
+        .d_a(d_a[7:0]),
+        .q_a(tmp[7:0]),
+        .adr_a(adr_a[a_addr_width-3-1:0]),
+        .we_a(we_a),
+        .clk_a(clk_a),
+        .d_b(d_b[7:0]),
+        .q_b(q_b[7:0]),
+        .adr_b(adr_b[b_addr_width-3-1:0]),
+        .we_b(we_b),
+        .clk_b(clk_b) );
+    `BASE`MODULE
+    # (.data_width(8), .addr_width(b_addr_width-3))
+    ram2 (
+        .d_a(d_a[15:8]),
+        .q_a(tmp[7:0]),
+        .adr_a(adr_a[a_addr_width-3-1:0]),
+        .we_a(we_a),
+        .clk_a(clk_a),
+        .d_b(d_b[7:0]),
+        .q_b(q_b[7:0]),
+        .adr_b(adr_b[b_addr_width-3-1:0]),
+        .we_b(we_b),
+        .clk_b(clk_b) );
+    `BASE`MODULE
+    # (.data_width(8), .addr_width(b_addr_width-3))
+    ram3 (
+        .d_a(d_a[15:8]),
+        .q_a(tmp[7:0]),
+        .adr_a(adr_a[a_addr_width-3-1:0]),
+        .we_a(we_a),
+        .clk_a(clk_a),
+        .d_b(d_b[7:0]),
+        .q_b(q_b[7:0]),
+        .adr_b(adr_b[b_addr_width-3-1:0]),
+        .we_b(we_b),
+        .clk_b(clk_b) );
+    `BASE`MODULE
+    # (.data_width(8), .addr_width(b_addr_width-3))
+    ram4 (
+        .d_a(d_a[23:16]),
+        .q_a(tmp[7:0]),
+        .adr_a(adr_a[a_addr_width-3-1:0]),
+        .we_a(we_a),
+        .clk_a(clk_a),
+        .d_b(d_b[7:0]),
+        .q_b(q_b[7:0]),
+        .adr_b(adr_b[b_addr_width-3-1:0]),
+        .we_b(we_b),
+        .clk_b(clk_b) );
+    `BASE`MODULE
+    # (.data_width(8), .addr_width(b_addr_width-3))
+    ram5 (
+        .d_a(d_a[23:16]),
+        .q_a(tmp[7:0]),
+        .adr_a(adr_a[a_addr_width-3-1:0]),
+        .we_a(we_a),
+        .clk_a(clk_a),
+        .d_b(d_b[7:0]),
+        .q_b(q_b[7:0]),
+        .adr_b(adr_b[b_addr_width-3-1:0]),
+        .we_b(we_b),
+        .clk_b(clk_b) );
+    `BASE`MODULE
+    # (.data_width(8), .addr_width(b_addr_width-3))
+    ram6 (
+        .d_a(d_a[31:24]),
+        .q_a(tmp[7:0]),
+        .adr_a(adr_a[a_addr_width-3-1:0]),
+        .we_a(we_a),
+        .clk_a(clk_a),
+        .d_b(d_b[7:0]),
+        .q_b(q_b[7:0]),
+        .adr_b(adr_b[b_addr_width-3-1:0]),
+        .we_b(we_b),
+        .clk_b(clk_b) );
+    `BASE`MODULE
+    # (.data_width(8), .addr_width(b_addr_width-3))
+    ram7 (
+        .d_a(d_a[31:24]),
+        .q_a(tmp[7:0]),
+        .adr_a(adr_a[a_addr_width-3-1:0]),
+        .we_a(we_a),
+        .clk_a(clk_a),
+        .d_b(d_b[7:0]),
+        .q_b(q_b[7:0]),
+        .adr_b(adr_b[b_addr_width-3-1:0]),
+        .we_b(we_b),
+        .clk_b(clk_b) );
+`undef MODULE
+/*
+   reg [7:0] ram0 [mem_size/8-1:0];
+   wire [7:0] wea, web;
+   assign wea = we_a & be_a[0];
+   assign web = we_b & be_b[0];
+   always @ (posedge clk_a)
+    if (wea)
+        ram0[adr_a] <= d_a[7:0];
+    always @ (posedge clk_a)
+        q_a[7:0] <= ram0[adr_a];
+   always @ (posedge clk_a)
+    if (web)
+        ram0[adr_b] <= d_b[7:0];
+    always @ (posedge clk_b)
+        q_b[7:0] <= ram0[adr_b];
+*/
+end
+endgenerate
+/*
+   generate for (i=0;i<addr_width/4;i=i+1) begin : be_rama
+      always @ (posedge clk_a)
+      if (we_a & be_a[i])
+        ram[adr_a][(i+1)*8-1:i*8] <= d_a[(i+1)*8-1:i*8];
+   end
+   endgenerate
+
+   always @ (posedge clk_a)
+      q_a <= ram[adr_a];
+
+   genvar i;
+   generate for (i=0;i<addr_width/4;i=i+1) begin : be_ramb
+      always @ (posedge clk_a)
+      if (we_b & be_b[i])
+        ram[adr_b][(i+1)*8-1:i*8] <= d_b[(i+1)*8-1:i*8];
+   end
+   endgenerate
+
+   always @ (posedge clk_b)
+      q_b <= ram[adr_b];
+*/
+/*
+   always @ (posedge clk_a)
+     begin 
+	q_a <= ram[adr_a];
+	if (we_a)
+	     ram[adr_a] <= d_a;
+     end 
+   always @ (posedge clk_b)
+     begin 
+	q_b <= ram[adr_b];
+	if (we_b)
+	  ram[adr_b] <= d_b;
+     end
+*/
 endmodule
 `endif
 
