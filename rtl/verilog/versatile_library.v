@@ -117,6 +117,12 @@
 `endif
 `endif
 
+`ifdef WB3AVALON_BRIDGE
+`ifndef WB3WB3_BRIDGE
+`define WB3WB3_BRIDGE
+`endif
+`endif
+
 `ifdef WB3WB3_BRIDGE
 `ifndef CNT_SHREG_CE_CLEAR
 `define CNT_SHREG_CE_CLEAR
