@@ -148,7 +148,7 @@ if (wbs_rst)
 	wbs_eoc <= 1'b0;
 else
 	if (wbs==wbs_adr & wbs_stb_i & !a_fifo_full)
-		wbs_eoc <= (wbs_bte_i==linear) | (wbs_cti_==3'b111);
+		wbs_eoc <= (wbs_bte_i==linear) | (wbs_cti_i==3'b111);
 	else if (wbs_eoc_alert & (a_rd | a_wr))
 		wbs_eoc <= 1'b1;
 
@@ -350,7 +350,8 @@ else
 assign beginbursttransfer = (!last_cyc & wbm_cyc_o) & wbm_cti_o==3'b010;
 assign burstcount = (wbm_bte_o==2'b01) ? 4'd4 :
                     (wbm_bte_o==2'b10) ? 4'd8 :
-                    4'd16;
+                    (wbm_bte_o==2'b11) ? 4'd16:
+                    4'd1;
 assign write = wbm_cyc_o & wbm_stb_o &  wbm_we_o;
 assign read  = wbm_cyc_o & wbm_stb_o & !wbm_we_o;
 assign wbm_ack_i = (readdatavalid & !waitrequest) | (write & !waitrequest);
@@ -373,7 +374,7 @@ assign wbm_ack_i = (readdatavalid & !waitrequest) | (write & !waitrequest);
     .wbs_rst(wbs_rst),
     // wishbone master side
     .wbm_dat_o(writedata),
-    .wbm_adr_o(adress),
+    .wbm_adr_o(address),
     .wbm_sel_o(be),
     .wbm_bte_o(wbm_bte_o),
     .wbm_cti_o(wbm_cti_o),
