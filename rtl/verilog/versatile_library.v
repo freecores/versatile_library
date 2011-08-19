@@ -4935,6 +4935,7 @@ wire [1:0] wbm_bte_o;
 wire [2:0] wbm_cti_o;
 wire wbm_we_o, wbm_cyc_o, wbm_stb_o, wbm_ack_i;
 reg last_cyc;
+reg [3:0] counter;
 
 always @ (posedge clk or posedge rst)
 if (rst)
@@ -4942,14 +4943,37 @@ if (rst)
 else
     last_cyc <= wbm_cyc_o;
 
+always @ (posedge clk or posedge rst)
+if (rst)
+    read <= 1'b0;
+else
+    if (!last_cyc & wbm_cyc_o)
+        read <= 1'b1;
+    else if (!waitrequest)
+        read <= 1'b0;
+        
 assign beginbursttransfer = (!last_cyc & wbm_cyc_o) & wbm_cti_o==3'b010;
 assign burstcount = (wbm_bte_o==2'b01) ? 4'd4 :
                     (wbm_bte_o==2'b10) ? 4'd8 :
                     (wbm_bte_o==2'b11) ? 4'd16:
                     4'd1;
-assign write = wbm_cyc_o & wbm_stb_o &  wbm_we_o;
-assign read  = wbm_cyc_o & wbm_stb_o & !wbm_we_o;
 assign wbm_ack_i = (readdatavalid & !waitrequest) | (write & !waitrequest);
+
+always @ (posedge clk or posedge rst)
+if (rst) begin
+    counter <= 4'd0;
+    write <= 1'b0;
+end else
+    if (!waitrequest & last_cyc & wbm_cyc_o) begin
+        write <= 1'b1;
+        counter <= burstcount -1;
+    end else if (waitrequest & last_cyc & wbm_cyc_o) begin
+        write <= 1'b1;
+        counter <= burstcount;
+    end else if (!waitrequst) begin
+        counter <= counter - 4'd1;
+        write <= (counter!=4'd0 & wbm_stb_o)
+    end
 
 `define MODULE wb3wb3_bridge
 `BASE`MODULE wbwb3inst (
