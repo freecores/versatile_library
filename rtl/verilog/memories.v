@@ -318,7 +318,7 @@ module `BASE`MODULE ( d_a, q_a, adr_a, be_a, we_a, clk_a, d_b, q_b, adr_b, be_b,
 generate
 if (a_data_width==32 & b_data_width==64) begin : inst32to64
 
-    wire [63:0] temp;
+    wire [63:0] tmp;
     `define MODULE dpram_2r2w
     `BASE`MODULE
     # (.data_width(8), .addr_width(b_addr_width-3))

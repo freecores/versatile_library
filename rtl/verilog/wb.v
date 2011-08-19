@@ -148,7 +148,7 @@ if (wbs_rst)
 	wbs_eoc <= 1'b0;
 else
 	if (wbs==wbs_adr & wbs_stb_i & !a_fifo_full)
-		wbs_eoc <= wbs_bte_i==linear;
+		wbs_eoc <= (wbs_bte_i==linear) | (wbs_cti_==3'b111);
 	else if (wbs_eoc_alert & (a_rd | a_wr))
 		wbs_eoc <= 1'b1;
 
@@ -310,7 +310,7 @@ module `BASE`MODULE (
 `undef MODULE
 	// wishbone slave side
 	wbs_dat_i, wbs_adr_i, wbs_sel_i, wbs_bte_i, wbs_cti_i, wbs_we_i, wbs_cyc_i, wbs_stb_i, wbs_dat_o, wbs_ack_o, wbs_clk, wbs_rst,
-	// wishbone master side
+	// avalon master side
 	readdata, readdatavalid, address, read, be, write, burstcount, writedata, waitrequest, beginbursttransfer, clk, rst);
 
 input [31:0] wbs_dat_i;
@@ -356,7 +356,7 @@ assign read  = wbm_cyc_o & wbm_stb_o & !wbm_we_o;
 assign wbm_ack_i = (readdatavalid & !waitrequest) | (write & !waitrequest);
 
 `define MODULE wb3wb3_bridge
-`BASE`MODULE (
+`BASE`MODULE wbwb3inst (
 `undef MODULE
     // wishbone slave side
     .wbs_dat_i(wbs_dat_i),
