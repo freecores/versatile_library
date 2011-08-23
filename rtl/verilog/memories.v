@@ -115,10 +115,12 @@ module `BASE`MODULE ( d, adr, be, we, q, clk);
    output reg [(data_width-1):0] q;
    input 			 clk;
 
+    
 //E2_ifdef SYSTEMVERILOG
    logic [data_width/8-1:0][7:0] ram[0:mem_size-1];// # words = 1 << address width
 //E2_else
-   reg [data_width-1:0] ram [mem_size-1:0];
+    reg [data_width-1:0] ram [mem_size-1:0];
+    wire [data_width/8-1:0] cke;
 //E2_endif
 
    parameter memory_init = 0;
@@ -148,10 +150,11 @@ end
 
 //E2_else
 
+assign cke = {data_width/8{we}} & be;
    genvar i;
-   generate for (i=0;i<addr_width/4;i=i+1) begin : be_ram
+   generate for (i=0;i<data_width/8;i=i+1) begin : be_ram
       always @ (posedge clk)
-      if (we & be[i])
+      if (cke[i])
         ram[adr][(i+1)*8-1:i*8] <= d[(i+1)*8-1:i*8];
    end
    endgenerate
@@ -160,6 +163,21 @@ end
       q <= ram[adr];
 
 //E2_endif
+
+   // Function to access RAM (for use by Verilator).
+   function [31:0] get_mem;
+      // verilator public
+      input [aw-1:0] 		addr;
+      get_mem = ram[addr];
+   endfunction // get_mem
+
+   // Function to write RAM (for use by Verilator).
+   function set_mem;
+      // verilator public
+      input [aw-1:0] 		addr;
+      input [dw-1:0] 		data;
+      ram[addr] = data;
+   endfunction // set_mem
 
 endmodule
 `endif
