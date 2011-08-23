@@ -1356,7 +1356,8 @@ module vl_ram_be ( d, adr, be, we, q, clk);
 `ifdef SYSTEMVERILOG
    logic [data_width/8-1:0][7:0] ram[0:mem_size-1];// # words = 1 << address width
 `else
-   reg [data_width-1:0] ram [mem_size-1:0];
+    reg [data_width-1:0] ram [mem_size-1:0];
+    wire [data_width/8-1:0] cke;
 `endif
    parameter memory_init = 0;
    parameter memory_file = "vl_ram.vmem";
@@ -1373,24 +1374,38 @@ module vl_ram_be ( d, adr, be, we, q, clk);
 always_ff@(posedge clk)
 begin
     if(we) begin // note: we should have a for statement to support any bus width
-        if(be[3]) ram[adr[addr_width-2:0]][3] <= d[31:24];
-        if(be[2]) ram[adr[addr_width-2:0]][2] <= d[23:16];
-        if(be[1]) ram[adr[addr_width-2:0]][1] <= d[15:8];
-        if(be[0]) ram[adr[addr_width-2:0]][0] <= d[7:0];
+        if(be[3]) ram[adr[3] <= d[31:24];
+        if(be[2]) ram[adr[2] <= d[23:16];
+        if(be[1]) ram[adr[1] <= d[15:8];
+        if(be[0]) ram[adr[0] <= d[7:0];
     end
     q <= ram[adr];
 end
 `else
+assign cke = {data_width/8{we}} & be;
    genvar i;
-   generate for (i=0;i<addr_width/4;i=i+1) begin : be_ram
+   generate for (i=0;i<data_width/8;i=i+1) begin : be_ram
       always @ (posedge clk)
-      if (we & be[i])
+      if (cke[i])
         ram[adr][(i+1)*8-1:i*8] <= d[(i+1)*8-1:i*8];
    end
    endgenerate
    always @ (posedge clk)
       q <= ram[adr];
 `endif
+   // Function to access RAM (for use by Verilator).
+   function [31:0] get_mem;
+      // verilator public
+      input [aw-1:0] 		addr;
+      get_mem = ram[addr];
+   endfunction // get_mem
+   // Function to write RAM (for use by Verilator).
+   function set_mem;
+      // verilator public
+      input [aw-1:0] 		addr;
+      input [dw-1:0] 		data;
+      ram[addr] = data;
+   endfunction // set_mem
 endmodule
 module vl_dpram_1r1w ( d_a, adr_a, we_a, clk_a, q_b, adr_b, clk_b );
    parameter data_width = 32;
@@ -2037,10 +2052,10 @@ endmodule
 //////////////////////////////////////////////////////////////////////
 // async wb3 - wb3 bridge
 `timescale 1ns/1ns
-module vl_wb_adr_inc ( cyc_i, stb_i, cti_i, bte_i, adr_i, ack_o, adr_o, clk, rst);
+module vl_wb_adr_inc ( cyc_i, stb_i, cti_i, bte_i, adr_i, we_i, ack_o, adr_o, clk, rst);
 parameter adr_width = 10;
 parameter max_burst_width = 4;
-input cyc_i, stb_i;
+input cyc_i, stb_i, we_i;
 input [2:0] cti_i;
 input [1:0] bte_i;
 input [adr_width-1:0] adr_i;
@@ -2073,7 +2088,9 @@ end else begin
                       (cyc_i & !stb_i) ? ws :
                       cyc;
     assign to_adr = (last_cycle==idle | last_cycle==eoc) ? adr_i[max_burst_width-1:0] : adr[max_burst_width-1:0];
-    assign adr_o[max_burst_width-1:0] = (last_cycle==idle | last_cycle==eoc) ? adr_i[max_burst_width-1:0] : adr[max_burst_width-1:0];
+    assign adr_o[max_burst_width-1:0] = (we_i) ? adr_i[max_burst_width-1:0] :
+                                        (last_cycle==idle | last_cycle==eoc) ? adr_i[max_burst_width-1:0] :
+                                        adr[max_burst_width-1:0];
     assign ack_o = last_cycle == cyc;
 end
 endgenerate
@@ -2318,6 +2335,7 @@ module vl_wb3avalon_bridge (
 	wbs_dat_i, wbs_adr_i, wbs_sel_i, wbs_bte_i, wbs_cti_i, wbs_we_i, wbs_cyc_i, wbs_stb_i, wbs_dat_o, wbs_ack_o, wbs_clk, wbs_rst,
 	// avalon master side
 	readdata, readdatavalid, address, read, be, write, burstcount, writedata, waitrequest, beginbursttransfer, clk, rst);
+parameter linewrapburst = 1'b0;
 input [31:0] wbs_dat_i;
 input [31:2] wbs_adr_i;
 input [3:0]  wbs_sel_i;
@@ -2373,7 +2391,7 @@ if (rst) begin
 end else
     if (wbm_we_o) begin
         if (!waitrequest & !last_cyc & wbm_cyc_o) begin
-            counter <= burstcount -1;
+            counter <= burstcount -4'd1;
         end else if (waitrequest & !last_cyc & wbm_cyc_o) begin
             counter <= burstcount;
         end else if (!waitrequest & wbm_stb_o) begin
@@ -2642,13 +2660,12 @@ module vl_wb_b3_ram_be (
     wbs_dat_i, wbs_adr_i, wbs_cti_i, wbs_bte_i, wbs_sel_i, wbs_we_i, wbs_stb_i, wbs_cyc_i, 
     wbs_dat_o, wbs_ack_o, wb_clk, wb_rst);
 parameter adr_size = 16;
-parameter adr_lo   = 2;
-parameter mem_size = 1<<16;
+parameter mem_size = 1<<adr_size;
 parameter dat_size = 32;
 parameter max_burst_width = 4;
 parameter memory_init = 1;
 parameter memory_file = "vl_ram.vmem";
-localparam aw = (adr_size - adr_lo);
+localparam aw = (adr_size);
 localparam dw = dat_size;
 localparam sw = dat_size/8;
 localparam cw = 3;
@@ -2662,7 +2679,6 @@ input wbs_we_i, wbs_stb_i, wbs_cyc_i;
 output [dw-1:0] wbs_dat_o;
 output wbs_ack_o;
 input wb_clk, wb_rst;
-reg wbs_ack_o;
 wire [aw-1:0] adr;
 vl_ram_be # (
     .data_width(dat_size),
@@ -2674,7 +2690,7 @@ ram0(
     .d(wbs_dat_i),
     .adr(adr),
     .be(wbs_sel_i),
-    .we(wbs_we_i),
+    .we(wbs_we_i & wb_ack_o),
     .q(wbs_dat_o),
     .clk(wb_clk)
 );
@@ -2684,6 +2700,7 @@ vl_wb_adr_inc # ( .adr_width(aw), .max_burst_width(max_burst_width)) adr_inc0 (
     .cti_i(wbs_cti_i),
     .bte_i(wbs_bte_i),
     .adr_i(wbs_adr_i),
+    .we_i(wbs_we_i),
     .ack_o(wbs_ack_o),
     .adr_o(adr),
     .clk(wb_clk),
