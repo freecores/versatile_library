@@ -839,7 +839,7 @@ ram0(
     .d(wbs_dat_i),
     .adr(adr),
     .be(wbs_sel_i),
-    .we(wbs_we_i & wb_ack_o),
+    .we(wbs_we_i & wbs_ack_o),
     .q(wbs_dat_o),
     .clk(wb_clk)
 );

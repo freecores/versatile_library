@@ -3751,10 +3751,10 @@ module `BASE`MODULE ( d, adr, be, we, q, clk);
 always_ff@(posedge clk)
 begin
     if(we) begin // note: we should have a for statement to support any bus width
-        if(be[3]) ram[adr[3] <= d[31:24];
-        if(be[2]) ram[adr[2] <= d[23:16];
-        if(be[1]) ram[adr[1] <= d[15:8];
-        if(be[0]) ram[adr[0] <= d[7:0];
+        if(be[3]) ram[adr][3] <= d[31:24];
+        if(be[2]) ram[adr][2] <= d[23:16];
+        if(be[1]) ram[adr][1] <= d[15:8];
+        if(be[0]) ram[adr][0] <= d[7:0];
     end
     q <= ram[adr];
 end
@@ -5465,7 +5465,7 @@ ram0(
     .d(wbs_dat_i),
     .adr(adr),
     .be(wbs_sel_i),
-    .we(wbs_we_i & wb_ack_o),
+    .we(wbs_we_i & wbs_ack_o),
     .q(wbs_dat_o),
     .clk(wb_clk)
 );
