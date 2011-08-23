@@ -67,6 +67,7 @@
 `define WB3AVALON_BRIDGE
 `define WB3WB3_BRIDGE
 `define WB3_ARBITER_TYPE1
+`define WB_ADR_INC
 `define WB_B3_RAM_BE
 `define WB_B4_RAM_BE
 `define WB_B4_ROM
@@ -100,8 +101,8 @@
 `endif
 
 `ifdef WB_B3_RAM_BE
-`ifndef WB3_ARBITER_TYPE1
-`define WB3_ARBITER_TYPE1
+`ifndef WB_ADR_INC
+`define WB_ADR_INC
 `endif
 `ifndef RAM_BE
 `define RAM_BE

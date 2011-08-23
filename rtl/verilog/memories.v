@@ -291,6 +291,18 @@ module `BASE`MODULE ( d_a, q_a, adr_a, we_a, clk_a, d_b, q_b, adr_b, we_b, clk_b
 endmodule
 `endif
 
+`ifdef DPRAM_MIXED_WIDTH_2R2W
+`define MODULE dpram_mixed_width_2r2w
+module `BASE`MODULE ( d_a, q_a, adr_a, be_a, we_a, clk_a, d_b, q_b, adr_b, be_b, we_b, clk_b );
+`undef MODULE
+   parameter data_width = 32;
+   parameter addr_width = 8;
+   parameter data_width_ratio = 2;
+   parameter b_data_width = data_width * data_width_ratio;
+   parameter b_addr_width = addr_width ;
+endmodule
+`endif
+
 `ifdef DPRAM_BE_2R2W
 `define MODULE dpram_be_2r2w
 module `BASE`MODULE ( d_a, q_a, adr_a, be_a, we_a, clk_a, d_b, q_b, adr_b, be_b, we_b, clk_b );

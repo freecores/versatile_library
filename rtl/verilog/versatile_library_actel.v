@@ -1932,6 +1932,97 @@ endmodule
 //////////////////////////////////////////////////////////////////////
 // async wb3 - wb3 bridge
 `timescale 1ns/1ns
+module vl_wb_adr_inc ( cyc_i, stb_i, cti_i, bte_i, adr_i, ack_o, adr_o, clk, rst);
+parameter adr_width = 10;
+parameter max_burst_width = 4;
+input cyc_i, stb_i;
+input [2:0] cti_i;
+input [1:0] bte_i;
+input [adr_width-1:0] adr_i;
+output [adr_width-1:0] adr_o;
+output ack_o;
+input clk, rst;
+reg [adr_width-1:0] adr;
+generate
+if (max_burst_width==0) begin : inst_0   
+    reg ack_o;
+    assign adr_o = adr_i;
+    always @ (posedge clk or posedge rst)
+    if (rst)
+        ack_o <= 1'b0;
+    else
+        ack_o <= cyc_i & stb_i & !ack_o;
+end else begin
+    wire [max_burst_width-1:0] to_adr;
+    reg [1:0] last_cycle;
+    localparam idle = 2'b00;
+    localparam cyc  = 2'b01;
+    localparam ws   = 2'b10;
+    localparam eoc  = 2'b11;
+    always @ (posedge clk or posedge rst)
+    if (rst)
+        last_cycle <= idle;
+    else
+        last_cycle <= (!cyc_i) ? idle :
+                      (cyc_i & ack_o & (cti_i==3'b000 | cti_i==3'b111)) ? eoc :
+                      (cyc_i & !stb_i) ? ws :
+                      cyc;
+    assign to_adr = (last_cycle==idle | last_cycle==eoc) ? adr_i[max_burst_width-1:0] : adr[max_burst_width-1:0];
+    assign adr_o[max_burst_width-1:0] = (last_cycle==idle | last_cycle==eoc) ? adr_i[max_burst_width-1:0] : adr[max_burst_width-1:0];
+    assign ack_o = last_cycle == cyc;
+end
+endgenerate
+generate
+if (max_burst_width==2) begin : inst_2
+    always @ (posedge clk or posedge rst)
+    if (rst)
+        adr <= 2'h0;
+    else
+        if (cyc_i & stb_i)
+            adr[1:0] <= to_adr[1:0] + 2'd1;
+        else
+            adr <= to_adr[1:0];
+end
+endgenerate
+generate
+if (max_burst_width==3) begin : inst_3    
+    always @ (posedge clk or posedge rst)
+    if (rst)
+        adr <= 3'h0;
+    else
+        if (cyc_i & stb_i)
+            case (bte_i)
+            2'b01: adr[2:0] <= {to_adr[2],to_adr[1:0] + 2'd1};
+            default: adr[3:0] <= to_adr[2:0] + 3'd1;
+            endcase
+        else
+            adr <= to_adr[2:0];
+end
+endgenerate
+generate
+if (max_burst_width==4) begin : inst_4    
+    always @ (posedge clk or posedge rst)
+    if (rst)
+        adr <= 4'h0;
+    else
+        if (cyc_i & stb_i)
+            case (bte_i)
+            2'b01: adr[3:0] <= {to_adr[3:2],to_adr[1:0] + 2'd1};
+            2'b10: adr[3:0] <= {to_adr[3],to_adr[2:0] + 3'd1};
+            default: adr[3:0] <= to_adr + 4'd1;
+            endcase
+        else
+            adr <= to_adr[3:0];
+end
+endgenerate
+generate
+if (adr_width > max_burst_width) begin : pass_through
+    assign adr_o[adr_width-1:max_burst_width] = adr_i[adr_width-1:max_burst_width];
+end
+endgenerate
+endmodule
+// async wb3 - wb3 bridge
+`timescale 1ns/1ns
 module vl_wb3wb3_bridge ( 
 	// wishbone slave side
 	wbs_dat_i, wbs_adr_i, wbs_sel_i, wbs_bte_i, wbs_cti_i, wbs_we_i, wbs_cyc_i, wbs_stb_i, wbs_dat_o, wbs_ack_o, wbs_clk, wbs_rst,
@@ -2127,7 +2218,9 @@ input [31:2] wbs_adr_i;
 input [3:0]  wbs_sel_i;
 input [1:0]  wbs_bte_i;
 input [2:0]  wbs_cti_i;
-input wbs_we_i, wbs_cyc_i, wbs_stb_i;
+input wbs_we_i;
+input wbs_cyc_i;
+input wbs_stb_i;
 output [31:0] wbs_dat_o;
 output wbs_ack_o;
 input wbs_clk, wbs_rst;
@@ -2447,6 +2540,7 @@ parameter adr_size = 16;
 parameter adr_lo   = 2;
 parameter mem_size = 1<<16;
 parameter dat_size = 32;
+parameter max_burst_width = 4;
 parameter memory_init = 1;
 parameter memory_file = "vl_ram.vmem";
 localparam aw = (adr_size - adr_lo);
@@ -2463,30 +2557,32 @@ input wbs_we_i, wbs_stb_i, wbs_cyc_i;
 output [dw-1:0] wbs_dat_o;
 output wbs_ack_o;
 input wb_clk, wb_rst;
-wire [sw-1:0] cke;
 reg wbs_ack_o;
+wire [aw-1:0] adr;
 vl_ram_be # (
     .data_width(dat_size),
-    .addr_width(adr_size-2),
+    .addr_width(aw),
     .mem_size(mem_size),
     .memory_init(memory_init),
     .memory_file(memory_file))
 ram0(
     .d(wbs_dat_i),
-    .adr(wbs_adr_i[adr_size-1:2]),
+    .adr(adr),
     .be(wbs_sel_i),
     .we(wbs_we_i),
     .q(wbs_dat_o),
     .clk(wb_clk)
 );
-always @ (posedge wb_clk or posedge wb_rst)
-if (wb_rst)
-    wbs_ack_o <= 1'b0;
-else
-    if (wbs_cti_i==3'b000 | wbs_cti_i==3'b111)
-        wbs_ack_o <= wbs_stb_i & wbs_cyc_i & !wbs_ack_o;
-    else
-        wbs_ack_o <= wbs_stb_i & wbs_cyc_i;
+vl_wb_adr_inc # ( .adr_width(aw), .max_burst_width(max_burst_width)) adr_inc0 (
+    .cyc_i(wbs_cyc_i),
+    .stb_i(wbs_stb_i),
+    .cti_i(wbs_cti_i),
+    .bte_i(wbs_bte_i),
+    .adr_i(wbs_adr_i),
+    .ack_o(wbs_ack_o),
+    .adr_o(adr),
+    .clk(wb_clk),
+    .rst(wb_rst));
 endmodule
 // WB RAM with byte enable
 module vl_wb_b4_ram_be (
