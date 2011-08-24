@@ -3713,7 +3713,7 @@ endmodule
 
 `ifdef RAM_BE
 `define MODULE ram_be
-module `BASE`MODULE ( d, adr, be, we, q, clk);
+module `BASE`MODULE ( d, adr, be, re, we, q, clk);
 `undef MODULE
 
    parameter data_width = 32;
@@ -3722,6 +3722,7 @@ module `BASE`MODULE ( d, adr, be, we, q, clk);
    input [(data_width-1):0]      d;
    input [(addr_width-1):0] 	 adr;
    input [(data_width/8)-1:0]    be;
+   input 			 re;
    input 			 we;
    output reg [(data_width-1):0] q;
    input 			 clk;
@@ -3756,7 +3757,8 @@ begin
         if(be[1]) ram[adr][1] <= d[15:8];
         if(be[0]) ram[adr][0] <= d[7:0];
     end
-    q <= ram[adr];
+    if (re)
+        q <= ram[adr];
 end
 
 `else
@@ -3771,6 +3773,7 @@ assign cke = {data_width/8{we}} & be;
    endgenerate
 
    always @ (posedge clk)
+    if (re)
       q <= ram[adr];
 
 `endif
@@ -3778,15 +3781,15 @@ assign cke = {data_width/8{we}} & be;
    // Function to access RAM (for use by Verilator).
    function [31:0] get_mem;
       // verilator public
-      input [aw-1:0] 		addr;
+      input [addr_width-1:0] 		addr;
       get_mem = ram[addr];
    endfunction // get_mem
 
    // Function to write RAM (for use by Verilator).
    function set_mem;
       // verilator public
-      input [aw-1:0] 		addr;
-      input [dw-1:0] 		data;
+      input [addr_width-1:0] 		addr;
+      input [data_width-1:0] 		data;
       ram[addr] = data;
    endfunction // set_mem
 
@@ -4683,7 +4686,8 @@ output ack_o;
 input clk, rst;
 
 reg [adr_width-1:0] adr;
-    
+wire [max_burst_width-1:0] to_adr;
+
 generate
 if (max_burst_width==0) begin : inst_0   
     reg ack_o;
@@ -4694,8 +4698,6 @@ if (max_burst_width==0) begin : inst_0
     else
         ack_o <= cyc_i & stb_i & !ack_o;
 end else begin
-
-    wire [max_burst_width-1:0] to_adr;
 
     reg [1:0] last_cycle;
     localparam idle = 2'b00;
@@ -4714,7 +4716,7 @@ end else begin
     assign adr_o[max_burst_width-1:0] = (we_i) ? adr_i[max_burst_width-1:0] :
                                         (last_cycle==idle | last_cycle==eoc) ? adr_i[max_burst_width-1:0] :
                                         adr[max_burst_width-1:0];
-    assign ack_o = last_cycle == cyc;
+    assign ack_o = (last_cycle==cyc | last_cycle==ws) & stb_i;
 end
 endgenerate
 
@@ -5465,6 +5467,7 @@ ram0(
     .d(wbs_dat_i),
     .adr(adr),
     .be(wbs_sel_i),
+    .re(wbs_stb_i),
     .we(wbs_we_i & wbs_ack_o),
     .q(wbs_dat_o),
     .clk(wb_clk)

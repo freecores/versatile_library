@@ -57,7 +57,8 @@ output ack_o;
 input clk, rst;
 
 reg [adr_width-1:0] adr;
-    
+wire [max_burst_width-1:0] to_adr;
+
 generate
 if (max_burst_width==0) begin : inst_0   
     reg ack_o;
@@ -68,8 +69,6 @@ if (max_burst_width==0) begin : inst_0
     else
         ack_o <= cyc_i & stb_i & !ack_o;
 end else begin
-
-    wire [max_burst_width-1:0] to_adr;
 
     reg [1:0] last_cycle;
     localparam idle = 2'b00;
@@ -88,7 +87,7 @@ end else begin
     assign adr_o[max_burst_width-1:0] = (we_i) ? adr_i[max_burst_width-1:0] :
                                         (last_cycle==idle | last_cycle==eoc) ? adr_i[max_burst_width-1:0] :
                                         adr[max_burst_width-1:0];
-    assign ack_o = last_cycle == cyc;
+    assign ack_o = (last_cycle==cyc | last_cycle==ws) & stb_i;
 end
 endgenerate
 
@@ -839,6 +838,7 @@ ram0(
     .d(wbs_dat_i),
     .adr(adr),
     .be(wbs_sel_i),
+    .re(wbs_stb_i),
     .we(wbs_we_i & wbs_ack_o),
     .q(wbs_dat_o),
     .clk(wb_clk)
