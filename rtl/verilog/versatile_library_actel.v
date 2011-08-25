@@ -1235,14 +1235,13 @@ module vl_ram ( d, adr, we, q, clk);
    q <= ram[adr];
    end
 endmodule
-module vl_ram_be ( d, adr, be, re, we, q, clk);
+module vl_ram_be ( d, adr, be, we, q, clk);
    parameter data_width = 32;
    parameter addr_width = 6;
    parameter mem_size = 1<<addr_width;
    input [(data_width-1):0]      d;
    input [(addr_width-1):0] 	 adr;
    input [(data_width/8)-1:0]    be;
-   input 			 re;
    input 			 we;
    output reg [(data_width-1):0] q;
    input 			 clk;
@@ -1272,7 +1271,6 @@ begin
         if(be[1]) ram[adr][1] <= d[15:8];
         if(be[0]) ram[adr][0] <= d[7:0];
     end
-    if (re)
         q <= ram[adr];
 end
 `else
@@ -1285,7 +1283,6 @@ assign cke = {data_width/8{we}} & be;
    end
    endgenerate
    always @ (posedge clk)
-    if (re)
       q <= ram[adr];
 `endif
    // Function to access RAM (for use by Verilator).
@@ -1399,185 +1396,60 @@ module vl_dpram_2r2w ( d_a, q_a, adr_a, we_a, clk_a, d_b, q_b, adr_b, we_b, clk_
 	  ram[adr_b] <= d_b;
      end
 endmodule
-module vl_dpram_be_2r2w ( d_a, q_a, adr_a, be_a, we_a, clk_a, d_b, q_b, adr_b, be_b, we_b, clk_b );
+module vl_dpram_be_2r2w ( d_a, q_a, adr_a, be_a, re_a, we_a, clk_a, d_b, q_b, adr_b, re_b, we_b, clk_b );
    parameter a_data_width = 32;
    parameter a_addr_width = 8;
-   parameter b_data_width = 64;
-   parameter b_addr_width = 7;
-   //parameter mem_size = (a_addr_width>b_addr_width) ? (1<<a_addr_width) : (1<<b_addr_width);
-   parameter mem_size = 1024;
+   parameter b_data_width = 32;
+   localparam b_addr_width = a_data_width * a_addr_width / b_data_width;
+   parameter mem_size = (a_addr_width>b_addr_width) ? (1<<a_addr_width) : (1<<b_addr_width);
    input [(a_data_width-1):0]      d_a;
-   input [(a_addr_width-1):0] 	 adr_a;
-   input [(b_addr_width-1):0] 	 adr_b;
-   input [(a_data_width/4-1):0]    be_a;
-   input 			 we_a;
-   output [(b_data_width-1):0] 	 q_b;
-   input [(b_data_width-1):0] 	 d_b;
+   input [(a_addr_width-1):0] 	   adr_a;
+   input [(a_data_width/8-1):0]    be_a;
+   input 			   re_a;
+   input 			   we_a;
    output reg [(a_data_width-1):0] q_a;
-   input [(b_data_width/4-1):0]    be_b;
-   input 			 we_b;
-   input 			 clk_a, clk_b;
-   reg [(b_data_width-1):0] 	 q_b;   
+   input [(b_data_width-1):0] 	   d_b;
+   input [(b_addr_width-1):0] 	   adr_b;
+   input 			   re_b,we_b;
+   output [(b_data_width-1):0] 	   q_b;
+   input 			   clk_a, clk_b;
+`ifdef SYSTEMVERILOG
+// use a multi-dimensional packed array
+//to model individual bytes within the word
 generate
-if (a_data_width==32 & b_data_width==64) begin : inst32to64
-    wire [63:0] tmp;
-    vl_dpram_2r2w
-    # (.data_width(8), .addr_width(b_addr_width-3))
-    ram0 (
-        .d_a(d_a[7:0]),
-        .q_a(tmp[7:0]),
-        .adr_a(adr_a[a_addr_width-3-1:0]),
-        .we_a(we_a & be_a[0] & !adr_a[0]),
-        .clk_a(clk_a),
-        .d_b(d_b[7:0]),
-        .q_b(q_b[7:0]),
-        .adr_b(adr_b[b_addr_width-3-1:0]),
-        .we_b(we_b),
-        .clk_b(clk_b) );
-    vl_dpram_2r2w
-    # (.data_width(8), .addr_width(b_addr_width-3))
-    ram1 (
-        .d_a(d_a[7:0]),
-        .q_a(tmp[7:0]),
-        .adr_a(adr_a[a_addr_width-3-1:0]),
-        .we_a(we_a),
-        .clk_a(clk_a),
-        .d_b(d_b[7:0]),
-        .q_b(q_b[7:0]),
-        .adr_b(adr_b[b_addr_width-3-1:0]),
-        .we_b(we_b),
-        .clk_b(clk_b) );
-    vl_dpram_2r2w
-    # (.data_width(8), .addr_width(b_addr_width-3))
-    ram2 (
-        .d_a(d_a[15:8]),
-        .q_a(tmp[7:0]),
-        .adr_a(adr_a[a_addr_width-3-1:0]),
-        .we_a(we_a),
-        .clk_a(clk_a),
-        .d_b(d_b[7:0]),
-        .q_b(q_b[7:0]),
-        .adr_b(adr_b[b_addr_width-3-1:0]),
-        .we_b(we_b),
-        .clk_b(clk_b) );
-    vl_dpram_2r2w
-    # (.data_width(8), .addr_width(b_addr_width-3))
-    ram3 (
-        .d_a(d_a[15:8]),
-        .q_a(tmp[7:0]),
-        .adr_a(adr_a[a_addr_width-3-1:0]),
-        .we_a(we_a),
-        .clk_a(clk_a),
-        .d_b(d_b[7:0]),
-        .q_b(q_b[7:0]),
-        .adr_b(adr_b[b_addr_width-3-1:0]),
-        .we_b(we_b),
-        .clk_b(clk_b) );
-    vl_dpram_2r2w
-    # (.data_width(8), .addr_width(b_addr_width-3))
-    ram4 (
-        .d_a(d_a[23:16]),
-        .q_a(tmp[7:0]),
-        .adr_a(adr_a[a_addr_width-3-1:0]),
-        .we_a(we_a),
-        .clk_a(clk_a),
-        .d_b(d_b[7:0]),
-        .q_b(q_b[7:0]),
-        .adr_b(adr_b[b_addr_width-3-1:0]),
-        .we_b(we_b),
-        .clk_b(clk_b) );
-    vl_dpram_2r2w
-    # (.data_width(8), .addr_width(b_addr_width-3))
-    ram5 (
-        .d_a(d_a[23:16]),
-        .q_a(tmp[7:0]),
-        .adr_a(adr_a[a_addr_width-3-1:0]),
-        .we_a(we_a),
-        .clk_a(clk_a),
-        .d_b(d_b[7:0]),
-        .q_b(q_b[7:0]),
-        .adr_b(adr_b[b_addr_width-3-1:0]),
-        .we_b(we_b),
-        .clk_b(clk_b) );
-    vl_dpram_2r2w
-    # (.data_width(8), .addr_width(b_addr_width-3))
-    ram6 (
-        .d_a(d_a[31:24]),
-        .q_a(tmp[7:0]),
-        .adr_a(adr_a[a_addr_width-3-1:0]),
-        .we_a(we_a),
-        .clk_a(clk_a),
-        .d_b(d_b[7:0]),
-        .q_b(q_b[7:0]),
-        .adr_b(adr_b[b_addr_width-3-1:0]),
-        .we_b(we_b),
-        .clk_b(clk_b) );
-    vl_dpram_2r2w
-    # (.data_width(8), .addr_width(b_addr_width-3))
-    ram7 (
-        .d_a(d_a[31:24]),
-        .q_a(tmp[7:0]),
-        .adr_a(adr_a[a_addr_width-3-1:0]),
-        .we_a(we_a),
-        .clk_a(clk_a),
-        .d_b(d_b[7:0]),
-        .q_b(q_b[7:0]),
-        .adr_b(adr_b[b_addr_width-3-1:0]),
-        .we_b(we_b),
-        .clk_b(clk_b) );
-/*
-   reg [7:0] ram0 [mem_size/8-1:0];
-   wire [7:0] wea, web;
-   assign wea = we_a & be_a[0];
-   assign web = we_b & be_b[0];
-   always @ (posedge clk_a)
-    if (wea)
-        ram0[adr_a] <= d_a[7:0];
-    always @ (posedge clk_a)
-        q_a[7:0] <= ram0[adr_a];
-   always @ (posedge clk_a)
-    if (web)
-        ram0[adr_b] <= d_b[7:0];
-    always @ (posedge clk_b)
-        q_b[7:0] <= ram0[adr_b];
-*/
+if (a_data_width==32 & b_data_width==32) begin : dpram_3232
+   logic [3:0][7:0] ram [0:mem_size-1];
+    reg [a_addr_width-1:0] rd_adr_a;
+    reg [b_addr_width-1:0] rd_adr_b;
+    always_ff@(posedge clk_a)
+    begin
+        if(we_a) begin
+            if(be_a[3]) ram[adr_a][3] <= d_a[31:24];
+            if(be_a[2]) ram[adr_a][2] <= d_a[23:16];
+            if(be_a[1]) ram[adr_a][1] <= d_a[15:8];
+            if(be_a[0]) ram[adr_a][0] <= d_a[7:0];
+        end
+    end
+    always@(posedge clk_a or posedge rst)
+    if (rst)
+        rd_adr_a <= 0;
+    else if (re_a)
+        rd_adr_a <= adr_a;
+    assign q_a = ram[rd_adr_a];
+    always_ff@(posedge clk_b)
+    if(we_b)
+        ram[adr_b] <= d_b;
+    always@(posedge clk_b or posedge rst)
+    if (rst)
+        rd_adr_b <= 0;
+    else if (re_b)
+        rd_adr_b <= adr_b;
+    assign q_b = ram[rd_adr_b];
 end
 endgenerate
-/*
-   generate for (i=0;i<addr_width/4;i=i+1) begin : be_rama
-      always @ (posedge clk_a)
-      if (we_a & be_a[i])
-        ram[adr_a][(i+1)*8-1:i*8] <= d_a[(i+1)*8-1:i*8];
-   end
-   endgenerate
-   always @ (posedge clk_a)
-      q_a <= ram[adr_a];
-   genvar i;
-   generate for (i=0;i<addr_width/4;i=i+1) begin : be_ramb
-      always @ (posedge clk_a)
-      if (we_b & be_b[i])
-        ram[adr_b][(i+1)*8-1:i*8] <= d_b[(i+1)*8-1:i*8];
-   end
-   endgenerate
-   always @ (posedge clk_b)
-      q_b <= ram[adr_b];
-*/
-/*
-   always @ (posedge clk_a)
-     begin 
-	q_a <= ram[adr_a];
-	if (we_a)
-	     ram[adr_a] <= d_a;
-     end 
-   always @ (posedge clk_b)
-     begin 
-	q_b <= ram[adr_b];
-	if (we_b)
-	  ram[adr_b] <= d_b;
-     end
-*/
+`else
+`endif
 endmodule
-// Content addresable memory, CAM
 // FIFO
 module vl_fifo_1r1w_fill_level_sync (
     d, wr, fifo_full,
@@ -1962,6 +1834,18 @@ output ack_o;
 input clk, rst;
 reg [adr_width-1:0] adr;
 wire [max_burst_width-1:0] to_adr;
+reg [max_burst_width-1:0] last_adr;
+reg [1:0] last_cycle;
+localparam idle = 2'b00;
+localparam cyc  = 2'b01;
+localparam ws   = 2'b10;
+localparam eoc  = 2'b11;
+always @ (posedge clk or posedge rst)
+if (rst)
+    last_adr <= {max_burst_width{1'b0}};
+else
+    if (stb_i)
+        last_adr <=adr_o;
 generate
 if (max_burst_width==0) begin : inst_0   
     reg ack_o;
@@ -1972,11 +1856,6 @@ if (max_burst_width==0) begin : inst_0
     else
         ack_o <= cyc_i & stb_i & !ack_o;
 end else begin
-    reg [1:0] last_cycle;
-    localparam idle = 2'b00;
-    localparam cyc  = 2'b01;
-    localparam ws   = 2'b10;
-    localparam eoc  = 2'b11;
     always @ (posedge clk or posedge rst)
     if (rst)
         last_cycle <= idle;
@@ -1987,6 +1866,7 @@ end else begin
                       cyc;
     assign to_adr = (last_cycle==idle | last_cycle==eoc) ? adr_i[max_burst_width-1:0] : adr[max_burst_width-1:0];
     assign adr_o[max_burst_width-1:0] = (we_i) ? adr_i[max_burst_width-1:0] :
+                                        (!stb_i) ? last_adr :
                                         (last_cycle==idle | last_cycle==eoc) ? adr_i[max_burst_width-1:0] :
                                         adr[max_burst_width-1:0];
     assign ack_o = (last_cycle==cyc | last_cycle==ws) & stb_i;
@@ -2025,7 +1905,7 @@ if (max_burst_width==4) begin : inst_4
     if (rst)
         adr <= 4'h0;
     else
-        if (cyc_i & stb_i)
+        if (stb_i) // | (!stb_i & last_cycle!=ws)) // for !stb_i restart with adr_i +1, only inc once
             case (bte_i)
             2'b01: adr[3:0] <= {to_adr[3:2],to_adr[1:0] + 2'd1};
             2'b10: adr[3:0] <= {to_adr[3],to_adr[2:0] + 3'd1};
@@ -2588,7 +2468,6 @@ ram0(
     .d(wbs_dat_i),
     .adr(adr),
     .be(wbs_sel_i),
-    .re(wbs_stb_i),
     .we(wbs_we_i & wbs_ack_o),
     .q(wbs_dat_o),
     .clk(wb_clk)

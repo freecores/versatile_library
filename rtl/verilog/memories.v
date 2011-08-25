@@ -102,7 +102,7 @@ endmodule
 
 `ifdef RAM_BE
 `define MODULE ram_be
-module `BASE`MODULE ( d, adr, be, re, we, q, clk);
+module `BASE`MODULE ( d, adr, be, we, q, clk);
 `undef MODULE
 
    parameter data_width = 32;
@@ -111,7 +111,6 @@ module `BASE`MODULE ( d, adr, be, re, we, q, clk);
    input [(data_width-1):0]      d;
    input [(addr_width-1):0] 	 adr;
    input [(data_width/8)-1:0]    be;
-   input 			 re;
    input 			 we;
    output reg [(data_width-1):0] q;
    input 			 clk;
@@ -146,7 +145,6 @@ begin
         if(be[1]) ram[adr][1] <= d[15:8];
         if(be[0]) ram[adr][0] <= d[7:0];
     end
-    if (re)
         q <= ram[adr];
 end
 
@@ -162,7 +160,6 @@ assign cke = {data_width/8{we}} & be;
    endgenerate
 
    always @ (posedge clk)
-    if (re)
       q <= ram[adr];
 
 //E2_endif
@@ -312,210 +309,82 @@ module `BASE`MODULE ( d_a, q_a, adr_a, we_a, clk_a, d_b, q_b, adr_b, we_b, clk_b
 endmodule
 `endif
 
-`ifdef DPRAM_MIXED_WIDTH_2R2W
-`define MODULE dpram_mixed_width_2r2w
-module `BASE`MODULE ( d_a, q_a, adr_a, be_a, we_a, clk_a, d_b, q_b, adr_b, be_b, we_b, clk_b );
-`undef MODULE
-   parameter data_width = 32;
-   parameter addr_width = 8;
-   parameter data_width_ratio = 2;
-   parameter b_data_width = data_width * data_width_ratio;
-   parameter b_addr_width = addr_width ;
-endmodule
-`endif
 
 `ifdef DPRAM_BE_2R2W
 `define MODULE dpram_be_2r2w
-module `BASE`MODULE ( d_a, q_a, adr_a, be_a, we_a, clk_a, d_b, q_b, adr_b, be_b, we_b, clk_b );
+module `BASE`MODULE ( d_a, q_a, adr_a, be_a, re_a, we_a, clk_a, d_b, q_b, adr_b, re_b, we_b, clk_b );
 `undef MODULE
 
    parameter a_data_width = 32;
    parameter a_addr_width = 8;
-   parameter b_data_width = 64;
-   parameter b_addr_width = 7;
-   //parameter mem_size = (a_addr_width>b_addr_width) ? (1<<a_addr_width) : (1<<b_addr_width);
-   parameter mem_size = 1024;
+   parameter b_data_width = 32;
+   localparam b_addr_width = a_data_width * a_addr_width / b_data_width;
+   parameter mem_size = (a_addr_width>b_addr_width) ? (1<<a_addr_width) : (1<<b_addr_width);
+
    input [(a_data_width-1):0]      d_a;
-   input [(a_addr_width-1):0] 	 adr_a;
-   input [(b_addr_width-1):0] 	 adr_b;
-   input [(a_data_width/4-1):0]    be_a;
-   input 			 we_a;
-   output [(b_data_width-1):0] 	 q_b;
-   input [(b_data_width-1):0] 	 d_b;
+   input [(a_addr_width-1):0] 	   adr_a;
+   input [(a_data_width/8-1):0]    be_a;
+   input 			   re_a;
+   input 			   we_a;
    output reg [(a_data_width-1):0] q_a;
-   input [(b_data_width/4-1):0]    be_b;
-   input 			 we_b;
-   input 			 clk_a, clk_b;
-   reg [(b_data_width-1):0] 	 q_b;   
+   input [(b_data_width-1):0] 	   d_b;
+   input [(b_addr_width-1):0] 	   adr_b;
+   input 			   re_b,we_b;
+   output [(b_data_width-1):0] 	   q_b;
+   input 			   clk_a, clk_b;
+
+//E2_ifdef SYSTEMVERILOG
+// use a multi-dimensional packed array
+//to model individual bytes within the word
 
 generate
-if (a_data_width==32 & b_data_width==64) begin : inst32to64
+if (a_data_width==32 & b_data_width==32) begin : dpram_3232
 
-    wire [63:0] tmp;
-    `define MODULE dpram_2r2w
-    `BASE`MODULE
-    # (.data_width(8), .addr_width(b_addr_width-3))
-    ram0 (
-        .d_a(d_a[7:0]),
-        .q_a(tmp[7:0]),
-        .adr_a(adr_a[a_addr_width-3-1:0]),
-        .we_a(we_a & be_a[0] & !adr_a[0]),
-        .clk_a(clk_a),
-        .d_b(d_b[7:0]),
-        .q_b(q_b[7:0]),
-        .adr_b(adr_b[b_addr_width-3-1:0]),
-        .we_b(we_b),
-        .clk_b(clk_b) );
-    `BASE`MODULE
-    # (.data_width(8), .addr_width(b_addr_width-3))
-    ram1 (
-        .d_a(d_a[7:0]),
-        .q_a(tmp[7:0]),
-        .adr_a(adr_a[a_addr_width-3-1:0]),
-        .we_a(we_a),
-        .clk_a(clk_a),
-        .d_b(d_b[7:0]),
-        .q_b(q_b[7:0]),
-        .adr_b(adr_b[b_addr_width-3-1:0]),
-        .we_b(we_b),
-        .clk_b(clk_b) );
-    `BASE`MODULE
-    # (.data_width(8), .addr_width(b_addr_width-3))
-    ram2 (
-        .d_a(d_a[15:8]),
-        .q_a(tmp[7:0]),
-        .adr_a(adr_a[a_addr_width-3-1:0]),
-        .we_a(we_a),
-        .clk_a(clk_a),
-        .d_b(d_b[7:0]),
-        .q_b(q_b[7:0]),
-        .adr_b(adr_b[b_addr_width-3-1:0]),
-        .we_b(we_b),
-        .clk_b(clk_b) );
-    `BASE`MODULE
-    # (.data_width(8), .addr_width(b_addr_width-3))
-    ram3 (
-        .d_a(d_a[15:8]),
-        .q_a(tmp[7:0]),
-        .adr_a(adr_a[a_addr_width-3-1:0]),
-        .we_a(we_a),
-        .clk_a(clk_a),
-        .d_b(d_b[7:0]),
-        .q_b(q_b[7:0]),
-        .adr_b(adr_b[b_addr_width-3-1:0]),
-        .we_b(we_b),
-        .clk_b(clk_b) );
-    `BASE`MODULE
-    # (.data_width(8), .addr_width(b_addr_width-3))
-    ram4 (
-        .d_a(d_a[23:16]),
-        .q_a(tmp[7:0]),
-        .adr_a(adr_a[a_addr_width-3-1:0]),
-        .we_a(we_a),
-        .clk_a(clk_a),
-        .d_b(d_b[7:0]),
-        .q_b(q_b[7:0]),
-        .adr_b(adr_b[b_addr_width-3-1:0]),
-        .we_b(we_b),
-        .clk_b(clk_b) );
-    `BASE`MODULE
-    # (.data_width(8), .addr_width(b_addr_width-3))
-    ram5 (
-        .d_a(d_a[23:16]),
-        .q_a(tmp[7:0]),
-        .adr_a(adr_a[a_addr_width-3-1:0]),
-        .we_a(we_a),
-        .clk_a(clk_a),
-        .d_b(d_b[7:0]),
-        .q_b(q_b[7:0]),
-        .adr_b(adr_b[b_addr_width-3-1:0]),
-        .we_b(we_b),
-        .clk_b(clk_b) );
-    `BASE`MODULE
-    # (.data_width(8), .addr_width(b_addr_width-3))
-    ram6 (
-        .d_a(d_a[31:24]),
-        .q_a(tmp[7:0]),
-        .adr_a(adr_a[a_addr_width-3-1:0]),
-        .we_a(we_a),
-        .clk_a(clk_a),
-        .d_b(d_b[7:0]),
-        .q_b(q_b[7:0]),
-        .adr_b(adr_b[b_addr_width-3-1:0]),
-        .we_b(we_b),
-        .clk_b(clk_b) );
-    `BASE`MODULE
-    # (.data_width(8), .addr_width(b_addr_width-3))
-    ram7 (
-        .d_a(d_a[31:24]),
-        .q_a(tmp[7:0]),
-        .adr_a(adr_a[a_addr_width-3-1:0]),
-        .we_a(we_a),
-        .clk_a(clk_a),
-        .d_b(d_b[7:0]),
-        .q_b(q_b[7:0]),
-        .adr_b(adr_b[b_addr_width-3-1:0]),
-        .we_b(we_b),
-        .clk_b(clk_b) );
-`undef MODULE
-/*
-   reg [7:0] ram0 [mem_size/8-1:0];
-   wire [7:0] wea, web;
-   assign wea = we_a & be_a[0];
-   assign web = we_b & be_b[0];
-   always @ (posedge clk_a)
-    if (wea)
-        ram0[adr_a] <= d_a[7:0];
-    always @ (posedge clk_a)
-        q_a[7:0] <= ram0[adr_a];
-   always @ (posedge clk_a)
-    if (web)
-        ram0[adr_b] <= d_b[7:0];
-    always @ (posedge clk_b)
-        q_b[7:0] <= ram0[adr_b];
-*/
+   logic [3:0][7:0] ram [0:mem_size-1];
+    reg [a_addr_width-1:0] rd_adr_a;
+    reg [b_addr_width-1:0] rd_adr_b;
+
+    always_ff@(posedge clk_a)
+    begin
+        if(we_a) begin
+            if(be_a[3]) ram[adr_a][3] <= d_a[31:24];
+            if(be_a[2]) ram[adr_a][2] <= d_a[23:16];
+            if(be_a[1]) ram[adr_a][1] <= d_a[15:8];
+            if(be_a[0]) ram[adr_a][0] <= d_a[7:0];
+        end
+    end
+    
+    always@(posedge clk_a or posedge rst)
+    if (rst)
+        rd_adr_a <= 0;
+    else if (re_a)
+        rd_adr_a <= adr_a;
+            
+    assign q_a = ram[rd_adr_a];
+    
+    always_ff@(posedge clk_b)
+    if(we_b)
+        ram[adr_b] <= d_b;
+    
+    always@(posedge clk_b or posedge rst)
+    if (rst)
+        rd_adr_b <= 0;
+    else if (re_b)
+        rd_adr_b <= adr_b;
+        
+    assign q_b = ram[rd_adr_b];
+
 end
 endgenerate
-/*
-   generate for (i=0;i<addr_width/4;i=i+1) begin : be_rama
-      always @ (posedge clk_a)
-      if (we_a & be_a[i])
-        ram[adr_a][(i+1)*8-1:i*8] <= d_a[(i+1)*8-1:i*8];
-   end
-   endgenerate
 
-   always @ (posedge clk_a)
-      q_a <= ram[adr_a];
-
-   genvar i;
-   generate for (i=0;i<addr_width/4;i=i+1) begin : be_ramb
-      always @ (posedge clk_a)
-      if (we_b & be_b[i])
-        ram[adr_b][(i+1)*8-1:i*8] <= d_b[(i+1)*8-1:i*8];
-   end
-   endgenerate
-
-   always @ (posedge clk_b)
-      q_b <= ram[adr_b];
-*/
-/*
-   always @ (posedge clk_a)
-     begin 
-	q_a <= ram[adr_a];
-	if (we_a)
-	     ram[adr_a] <= d_a;
-     end 
-   always @ (posedge clk_b)
-     begin 
-	q_b <= ram[adr_b];
-	if (we_b)
-	  ram[adr_b] <= d_b;
-     end
-*/
+//E2_else
+//E2_endif
 endmodule
 `endif
 
+`ifdef CAM
 // Content addresable memory, CAM
+`endif
 
 `ifdef FIFO_1R1W_FILL_LEVEL_SYNC
 // FIFO

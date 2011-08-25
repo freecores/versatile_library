@@ -58,6 +58,19 @@ input clk, rst;
 
 reg [adr_width-1:0] adr;
 wire [max_burst_width-1:0] to_adr;
+reg [max_burst_width-1:0] last_adr;
+reg [1:0] last_cycle;
+localparam idle = 2'b00;
+localparam cyc  = 2'b01;
+localparam ws   = 2'b10;
+localparam eoc  = 2'b11;
+
+always @ (posedge clk or posedge rst)
+if (rst)
+    last_adr <= {max_burst_width{1'b0}};
+else
+    if (stb_i)
+        last_adr <=adr_o;
 
 generate
 if (max_burst_width==0) begin : inst_0   
@@ -70,11 +83,6 @@ if (max_burst_width==0) begin : inst_0
         ack_o <= cyc_i & stb_i & !ack_o;
 end else begin
 
-    reg [1:0] last_cycle;
-    localparam idle = 2'b00;
-    localparam cyc  = 2'b01;
-    localparam ws   = 2'b10;
-    localparam eoc  = 2'b11;
     always @ (posedge clk or posedge rst)
     if (rst)
         last_cycle <= idle;
@@ -85,6 +93,7 @@ end else begin
                       cyc;
     assign to_adr = (last_cycle==idle | last_cycle==eoc) ? adr_i[max_burst_width-1:0] : adr[max_burst_width-1:0];
     assign adr_o[max_burst_width-1:0] = (we_i) ? adr_i[max_burst_width-1:0] :
+                                        (!stb_i) ? last_adr :
                                         (last_cycle==idle | last_cycle==eoc) ? adr_i[max_burst_width-1:0] :
                                         adr[max_burst_width-1:0];
     assign ack_o = (last_cycle==cyc | last_cycle==ws) & stb_i;
@@ -126,7 +135,7 @@ if (max_burst_width==4) begin : inst_4
     if (rst)
         adr <= 4'h0;
     else
-        if (cyc_i & stb_i)
+        if (stb_i) // | (!stb_i & last_cycle!=ws)) // for !stb_i restart with adr_i +1, only inc once
             case (bte_i)
             2'b01: adr[3:0] <= {to_adr[3:2],to_adr[1:0] + 2'd1};
             2'b10: adr[3:0] <= {to_adr[3],to_adr[2:0] + 3'd1};
@@ -838,7 +847,6 @@ ram0(
     .d(wbs_dat_i),
     .adr(adr),
     .be(wbs_sel_i),
-    .re(wbs_stb_i),
     .we(wbs_we_i & wbs_ack_o),
     .q(wbs_dat_o),
     .clk(wb_clk)
