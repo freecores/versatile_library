@@ -502,6 +502,82 @@ else
 assign q = dffs[depth];
 assign emptyflag = !(|dffs);
 endmodule
+module vl_pules2toggle ( pl, q, clk, rst)
+input pl;
+output q;
+input clk, rst;
+input
+always @ (posedge clk or posedge rst)
+if (rst)
+    q <= 1'b0;
+else
+    q <= pl ^ q;
+endmodule
+module vl_toggle2pulse; (d, pl, clk, rst);
+input d;
+output pl;
+input clk, rst;
+reg dff;
+always @ (posedge clk or posedge rst)
+if (rst)
+    dff <= 1'b0;
+else
+    dff <= d;
+assign d ^ dff;
+endmodule
+module vl_synchronizer (d, q, clk, rst);
+input d;
+output reg q;
+output clk, rst;
+reg dff;
+always @ (posedge clk or posedge rst)
+if (rst)
+    {dff,q} <= 2'b00;
+else
+    {dff,q} <= {d,dff};
+endmodule
+module vl_cdc ( start_pl, take_it_pl, take_it_grant_pl, got_it_pl, clk_src, rst_src, clk_dst, rst_dst)
+input start_pl;
+output take_it_pl;
+input take_it_grant_pl; // note: connect to take_it_pl to generate automatic ack
+output got_it_pl;
+input clk_src, rst_src;
+input clk_dst, rst_dst;
+wire take_it_tg, take_it_tg_sync;
+wire got_it_tg, got_it_tg_sync;
+// src -> dst
+vl_pulse2toggle p2t0 (
+    .pl(start_pl),
+    .q(take_it_tg),
+    .clk(clk_src),
+    .rst(rst_src));
+vl_synchronizer sync0 (
+    .d(take_it_tg),
+    .q(take_it_tg_sync),
+    .clk(clk_dst),
+    .rst(rst_dst));
+vl_toggle2pulse t2p0 (
+    .d(take_it_sync),
+    .pl(take_it_pl),
+    .clk(clk_dst),
+    .rst(rst_dst));
+// dst -> src
+vl_pulse2toggle p2t0 (
+    .pl(take_it_grant_pl),
+    .q(got_it_tg),
+    .clk(clk_dst),
+    .rst(rst_dst));
+vl_synchronizer sync1 (
+    .d(got_it_tg),
+    .q(got_it_tg_sync),
+    .clk(clk_src),
+    .rst(rst_src));
+vl_toggle2pulse t2p1 (
+    .d(take_it_grant_tg_sync),
+    .pl(got_it_pl),
+    .clk(clk_src),
+    .rst(rst_src));
+endmodule
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
 ////  Logic functions                                             ////

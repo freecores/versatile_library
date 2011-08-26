@@ -164,6 +164,9 @@ module `BASE`MODULE (
 	// wishbone master side
 	wbm_dat_o, wbm_adr_o, wbm_sel_o, wbm_bte_o, wbm_cti_o, wbm_we_o, wbm_cyc_o, wbm_stb_o, wbm_dat_i, wbm_ack_i, wbm_clk, wbm_rst);
 
+parameter style = "FIFO"; // valid: simple, FIFO
+parameter addr_width = 4;
+
 input [31:0] wbs_dat_i;
 input [31:2] wbs_adr_i;
 input [3:0]  wbs_sel_i;
@@ -186,8 +189,6 @@ input [31:0]  wbm_dat_i;
 input wbm_ack_i;
 input wbm_clk, wbm_rst;
 
-parameter addr_width = 4;
-
 // bte
 parameter linear       = 2'b00;
 parameter wrap4        = 2'b01;
@@ -198,13 +199,13 @@ parameter classic      = 3'b000;
 parameter incburst     = 3'b010;
 parameter endofburst   = 3'b111;
 
-parameter wbs_adr  = 1'b0;
-parameter wbs_data = 1'b1;
+localparam wbs_adr  = 1'b0;
+localparam wbs_data = 1'b1;
 
-parameter wbm_adr0      = 2'b00;
-parameter wbm_adr1      = 2'b01;
-parameter wbm_data      = 2'b10;
-parameter wbm_data_wait = 2'b11;
+localparam wbm_adr0      = 2'b00;
+localparam wbm_adr1      = 2'b01;
+localparam wbm_data      = 2'b10;
+localparam wbm_data_wait = 2'b11;
 
 reg [1:0] wbs_bte_reg;
 reg wbs;
@@ -1134,3 +1135,4 @@ ram_i (
 
 endmodule
 `endif
+

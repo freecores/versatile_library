@@ -63,6 +63,10 @@
 `define SHREG_CE
 `define DELAY
 `define DELAY_EMPTYFLAG
+`define PULSE2TOGGLE
+`define TOGGLE2PULSE
+`define SYNCHRONIZER
+`define CDC
 
 `define WB3AVALON_BRIDGE
 `define WB3WB3_BRIDGE
@@ -88,6 +92,18 @@
 `ifdef SYNC_RST
 `ifndef GBUF
 `define GBUF
+`endif
+`endif
+
+`ifdef CDC
+`ifndef PULSE2TOGGLE
+`define PULSE2TOGGLE
+`endif
+`ifndef TOGGLE2PULSE
+`define TOGGLE2PULSE
+`endif
+`ifndef SYNCHRONIZER
+`define SYNCHRONIZER
 `endif
 `endif
 
@@ -1148,57 +1164,115 @@ assign emptyflag = !(|dffs);
 endmodule
 `endif
 
-`ifdef ASYNC_REG_REQ_ACK
-`define MODULE async_reg_req_ack
-module `BASE`MODULE ( d, q, req_i, req_o, ack_i, ack_o, clk_a, rst_a, clk_b, rst_b);
+`ifdef PULSE2TOGGLE
+`define MODULE pules2toggle
+module `BASE`MODULE ( pl, q, clk, rst)
 `undef MODULE
-parameter data_width = 8;
-input [data_width-1:0] d;
-output [data_width-1:0] q;
-input req_i;
-output req_o;
-input ack_i;
-output ack_o;
-input clk_a, rst_a, clk_b, rst_b;
-
-reg [3:0] reqi; // 3: last req in clk_a, 2: input dff, 1-0: sync
-wire rst;
-
-always @ (posedge clk_a or rst_a)
-if (rst_a)
-    q <= {data_width{1'b0}};
-else
-    if (req_i)
-        q <= d;
-    
-assign rst = ack_i | rst_a;
-always @ (posedge clk_a or posedge rst)
+input pl;
+output q;
+input clk, rst;
+input
+always @ (posedge clk or posedge rst)
 if (rst)
-    req[2] <= 1'b0;
+    q <= 1'b0;
 else
-    req[2] <= req_i & !ack_o;
+    q <= pl ^ q;
+endmodule
+`endif
 
-always @ (posedge clk_a or posedge rst_a)
-if (rst_a)
-    req[3] <= 1'b0;
+`ifdef TOGGLE2PULSE
+`define MODULE toggle2pulse;
+module `BASE`MODULE (d, pl, clk, rst);
+input d;
+output pl;
+input clk, rst;
+reg dff;
+always @ (posedge clk or posedge rst)
+if (rst)
+    dff <= 1'b0;
 else
-    req[3] <= req[2];
+    dff <= d;
+assign d ^ dff;
+endmodule
+`endif
 
-always @ (posedge clk_b or posedge rst_b)
-if (rst_b)
-    req[1:0] <= 2'b00;
+`ifdef SYNCHRONIZER
+`define MODULE synchronizer
+module `BASE`MODULE (d, q, clk, rst);
+`undef MODULE
+input d;
+output reg q;
+output clk, rst;
+reg dff;
+always @ (posedge clk or posedge rst)
+if (rst)
+    {dff,q} <= 2'b00;
 else
-    if (ack_i)
-        req[1:0] <= 2'b00;
-    else
-        req[1:0] <= req[2:1];
-assign req_o = req[0];
+    {dff,q} <= {d,dff};
+endmodule
+`endif
 
-always @ (posedge clk_a or posedge rst_a)
-if (rst_a)
-    ack_o <= 1'b0;
-else
-    ack_o <= req[3] & req[2];
+`ifdef CDC
+`define MODULE cdc
+module `BASE`MODULE ( start_pl, take_it_pl, take_it_grant_pl, got_it_pl, clk_src, rst_src, clk_dst, rst_dst)
+`undef MODULE
+input start_pl;
+output take_it_pl;
+input take_it_grant_pl; // note: connect to take_it_pl to generate automatic ack
+output got_it_pl;
+input clk_src, rst_src;
+input clk_dst, rst_dst;
+wire take_it_tg, take_it_tg_sync;
+wire got_it_tg, got_it_tg_sync;
+// src -> dst
+`define MODULE pulse2toggle
+`BASE`MODULE p2t0 (
+`undef MODULE
+    .pl(start_pl),
+    .q(take_it_tg),
+    .clk(clk_src),
+    .rst(rst_src));
+
+`define MODULE synchronizer
+`BASE`MODULE sync0 (
+`undef MODULE
+    .d(take_it_tg),
+    .q(take_it_tg_sync),
+    .clk(clk_dst),
+    .rst(rst_dst));
+    
+`define MODULE toggle2pulse
+`BASE`MODULE t2p0 (
+`undef MODULE
+    .d(take_it_sync),
+    .pl(take_it_pl),
+    .clk(clk_dst),
+    .rst(rst_dst));
+
+// dst -> src
+`define MODULE pulse2toggle
+`BASE`MODULE p2t0 (
+`undef MODULE
+    .pl(take_it_grant_pl),
+    .q(got_it_tg),
+    .clk(clk_dst),
+    .rst(rst_dst));
+
+`define MODULE synchronizer
+`BASE`MODULE sync1 (
+`undef MODULE
+    .d(got_it_tg),
+    .q(got_it_tg_sync),
+    .clk(clk_src),
+    .rst(rst_src));
+
+`define MODULE toggle2pulse
+`BASE`MODULE t2p1 (
+`undef MODULE
+    .d(take_it_grant_tg_sync),
+    .pl(got_it_pl),
+    .clk(clk_src),
+    .rst(rst_src));
 
 endmodule
 `endif
@@ -5629,6 +5703,7 @@ ram_i (
 
 endmodule
 `endif
+
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
 ////  Arithmetic functions                                        ////

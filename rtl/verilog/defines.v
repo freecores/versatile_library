@@ -63,6 +63,10 @@
 `define SHREG_CE
 `define DELAY
 `define DELAY_EMPTYFLAG
+`define PULSE2TOGGLE
+`define TOGGLE2PULSE
+`define SYNCHRONIZER
+`define CDC
 
 `define WB3AVALON_BRIDGE
 `define WB3WB3_BRIDGE
@@ -88,6 +92,18 @@
 `ifdef SYNC_RST
 `ifndef GBUF
 `define GBUF
+`endif
+`endif
+
+`ifdef CDC
+`ifndef PULSE2TOGGLE
+`define PULSE2TOGGLE
+`endif
+`ifndef TOGGLE2PULSE
+`define TOGGLE2PULSE
+`endif
+`ifndef SYNCHRONIZER
+`define SYNCHRONIZER
 `endif
 `endif
 
