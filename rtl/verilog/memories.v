@@ -312,25 +312,25 @@ endmodule
 
 `ifdef DPRAM_BE_2R2W
 `define MODULE dpram_be_2r2w
-module `BASE`MODULE ( d_a, q_a, adr_a, be_a, re_a, we_a, clk_a, d_b, q_b, adr_b, re_b, we_b, clk_b );
+module `BASE`MODULE ( d_a, q_a, adr_a, be_a, we_a, clk_a, d_b, q_b, adr_b, be_b, we_b, clk_b );
 `undef MODULE
 
    parameter a_data_width = 32;
    parameter a_addr_width = 8;
-   parameter b_data_width = 32;
+   parameter b_data_width = a_data_width;
    localparam b_addr_width = a_data_width * a_addr_width / b_data_width;
    parameter mem_size = (a_addr_width>b_addr_width) ? (1<<a_addr_width) : (1<<b_addr_width);
 
    input [(a_data_width-1):0]      d_a;
    input [(a_addr_width-1):0] 	   adr_a;
    input [(a_data_width/8-1):0]    be_a;
-   input 			   re_a;
    input 			   we_a;
    output reg [(a_data_width-1):0] q_a;
    input [(b_data_width-1):0] 	   d_b;
    input [(b_addr_width-1):0] 	   adr_b;
-   input 			   re_b,we_b;
-   output [(b_data_width-1):0] 	   q_b;
+   input [(b_data_width/8-1):0]    be_b;
+   input 			   we_b;
+   output reg [(b_data_width-1):0] 	   q_b;
    input 			   clk_a, clk_b;
 
 //E2_ifdef SYSTEMVERILOG
@@ -341,8 +341,6 @@ generate
 if (a_data_width==32 & b_data_width==32) begin : dpram_3232
 
    logic [3:0][7:0] ram [0:mem_size-1];
-    reg [a_addr_width-1:0] rd_adr_a;
-    reg [b_addr_width-1:0] rd_adr_b;
 
     always_ff@(posedge clk_a)
     begin
@@ -354,30 +352,27 @@ if (a_data_width==32 & b_data_width==32) begin : dpram_3232
         end
     end
     
-    always@(posedge clk_a or posedge rst)
-    if (rst)
-        rd_adr_a <= 0;
-    else if (re_a)
-        rd_adr_a <= adr_a;
-            
-    assign q_a = ram[rd_adr_a];
+    always@(posedge clk_a)
+        q_a = ram[adr_a];
     
     always_ff@(posedge clk_b)
-    if(we_b)
-        ram[adr_b] <= d_b;
+    begin
+        if(we_b) begin
+            if(be_b[3]) ram[adr_b][3] <= d_b[31:24];
+            if(be_b[2]) ram[adr_b][2] <= d_b[23:16];
+            if(be_b[1]) ram[adr_b][1] <= d_b[15:8];
+            if(be_b[0]) ram[adr_b][0] <= d_b[7:0];
+        end
+    end
     
-    always@(posedge clk_b or posedge rst)
-    if (rst)
-        rd_adr_b <= 0;
-    else if (re_b)
-        rd_adr_b <= adr_b;
-        
-    assign q_b = ram[rd_adr_b];
+    always@(posedge clk_b)
+        q_b = ram[adr_b];
 
 end
 endgenerate
 
 //E2_else
+    // This modules requires SystemVerilog
 //E2_endif
 endmodule
 `endif

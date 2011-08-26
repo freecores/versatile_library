@@ -91,12 +91,12 @@
 `endif
 `endif
 
-`ifdef WB_DPRAM
-`ifndef DPRAM_2R2W
-`define DPRAM_2R2W
+`ifdef WB_B3_DPRAM
+`ifndef WB_ADR_INC
+`define WB_ADR_INC
 `endif
-`ifndef SPR
-`define SPR
+`ifndef DPRAM_BE_2R2W
+`define DPRAM_BE_2R2W
 `endif
 `endif
 

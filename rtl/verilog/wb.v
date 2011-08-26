@@ -59,18 +59,16 @@ input clk, rst;
 reg [adr_width-1:0] adr;
 wire [max_burst_width-1:0] to_adr;
 reg [max_burst_width-1:0] last_adr;
-reg [1:0] last_cycle;
-localparam idle = 2'b00;
-localparam cyc  = 2'b01;
-localparam ws   = 2'b10;
-localparam eoc  = 2'b11;
+reg last_cycle;
+localparam idle_or_eoc = 1'b0;
+localparam cyc_or_ws   = 1'b1;
 
 always @ (posedge clk or posedge rst)
 if (rst)
     last_adr <= {max_burst_width{1'b0}};
 else
     if (stb_i)
-        last_adr <=adr_o;
+        last_adr <=adr_o[max_burst_width-1:0];
 
 generate
 if (max_burst_width==0) begin : inst_0   
@@ -85,18 +83,18 @@ end else begin
 
     always @ (posedge clk or posedge rst)
     if (rst)
-        last_cycle <= idle;
+        last_cycle <= idle_or_eoc;
     else
-        last_cycle <= (!cyc_i) ? idle :
-                      (cyc_i & ack_o & (cti_i==3'b000 | cti_i==3'b111)) ? eoc :
-                      (cyc_i & !stb_i) ? ws :
-                      cyc;
-    assign to_adr = (last_cycle==idle | last_cycle==eoc) ? adr_i[max_burst_width-1:0] : adr[max_burst_width-1:0];
+        last_cycle <= (!cyc_i) ? idle_or_eoc : //idle
+                      (cyc_i & ack_o & (cti_i==3'b000 | cti_i==3'b111)) ? idle_or_eoc : // eoc
+                      (cyc_i & !stb_i) ? cyc_or_ws : //ws
+                      cyc_or_ws; // cyc
+    assign to_adr = (last_cycle==idle_or_eoc) ? adr_i[max_burst_width-1:0] : adr[max_burst_width-1:0];
     assign adr_o[max_burst_width-1:0] = (we_i) ? adr_i[max_burst_width-1:0] :
                                         (!stb_i) ? last_adr :
-                                        (last_cycle==idle | last_cycle==eoc) ? adr_i[max_burst_width-1:0] :
+                                        (last_cycle==idle_or_eoc) ? adr_i[max_burst_width-1:0] :
                                         adr[max_burst_width-1:0];
-    assign ack_o = (last_cycle==cyc | last_cycle==ws) & stb_i;
+    assign ack_o = (last_cycle==cyc_or_ws) & stb_i;
 end
 endgenerate
 
@@ -1049,73 +1047,90 @@ assign wb_ack_o = wb_ack;
 endmodule
 `endif
 
-`ifdef WB_DPRAM
-`define MODULE wb_dpram
+`ifdef WB_B3_DPRAM
+`define MODULE wb_b3_dpram
 module `BASE`MODULE ( 
 `undef MODULE
 	// wishbone slave side a
-	wbsa_dat_i, wbsa_adr_i, wbsa_we_i, wbsa_cyc_i, wbsa_stb_i, wbsa_dat_o, wbsa_ack_o,
+	wbsa_dat_i, wbsa_adr_i, wbsa_sel_i, wbsa_cti_i, wbsa_bte_i, wbsa_we_i, wbsa_cyc_i, wbsa_stb_i, wbsa_dat_o, wbsa_ack_o,
         wbsa_clk, wbsa_rst,
-	// wishbone slave side a
-	wbsb_dat_i, wbsb_adr_i, wbsb_we_i, wbsb_cyc_i, wbsb_stb_i, wbsb_dat_o, wbsb_ack_o,
+	// wishbone slave side b
+	wbsb_dat_i, wbsb_adr_i, wbsb_sel_i, wbsb_cti_i, wbsb_bte_i, wbsb_we_i, wbsb_cyc_i, wbsb_stb_i, wbsb_dat_o, wbsb_ack_o,
         wbsb_clk, wbsb_rst);
 
-parameter data_width = 32;
-parameter addr_width = 8;
+parameter data_width_a = 32;
+parameter data_width_b = data_width_a;
+parameter addr_width_a = 8;
+localparam addr_width_b = data_width_a * addr_width_a / data_width_b;
+   parameter mem_size = (addr_width_a>addr_width_b) ? (1<<addr_width_a) : (1<<addr_width_b);
+parameter max_burst_width_a = 4;
+parameter max_burst_width_b = max_burst_width_a;
 
-parameter dat_o_mask_a = 1;
-parameter dat_o_mask_b = 1;
-
-input [31:0] wbsa_dat_i;
-input [addr_width-1:2] wbsa_adr_i;
+input [data_width_a-1:0] wbsa_dat_i;
+input [addr_width_a-1:0] wbsa_adr_i;
+input [data_width_a/8-1:0] wbsa_sel_i;
+input [2:0] wbsa_cti_i;
+input [1:0] wbsa_bte_i;
 input wbsa_we_i, wbsa_cyc_i, wbsa_stb_i;
-output [31:0] wbsa_dat_o;
+output [data_width_a-1:0] wbsa_dat_o;
 output wbsa_ack_o;
 input wbsa_clk, wbsa_rst;
 
-input [31:0] wbsb_dat_i;
-input [addr_width-1:2] wbsb_adr_i;
+input [data_width_b-1:0] wbsb_dat_i;
+input [addr_width_b-1:0] wbsb_adr_i;
+input [data_width_b/8-1:0] wbsb_sel_i;
+input [2:0] wbsb_cti_i;
+input [1:0] wbsb_bte_i;
 input wbsb_we_i, wbsb_cyc_i, wbsb_stb_i;
-output [31:0] wbsb_dat_o;
+output [data_width_b-1:0] wbsb_dat_o;
 output wbsb_ack_o;
 input wbsb_clk, wbsb_rst;
 
-wire wbsa_dat_tmp, wbsb_dat_tmp;
+wire [addr_width_a-1:0] adr_a;
+wire [addr_width_b-1:0] adr_b;
 
-`define MODULE dpram_2r2w
-`BASE`MODULE # (
+`define MODULE wb_adr_inc 
+`BASE`MODULE # ( .adr_width(addr_width_a), .max_burst_width(max_burst_width_a)) adr_inc0 (
+    .cyc_i(wbsa_cyc_i),
+    .stb_i(wbsa_stb_i),
+    .cti_i(wbsa_cti_i),
+    .bte_i(wbsa_bte_i),
+    .adr_i(wbsa_adr_i),
+    .we_i(wbsa_we_i),
+    .ack_o(wbsa_ack_o),
+    .adr_o(adr_a),
+    .clk(wbsa_clk),
+    .rst(wbsa_rst));
+
+`BASE`MODULE # ( .adr_width(addr_width_b), .max_burst_width(max_burst_width_b)) adr_inc1 (
+    .cyc_i(wbsb_cyc_i),
+    .stb_i(wbsb_stb_i),
+    .cti_i(wbsb_cti_i),
+    .bte_i(wbsb_bte_i),
+    .adr_i(wbsb_adr_i),
+    .we_i(wbsb_we_i),
+    .ack_o(wbsb_ack_o),
+    .adr_o(adr_b),
+    .clk(wbsb_clk),
+    .rst(wbsb_rst));
 `undef MODULE
-    .data_width(data_width), .addr_width(addr_width) )
-dpram0(
+
+`define MODULE dpram_be_2r2w
+`BASE`MODULE # ( .a_data_width(data_width_a), .a_addr_width(addr_width_a), .mem_size(mem_size))
+`undef MODULE
+ram_i (
     .d_a(wbsa_dat_i),
-    .q_a(wbsa_dat_tmp),
-    .adr_a(wbsa_adr_i),
-    .we_a(wbsa_we_i),
+    .q_a(wbsa_dat_o),
+    .adr_a(adr_a),
+    .be_a(wbsa_sel_i),
+    .we_a(wbsa_we_i & wbsa_ack_o),
     .clk_a(wbsa_clk),
     .d_b(wbsb_dat_i),
-    .q_b(wbsb_dat_tmp),
-    .adr_b(wbsb_adr_i),
-    .we_b(wbsb_we_i),
+    .q_b(wbsb_dat_o),
+    .adr_b(adr_b),
+    .be_b(wbsb_sel_i),
+    .we_b(wbsb_we_i & wbsb_ack_o),
     .clk_b(wbsb_clk) );
-
-generate if (dat_o_mask_a==1) 
-    assign wbsa_dat_o = wbsa_dat_tmp & {data_width{wbsa_ack_o}};
-endgenerate
-generate if (dat_o_mask_a==0) 
-    assign wbsa_dat_o = wbsa_dat_tmp;
-endgenerate
-
-generate if (dat_o_mask_b==1) 
-    assign wbsb_dat_o = wbsb_dat_tmp & {data_width{wbsb_ack_o}};
-endgenerate
-generate if (dat_o_mask_b==0) 
-    assign wbsb_dat_o = wbsb_dat_tmp;
-endgenerate
-
-`define MODULE spr
-`BASE`MODULE ack_a( .sp(wbsa_cyc_i & wbsa_stb_i & !wbsa_ack_o), .r(1'b1), .q(wbsa_ack_o), .clk(wbsa_clk), .rst(wbsa_rst));
-`BASE`MODULE ack_b( .sp(wbsb_cyc_i & wbsb_stb_i & !wbsb_ack_o), .r(1'b1), .q(wbsb_ack_o), .clk(wbsb_clk), .rst(wbsb_rst));
-`undef MODULE
 
 endmodule
 `endif

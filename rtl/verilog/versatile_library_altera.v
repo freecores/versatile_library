@@ -1503,22 +1503,22 @@ module vl_dpram_2r2w ( d_a, q_a, adr_a, we_a, clk_a, d_b, q_b, adr_b, we_b, clk_
 	  ram[adr_b] <= d_b;
      end
 endmodule
-module vl_dpram_be_2r2w ( d_a, q_a, adr_a, be_a, re_a, we_a, clk_a, d_b, q_b, adr_b, re_b, we_b, clk_b );
+module vl_dpram_be_2r2w ( d_a, q_a, adr_a, be_a, we_a, clk_a, d_b, q_b, adr_b, be_b, we_b, clk_b );
    parameter a_data_width = 32;
    parameter a_addr_width = 8;
-   parameter b_data_width = 32;
+   parameter b_data_width = a_data_width;
    localparam b_addr_width = a_data_width * a_addr_width / b_data_width;
    parameter mem_size = (a_addr_width>b_addr_width) ? (1<<a_addr_width) : (1<<b_addr_width);
    input [(a_data_width-1):0]      d_a;
    input [(a_addr_width-1):0] 	   adr_a;
    input [(a_data_width/8-1):0]    be_a;
-   input 			   re_a;
    input 			   we_a;
    output reg [(a_data_width-1):0] q_a;
    input [(b_data_width-1):0] 	   d_b;
    input [(b_addr_width-1):0] 	   adr_b;
-   input 			   re_b,we_b;
-   output [(b_data_width-1):0] 	   q_b;
+   input [(b_data_width/8-1):0]    be_b;
+   input 			   we_b;
+   output reg [(b_data_width-1):0] 	   q_b;
    input 			   clk_a, clk_b;
 `ifdef SYSTEMVERILOG
 // use a multi-dimensional packed array
@@ -1526,8 +1526,6 @@ module vl_dpram_be_2r2w ( d_a, q_a, adr_a, be_a, re_a, we_a, clk_a, d_b, q_b, ad
 generate
 if (a_data_width==32 & b_data_width==32) begin : dpram_3232
    logic [3:0][7:0] ram [0:mem_size-1];
-    reg [a_addr_width-1:0] rd_adr_a;
-    reg [b_addr_width-1:0] rd_adr_b;
     always_ff@(posedge clk_a)
     begin
         if(we_a) begin
@@ -1537,24 +1535,23 @@ if (a_data_width==32 & b_data_width==32) begin : dpram_3232
             if(be_a[0]) ram[adr_a][0] <= d_a[7:0];
         end
     end
-    always@(posedge clk_a or posedge rst)
-    if (rst)
-        rd_adr_a <= 0;
-    else if (re_a)
-        rd_adr_a <= adr_a;
-    assign q_a = ram[rd_adr_a];
+    always@(posedge clk_a)
+        q_a = ram[adr_a];
     always_ff@(posedge clk_b)
-    if(we_b)
-        ram[adr_b] <= d_b;
-    always@(posedge clk_b or posedge rst)
-    if (rst)
-        rd_adr_b <= 0;
-    else if (re_b)
-        rd_adr_b <= adr_b;
-    assign q_b = ram[rd_adr_b];
+    begin
+        if(we_b) begin
+            if(be_b[3]) ram[adr_b][3] <= d_b[31:24];
+            if(be_b[2]) ram[adr_b][2] <= d_b[23:16];
+            if(be_b[1]) ram[adr_b][1] <= d_b[15:8];
+            if(be_b[0]) ram[adr_b][0] <= d_b[7:0];
+        end
+    end
+    always@(posedge clk_b)
+        q_b = ram[adr_b];
 end
 endgenerate
 `else
+    // This modules requires SystemVerilog
 `endif
 endmodule
 // FIFO
@@ -1940,17 +1937,15 @@ input clk, rst;
 reg [adr_width-1:0] adr;
 wire [max_burst_width-1:0] to_adr;
 reg [max_burst_width-1:0] last_adr;
-reg [1:0] last_cycle;
-localparam idle = 2'b00;
-localparam cyc  = 2'b01;
-localparam ws   = 2'b10;
-localparam eoc  = 2'b11;
+reg last_cycle;
+localparam idle_or_eoc = 1'b0;
+localparam cyc_or_ws   = 1'b1;
 always @ (posedge clk or posedge rst)
 if (rst)
     last_adr <= {max_burst_width{1'b0}};
 else
     if (stb_i)
-        last_adr <=adr_o;
+        last_adr <=adr_o[max_burst_width-1:0];
 generate
 if (max_burst_width==0) begin : inst_0   
     reg ack_o;
@@ -1963,18 +1958,18 @@ if (max_burst_width==0) begin : inst_0
 end else begin
     always @ (posedge clk or posedge rst)
     if (rst)
-        last_cycle <= idle;
+        last_cycle <= idle_or_eoc;
     else
-        last_cycle <= (!cyc_i) ? idle :
-                      (cyc_i & ack_o & (cti_i==3'b000 | cti_i==3'b111)) ? eoc :
-                      (cyc_i & !stb_i) ? ws :
-                      cyc;
-    assign to_adr = (last_cycle==idle | last_cycle==eoc) ? adr_i[max_burst_width-1:0] : adr[max_burst_width-1:0];
+        last_cycle <= (!cyc_i) ? idle_or_eoc : //idle
+                      (cyc_i & ack_o & (cti_i==3'b000 | cti_i==3'b111)) ? idle_or_eoc : // eoc
+                      (cyc_i & !stb_i) ? cyc_or_ws : //ws
+                      cyc_or_ws; // cyc
+    assign to_adr = (last_cycle==idle_or_eoc) ? adr_i[max_burst_width-1:0] : adr[max_burst_width-1:0];
     assign adr_o[max_burst_width-1:0] = (we_i) ? adr_i[max_burst_width-1:0] :
                                         (!stb_i) ? last_adr :
-                                        (last_cycle==idle | last_cycle==eoc) ? adr_i[max_burst_width-1:0] :
+                                        (last_cycle==idle_or_eoc) ? adr_i[max_burst_width-1:0] :
                                         adr[max_burst_width-1:0];
-    assign ack_o = (last_cycle==cyc | last_cycle==ws) & stb_i;
+    assign ack_o = (last_cycle==cyc_or_ws) & stb_i;
 end
 endgenerate
 generate
@@ -2728,58 +2723,6 @@ always @ (posedge wb_clk or posedge wb_rst)
 assign hit_o = hit;
 assign wb_dat_o = wb_dat & {32{wb_ack}};
 assign wb_ack_o = wb_ack;
-endmodule
-module vl_wb_dpram ( 
-	// wishbone slave side a
-	wbsa_dat_i, wbsa_adr_i, wbsa_we_i, wbsa_cyc_i, wbsa_stb_i, wbsa_dat_o, wbsa_ack_o,
-        wbsa_clk, wbsa_rst,
-	// wishbone slave side a
-	wbsb_dat_i, wbsb_adr_i, wbsb_we_i, wbsb_cyc_i, wbsb_stb_i, wbsb_dat_o, wbsb_ack_o,
-        wbsb_clk, wbsb_rst);
-parameter data_width = 32;
-parameter addr_width = 8;
-parameter dat_o_mask_a = 1;
-parameter dat_o_mask_b = 1;
-input [31:0] wbsa_dat_i;
-input [addr_width-1:2] wbsa_adr_i;
-input wbsa_we_i, wbsa_cyc_i, wbsa_stb_i;
-output [31:0] wbsa_dat_o;
-output wbsa_ack_o;
-input wbsa_clk, wbsa_rst;
-input [31:0] wbsb_dat_i;
-input [addr_width-1:2] wbsb_adr_i;
-input wbsb_we_i, wbsb_cyc_i, wbsb_stb_i;
-output [31:0] wbsb_dat_o;
-output wbsb_ack_o;
-input wbsb_clk, wbsb_rst;
-wire wbsa_dat_tmp, wbsb_dat_tmp;
-vl_dpram_2r2w # (
-    .data_width(data_width), .addr_width(addr_width) )
-dpram0(
-    .d_a(wbsa_dat_i),
-    .q_a(wbsa_dat_tmp),
-    .adr_a(wbsa_adr_i),
-    .we_a(wbsa_we_i),
-    .clk_a(wbsa_clk),
-    .d_b(wbsb_dat_i),
-    .q_b(wbsb_dat_tmp),
-    .adr_b(wbsb_adr_i),
-    .we_b(wbsb_we_i),
-    .clk_b(wbsb_clk) );
-generate if (dat_o_mask_a==1) 
-    assign wbsa_dat_o = wbsa_dat_tmp & {data_width{wbsa_ack_o}};
-endgenerate
-generate if (dat_o_mask_a==0) 
-    assign wbsa_dat_o = wbsa_dat_tmp;
-endgenerate
-generate if (dat_o_mask_b==1) 
-    assign wbsb_dat_o = wbsb_dat_tmp & {data_width{wbsb_ack_o}};
-endgenerate
-generate if (dat_o_mask_b==0) 
-    assign wbsb_dat_o = wbsb_dat_tmp;
-endgenerate
-vl_spr ack_a( .sp(wbsa_cyc_i & wbsa_stb_i & !wbsa_ack_o), .r(1'b1), .q(wbsa_ack_o), .clk(wbsa_clk), .rst(wbsa_rst));
-vl_spr ack_b( .sp(wbsb_cyc_i & wbsb_stb_i & !wbsb_ack_o), .r(1'b1), .q(wbsb_ack_o), .clk(wbsb_clk), .rst(wbsb_rst));
 endmodule
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////

@@ -6,3 +6,9 @@ tb_wb_b3_ram_be:
 	vlog -reportprogress 300 -work work /home/michael/work/ocsvn/versatile_library/trunk/bench/wbm.v
 	vlog -reportprogress 300 -work work /home/michael/work/ocsvn/versatile_library/trunk/bench/tb_wb_b3_ram_be.v
 	vsim -do "run 10 us" -l log.txt -c work.vl_wb_b3_ram_be_tb
+
+tb_wb_b3_dpram:
+	vppreproc --noline --noblank +define+SYSTEMVERILOG +define+WB_B3_DPRAM $(VERILOG_FILES) > wb_b3_dpram.v
+	vlog -reportprogress 300 -work work ./wb_b3_dpram.v
+	vlog -reportprogress 300 -work work ./../../../bench/wbm.v
+	vlog -reportprogress 300 -work work ./../../../bench/tb_wb_b3_dpram.v
