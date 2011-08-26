@@ -1285,6 +1285,7 @@ assign cke = {data_width/8{we}} & be;
    always @ (posedge clk)
       q <= ram[adr];
 `endif
+`ifdef verilator
    // Function to access RAM (for use by Verilator).
    function [31:0] get_mem;
       // verilator public
@@ -1298,6 +1299,7 @@ assign cke = {data_width/8{we}} & be;
       input [data_width-1:0] 		data;
       ram[addr] = data;
    endfunction // set_mem
+`endif
 endmodule
         // ACTEL FPGA should not use logic to handle rw collision
 module vl_dpram_1r1w ( d_a, adr_a, we_a, clk_a, q_b, adr_b, clk_b );

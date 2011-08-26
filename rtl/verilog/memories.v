@@ -164,6 +164,7 @@ assign cke = {data_width/8{we}} & be;
 
 //E2_endif
 
+//E2_ifdef verilator
    // Function to access RAM (for use by Verilator).
    function [31:0] get_mem;
       // verilator public
@@ -178,6 +179,7 @@ assign cke = {data_width/8{we}} & be;
       input [data_width-1:0] 		data;
       ram[addr] = data;
    endfunction // set_mem
+//E2_endif
 
 endmodule
 `endif
