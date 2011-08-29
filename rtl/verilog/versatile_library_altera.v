@@ -1430,7 +1430,9 @@ module vl_ram_be ( d, adr, be, we, q, clk);
    output reg [(data_width-1):0] q;
    input 			 clk;
 `ifdef SYSTEMVERILOG
-   logic [data_width/8-1:0][7:0] ram[0:mem_size-1];// # words = 1 << address width
+    // use a multi-dimensional packed array
+    //t o model individual bytes within the word
+    logic [data_width/8-1:0][7:0] ram [0:mem_size-1];// # words = 1 << address width
 `else
     reg [data_width-1:0] ram [mem_size-1:0];
     wire [data_width/8-1:0] cke;
@@ -1445,11 +1447,9 @@ module vl_ram_be ( d, adr, be, we, q, clk);
    end
    endgenerate 
 `ifdef SYSTEMVERILOG
-// use a multi-dimensional packed array
-//to model individual bytes within the word
 always_ff@(posedge clk)
 begin
-    if(we) begin // note: we should have a for statement to support any bus width
+    if(we) begin
         if(be[3]) ram[adr][3] <= d[31:24];
         if(be[2]) ram[adr][2] <= d[23:16];
         if(be[1]) ram[adr][1] <= d[15:8];
@@ -1584,9 +1584,12 @@ endmodule
 module vl_dpram_be_2r2w ( d_a, q_a, adr_a, be_a, we_a, clk_a, d_b, q_b, adr_b, be_b, we_b, clk_b );
    parameter a_data_width = 32;
    parameter a_addr_width = 8;
-   parameter b_data_width = a_data_width;
+   parameter b_data_width = 64; //a_data_width;
    localparam b_addr_width = a_data_width * a_addr_width / b_data_width;
-   parameter mem_size = (a_addr_width>b_addr_width) ? (1<<a_addr_width) : (1<<b_addr_width);
+   localparam ratio = (a_addr_width>b_addr_width) ? (a_addr_width/b_addr_width) : (b_addr_width/a_addr_width);
+   parameter mem_size = (a_addr_width>b_addr_width) ? (1<<b_addr_width) : (1<<a_addr_width);
+   parameter init = 0;
+   parameter memory_file = "vl_ram.vmem";
    input [(a_data_width-1):0]      d_a;
    input [(a_addr_width-1):0] 	   adr_a;
    input [(a_data_width/8-1):0]    be_a;
@@ -1603,7 +1606,10 @@ module vl_dpram_be_2r2w ( d_a, q_a, adr_a, be_a, we_a, clk_a, d_b, q_b, adr_b, b
 //to model individual bytes within the word
 generate
 if (a_data_width==32 & b_data_width==32) begin : dpram_3232
-   logic [3:0][7:0] ram [0:mem_size-1];
+    logic [0:3][7:0] ram [0:mem_size-1];
+    initial
+        if (init)
+            $readmemh(memory_file, ram);
     always_ff@(posedge clk_a)
     begin
         if(we_a) begin
@@ -1626,6 +1632,94 @@ if (a_data_width==32 & b_data_width==32) begin : dpram_3232
     end
     always@(posedge clk_b)
         q_b = ram[adr_b];
+end
+endgenerate
+generate
+if (a_data_width==64 & b_data_width==64) begin : dpram_6464
+    logic [0:7][7:0] ram [0:mem_size-1];
+    initial
+        if (init)
+            $readmemh(memory_file, ram);
+    always_ff@(posedge clk_a)
+    begin
+        if(we_a) begin
+            if(be_a[7]) ram[adr_a][7] <= d_a[63:56];
+            if(be_a[6]) ram[adr_a][6] <= d_a[55:48];
+            if(be_a[5]) ram[adr_a][5] <= d_a[47:40];
+            if(be_a[4]) ram[adr_a][4] <= d_a[39:32];
+            if(be_a[3]) ram[adr_a][3] <= d_a[31:24];
+            if(be_a[2]) ram[adr_a][2] <= d_a[23:16];
+            if(be_a[1]) ram[adr_a][1] <= d_a[15:8];
+            if(be_a[0]) ram[adr_a][0] <= d_a[7:0];
+        end
+    end
+    always@(posedge clk_a)
+        q_a = ram[adr_a];
+    always_ff@(posedge clk_b)
+    begin
+        if(we_b) begin
+            if(be_b[7]) ram[adr_b][7] <= d_b[63:56];
+            if(be_b[6]) ram[adr_b][6] <= d_b[55:48];
+            if(be_b[5]) ram[adr_b][5] <= d_b[47:40];
+            if(be_b[4]) ram[adr_b][4] <= d_b[39:32];
+            if(be_b[3]) ram[adr_b][3] <= d_b[31:24];
+            if(be_b[2]) ram[adr_b][2] <= d_b[23:16];
+            if(be_b[1]) ram[adr_b][1] <= d_b[15:8];
+            if(be_b[0]) ram[adr_b][0] <= d_b[7:0];
+        end
+    end
+    always@(posedge clk_b)
+        q_b = ram[adr_b];
+end
+endgenerate
+generate
+if (a_data_width==32 & b_data_width==16) begin : dpram_3216
+logic [31:0] temp;
+vl_dpram_be_2r2w # (.a_data_width(64), .b_data_width(64), .a_addr_width(a_addr_width), .mem_size(mem_size), .init(init), .memory_file(memory_file))
+dpram6464 (
+    .d_a(d_a),
+    .q_a(q_a),
+    .adr_a(adr_a),
+    .be_a(be_a),
+    .we_a(we_a),
+    .clk_a(clk_a),
+    .d_b({d_b,d_b}),
+    .q_b(temp),
+    .adr_b(adr_b),
+    .be_b({be_b,be_b} & {{2{adr_b[0]}},{2{!adr_b[0]}}}),
+    .we_b(we_b),
+    .clk_b(clk_b)
+);
+always_comb
+    if (adr_b[0])
+        q_b = temp[31:16];
+    else
+        q_b = temp[15:0];
+end
+endgenerate
+generate
+if (a_data_width==32 & b_data_width==64) begin : dpram_3264
+logic [63:0] temp;
+vl_dpram_be_2r2w # (.a_data_width(64), .b_data_width(64), .a_addr_width(a_addr_width), .mem_size(mem_size), .init(init), .memory_file(memory_file))
+dpram6464 (
+    .d_a({d_a,d_a}),
+    .q_a(temp),
+    .adr_a(adr_a[a_addr_width-1:1]),
+    .be_a({be_a,be_a} & {{4{adr_a[0]}},{4{!adr_a[0]}}}),
+    .we_a(we_a),
+    .clk_a(clk_a),
+    .d_b(d_b),
+    .q_b(q_b),
+    .adr_b(adr_b),
+    .be_b(be_b),
+    .we_b(we_b),
+    .clk_b(clk_b)
+);
+always_comb
+    if (adr_a[0])
+        q_a = temp[63:32];
+    else
+        q_a = temp[31:0];
 end
 endgenerate
 `else
@@ -2106,6 +2200,8 @@ module vl_wb3wb3_bridge (
 	wbs_dat_i, wbs_adr_i, wbs_sel_i, wbs_bte_i, wbs_cti_i, wbs_we_i, wbs_cyc_i, wbs_stb_i, wbs_dat_o, wbs_ack_o, wbs_clk, wbs_rst,
 	// wishbone master side
 	wbm_dat_o, wbm_adr_o, wbm_sel_o, wbm_bte_o, wbm_cti_o, wbm_we_o, wbm_cyc_o, wbm_stb_o, wbm_dat_i, wbm_ack_i, wbm_clk, wbm_rst);
+parameter style = "FIFO"; // valid: simple, FIFO
+parameter addr_width = 4;
 input [31:0] wbs_dat_i;
 input [31:2] wbs_adr_i;
 input [3:0]  wbs_sel_i;
@@ -2126,7 +2222,6 @@ output wbm_stb_o;
 input [31:0]  wbm_dat_i;
 input wbm_ack_i;
 input wbm_clk, wbm_rst;
-parameter addr_width = 4;
 // bte
 parameter linear       = 2'b00;
 parameter wrap4        = 2'b01;
@@ -2136,12 +2231,12 @@ parameter wrap16       = 2'b11;
 parameter classic      = 3'b000;
 parameter incburst     = 3'b010;
 parameter endofburst   = 3'b111;
-parameter wbs_adr  = 1'b0;
-parameter wbs_data = 1'b1;
-parameter wbm_adr0      = 2'b00;
-parameter wbm_adr1      = 2'b01;
-parameter wbm_data      = 2'b10;
-parameter wbm_data_wait = 2'b11;
+localparam wbs_adr  = 1'b0;
+localparam wbs_data = 1'b1;
+localparam wbm_adr0      = 2'b00;
+localparam wbm_adr1      = 2'b01;
+localparam wbm_data      = 2'b10;
+localparam wbm_data_wait = 2'b11;
 reg [1:0] wbs_bte_reg;
 reg wbs;
 wire wbs_eoc_alert, wbm_eoc_alert;
