@@ -72,13 +72,15 @@ else
 
 generate
 if (max_burst_width==0) begin : inst_0   
-    reg ack_o;
-    assign adr_o = adr_i;
-    always @ (posedge clk or posedge rst)
-    if (rst)
-        ack_o <= 1'b0;
-    else
-        ack_o <= cyc_i & stb_i & !ack_o;
+
+        reg ack_o;
+        assign adr_o = adr_i;
+        always @ (posedge clk or posedge rst)
+        if (rst)
+            ack_o <= 1'b0;
+        else
+            ack_o <= cyc_i & stb_i & !ack_o;
+
 end else begin
 
     always @ (posedge clk or posedge rst)
@@ -95,6 +97,7 @@ end else begin
                                         (last_cycle==idle_or_eoc) ? adr_i[max_burst_width-1:0] :
                                         adr[max_burst_width-1:0];
     assign ack_o = (last_cycle==cyc_or_ws) & stb_i;
+
 end
 endgenerate
 
@@ -1136,3 +1139,60 @@ ram_i (
 endmodule
 `endif
 
+`ifdef WBB3_WBB4_CACHE
+`define MODULE wbb3_wbb4_cache
+module `BASE`MODULE (
+    wbs_dat_i, wbs_adr_i, wbs_sel_i, wbs_cti_i, wbs_bte_i, wbs_we_i, wbs_dat_o, wbs_ack_o, wbs_clk, wbs_rst,
+    wbm_dat_o, wbm_adr_o, wbm_sel_o, wbm_cti_o, wbm_bte_o, wbm_we_o, wbm_dat_i, wbm_ack_i, wbm_stall_i, wbm_clk, wbm_rst
+);
+`undef MODULE
+
+parameter dw_s = 32;
+parameter aw_s = 24;
+parameter dw_m = dw_s;
+parameter aw_m = dw_s * aw_s / dw_m;
+
+parameter nr_of_ways = 1;
+parameter aw_cache_mem = 10;
+parameter nr_of_cache_lines = 1 << aw_tag_mem;
+parameter size_of_cache_lines = 4; // size in word with dw_s bits
+
+input [dw_s-1:0] wbs_dat_i;
+input [aw_s-1:0] wbs_adr_i; // dont include a1,a0
+input [dw_s/8-1:0] wbs-sel_i;
+input [2:0] wbs_cti_i;
+input [1:0] wbs_bte_i;
+input wbs_we_i;
+output [dw_s-1:0] wbs_dat_o;
+output wbs_ack_o;
+input wbs_clk, wbs_rst;
+
+output [dw_m-1:0] wbm_dat_o;
+output [aw_m-1:0] wbm_adr_o;
+output [dw_m/8-1:0] wbm_sel_o;
+output [2:0] wbm_cti_o;
+output [1:0] wbm_bte_o;
+input [dw_m-1:0] wbm_dat_i;
+input wbm_ack_i;
+input wbm_stall_i;
+input wbm_clk, wbm_rst;
+
+wire dirty, valid;
+wire [] tag;
+
+`define MODULE wb_adr_inc 
+`BASE`MODULE # ( .adr_width(aw), .max_burst_width(max_burst_width)) adr_inc0 (
+    .cyc_i(wbs_cyc_i),
+    .stb_i(wbs_stb_i),
+    .cti_i(wbs_cti_i),
+    .bte_i(wbs_bte_i),
+    .adr_i(wbs_adr_i),
+    .we_i(wbs_we_i),
+    .ack_o(wbs_ack_o),
+    .adr_o(adr),
+    .clk(wb_clk),
+    .rst(wb_rst));
+`undef MODULE
+
+endmodule
+`endif
