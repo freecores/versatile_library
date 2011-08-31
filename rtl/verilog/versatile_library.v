@@ -77,6 +77,7 @@
 `define WB_B4_ROM
 `define WB_BOOT_ROM
 `define WB_DPRAM
+`define WBB3_WBB4_CACHE
 
 `define IO_DFF_OE
 `define O_DFF
@@ -158,6 +159,18 @@
 `endif
 `endif
 
+ `ifdef WBB3_WBB4_CACHE
+ `ifndef RAM
+ `define RAM
+ `endif
+ `ifndef WB_ADR_INC
+ `define WB_ADR_INC
+ `endif
+ `ifndef dpram_be_2r2w
+ `define DPRAM_BE_2R2W
+ `endif
+ `endif
+ 
 `ifdef MULTS18X18
 `ifndef MULTS
 `define MULTS
@@ -268,6 +281,9 @@
 `define DPRAM_1R1W
 `endif
 `endif
+
+// size to width
+`define SIZE2WIDTH_EXPR = (`SIZE2WIDTH==4) ? 2 : (`SIZE2WIDTH==8) ? 3 : (`SIZE2WIDTH==16) ? 4 : (`SIZE2WIDTH==32) ? 5 : (`SIZE2WIDTH==64) ? 6 : (`SIZE2WIDTH==128) ? 7 : 8;
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
 ////  Versatile library, clock and reset                          ////
@@ -1183,6 +1199,7 @@ endmodule
 `ifdef TOGGLE2PULSE
 `define MODULE toggle2pulse;
 module `BASE`MODULE (d, pl, clk, rst);
+`undef MODULE
 input d;
 output pl;
 input clk, rst;
@@ -1214,7 +1231,7 @@ endmodule
 
 `ifdef CDC
 `define MODULE cdc
-module `BASE`MODULE ( start_pl, take_it_pl, take_it_grant_pl, got_it_pl, clk_src, rst_src, clk_dst, rst_dst)
+module `BASE`MODULE ( start_pl, take_it_pl, take_it_grant_pl, got_it_pl, clk_src, rst_src, clk_dst, rst_dst);
 `undef MODULE
 input start_pl;
 output take_it_pl;
@@ -4755,13 +4772,15 @@ else
 
 generate
 if (max_burst_width==0) begin : inst_0   
-    reg ack_o;
-    assign adr_o = adr_i;
-    always @ (posedge clk or posedge rst)
-    if (rst)
-        ack_o <= 1'b0;
-    else
-        ack_o <= cyc_i & stb_i & !ack_o;
+
+        reg ack_o;
+        assign adr_o = adr_i;
+        always @ (posedge clk or posedge rst)
+        if (rst)
+            ack_o <= 1'b0;
+        else
+            ack_o <= cyc_i & stb_i & !ack_o;
+
 end else begin
 
     always @ (posedge clk or posedge rst)
@@ -4778,6 +4797,7 @@ end else begin
                                         (last_cycle==idle_or_eoc) ? adr_i[max_burst_width-1:0] :
                                         adr[max_burst_width-1:0];
     assign ack_o = (last_cycle==cyc_or_ws) & stb_i;
+
 end
 endgenerate
 
@@ -5819,6 +5839,168 @@ ram_i (
 endmodule
 `endif
 
+`ifdef WBB3_WBB4_CACHE
+`define MODULE wbb3_wbb4_cache
+module `BASE`MODULE (
+    wbs_dat_i, wbs_adr_i, wbs_sel_i, wbs_cti_i, wbs_bte_i, wbs_we_i, wbs_dat_o, wbs_ack_o, wbs_clk, wbs_rst,
+    wbm_dat_o, wbm_adr_o, wbm_sel_o, wbm_cti_o, wbm_bte_o, wbm_we_o, wbm_dat_i, wbm_ack_i, wbm_stall_i, wbm_clk, wbm_rst
+);
+`undef MODULE
+
+parameter dw_s = 32;
+parameter aw_s = 24;
+parameter dw_m = dw_s;
+parameter aw_m = dw_s * aw_s / dw_m;
+parameter max_burst_width = 4;
+
+parameter async = 1; // wbs_clk != wbm_clk
+
+parameter nr_of_ways = 1;
+parameter aw_offset = 4; // 4 => 16 words per cache line
+parameter aw_slot = 10;
+localparam aw_tag = aw_s - aw_tag_mem - aw_offset;
+parameter wbm_burst_size = 4; // valid options 4,8,16
+`define SIZE2WIDTH wbm_burst_size
+localparam wbm_burst_width `SIZE2WIDTH_EXPR
+`undef SIZE2WIDTH
+localparam nr_of_wbm_burst = ((1<<aw_offset)/wbm_burst_size) * dw_s / dw_m; 
+`define SIZE2WIDTH nr_of_wbm_burst
+localparam nr_of_wbm_burst_width `SIZE2WIDTH_EXPR
+`undef SIZE2WIDTH
+input [dw_s-1:0] wbs_dat_i;
+input [aw_s-1:0] wbs_adr_i; // dont include a1,a0
+input [dw_s/8-1:0] wbs-sel_i;
+input [2:0] wbs_cti_i;
+input [1:0] wbs_bte_i;
+input wbs_we_i;
+output [dw_s-1:0] wbs_dat_o;
+output wbs_ack_o;
+input wbs_clk, wbs_rst;
+
+output [dw_m-1:0] wbm_dat_o;
+output [aw_m-1:0] wbm_adr_o;
+output [dw_m/8-1:0] wbm_sel_o;
+output [2:0] wbm_cti_o;
+output [1:0] wbm_bte_o;
+input [dw_m-1:0] wbm_dat_i;
+input wbm_ack_i;
+input wbm_stall_i;
+input wbm_clk, wbm_rst;
+
+wire dirty, valid;
+wire [aw_tag-1:0] tag;
+wire tag_mem_we;
+wire [aw_tag-1:0] wbs_adr_tag;
+wire [aw_slot-1:0] wbs_adr_slot;
+wire [aw_offset_1:0] wbs_adr_word;
+wire [aw-1:0] wbs_adr;
+
+reg [1:0] state;
+localparam idle = 2'h0;
+localparam rdwr = 2'h1;
+localparam push = 2'h2;
+localparam pull = 2'h3;
+wire eoc;
+
+// cdc
+wire done, mem_alert, mem_done;
+
+assign {wbs_adr_tag, wbs_adr_slot, wbs_adr_word} = wbs_adr_i;
+assign eoc = (wbs_cti_i==3'b000 | wbs_cti_i==3'b111) & wbs_ack_o;
+
+`define MODULE ram
+`BASE`MODULE
+    # ( .data_width(aw_tag), .addr_Width(aw_slot))
+    tag_mem ( .d(wbs_adr_slot), .adr(wbs_adr_tag), .we(done), .q(tag), .clk(wbs_clk));
+`undef MODULE
+assign valid = wbs_adr_tag == tag;
+
+`define MODULE wb_adr_inc 
+`BASE`MODULE # ( .adr_width(aw_slot+aw_offset), .max_burst_width(max_burst_width)) adr_inc0 (
+    .cyc_i(wbs_cyc_i),
+    .stb_i(wbs_stb_i & (state==idle | (state==rw & valid))), // throttle depending on valid
+    .cti_i(wbs_cti_i),
+    .bte_i(wbs_bte_i),
+    .adr_i(wbs_adr_i),
+    .we_i (wbs_we_i),
+    .ack_o(wbs_ack_o),
+    .adr_o(wbs_adr),
+    .clk(wbsa_clk),
+    .rst(wbsa_rst));
+`undef MODULE
+
+`define MODULE dpram_be_2r2w
+`BASE`MODULE
+    # ( .data_width(aw_tag), .addr_Width(aw_slot+aw_offset))
+    cache_mem ( .d_a(wbs_dat_i), .adr_a(wbs_adr), be_a(wbs_sel_i), .we_a(wbs_cyc_i &  wbs_we_i & wbs_ack_o), .q_a(wbs_dat_o), .clk_a(wbs_clk),
+                .d_b(wbm_dat_i), .adr_b(wbm_adr), be_b(wbm_sel_o), .we_b(wbm_cyc_o & !wbm_we_o & wbs_ack_i), .q_b(wbm_dat_o), .clk_b(wbm_clk));
+`undef MODULE    
+
+always @ (posedge wbs_clk or posedge wbs_rst)
+if (wbs_rst)
+    case <= idle;
+else
+    case (state)
+    idle:
+        if (wbs_cyc_i)
+            state <= rdwr;
+    rdwr:
+        if (wbs_we_i & valid & eoc)
+            state <= idle;
+        else if (wbs_we_i & !valid)
+            state <= pull;
+        else if (!wbs_we_i & valid & eoc)
+            state <= idle;
+        else if (!wbs_we_i & !valid & !dirty)
+            state <= pull;
+        else if (!wbs_we_i & !valid & dirty)
+            state <= push;
+    push:
+        if (done)
+            state <= rdwr;
+    pull:
+        if (done)
+            state <= rdwr;
+    default: state <= idle;
+    endcase
+
+
+// cdc
+generate
+if (async==1) begin : cdc0
+`define MODULE cdc
+`BASE`MODULE cdc0 ( .start_pl(state==rdwr & !valid), .take_it_pl(mem_alert), .take_it_grant_pl(mem_done), .got_it_pl(done), .clk_src(wbs_clk), .rst_src(wbs_rst), .clk_dst(wbm_clk), .rst_dst(wbm_rst));
+`undef MODULE
+end
+else begin : nocdc
+    assign mem_alert = state==rdwr & !valid;
+    assign done = mem_done;
+end
+endgenerate
+
+always @ (posedge wbm_clk or posedge wbm_rst)
+if (rst)
+    wbm_burst_adr <= {aw_wbm_burst{1'b0}};
+else
+    if (wbm_cyc_o & wbm_stb_o & !wbm_stall_i))
+        wbm_burst_adr <= wbm_burst_adr + (aw_wbm_burst)'d1
+
+// FSM generating a number of burts 4 cycles
+// actual number depends on data width ratio
+// nr_of_wbm_burst
+reg [wbm_burst_width-1:0] cnt0;
+reg [nr_of_wbm_burst_width-1:0] cnt1;
+
+always @ (posedge wbm_clk or posedge wbm_rst)
+if (wbm_rst)
+    {cnt1,cnt0} <= {nr_of_wbm_burst_width+wbm_burst_width{1'b0}};
+else
+    if (wbm_cyc_o & wbm_stb_o & !wbm_stall_i)
+        {cnt1,cnt0} <= (nr_of_wbm_burst_width+wbm_burst_width)1'd1;
+
+
+endmodule
+`endif
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
 ////  Arithmetic functions                                        ////

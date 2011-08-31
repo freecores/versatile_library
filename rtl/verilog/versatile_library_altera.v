@@ -1,4 +1,5 @@
 // default SYN_KEEP definition
+// size to width
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
 ////  Versatile library, clock and reset                          ////
@@ -536,7 +537,7 @@ if (rst)
 else
     {dff,q} <= {d,dff};
 endmodule
-module vl_cdc ( start_pl, take_it_pl, take_it_grant_pl, got_it_pl, clk_src, rst_src, clk_dst, rst_dst)
+module vl_cdc ( start_pl, take_it_pl, take_it_grant_pl, got_it_pl, clk_src, rst_src, clk_dst, rst_dst);
 input start_pl;
 output take_it_pl;
 input take_it_grant_pl; // note: connect to take_it_pl to generate automatic ack
@@ -2120,13 +2121,13 @@ else
         last_adr <=adr_o[max_burst_width-1:0];
 generate
 if (max_burst_width==0) begin : inst_0   
-    reg ack_o;
-    assign adr_o = adr_i;
-    always @ (posedge clk or posedge rst)
-    if (rst)
-        ack_o <= 1'b0;
-    else
-        ack_o <= cyc_i & stb_i & !ack_o;
+        reg ack_o;
+        assign adr_o = adr_i;
+        always @ (posedge clk or posedge rst)
+        if (rst)
+            ack_o <= 1'b0;
+        else
+            ack_o <= cyc_i & stb_i & !ack_o;
 end else begin
     always @ (posedge clk or posedge rst)
     if (rst)
@@ -2896,6 +2897,133 @@ always @ (posedge wb_clk or posedge wb_rst)
 assign hit_o = hit;
 assign wb_dat_o = wb_dat & {32{wb_ack}};
 assign wb_ack_o = wb_ack;
+endmodule
+module vl_wbb3_wbb4_cache (
+    wbs_dat_i, wbs_adr_i, wbs_sel_i, wbs_cti_i, wbs_bte_i, wbs_we_i, wbs_dat_o, wbs_ack_o, wbs_clk, wbs_rst,
+    wbm_dat_o, wbm_adr_o, wbm_sel_o, wbm_cti_o, wbm_bte_o, wbm_we_o, wbm_dat_i, wbm_ack_i, wbm_stall_i, wbm_clk, wbm_rst
+);
+parameter dw_s = 32;
+parameter aw_s = 24;
+parameter dw_m = dw_s;
+parameter aw_m = dw_s * aw_s / dw_m;
+parameter max_burst_width = 4;
+parameter async = 1; // wbs_clk != wbm_clk
+parameter nr_of_ways = 1;
+parameter aw_offset = 4; // 4 => 16 words per cache line
+parameter aw_slot = 10;
+localparam aw_tag = aw_s - aw_tag_mem - aw_offset;
+parameter wbm_burst_size = 4; // valid options 4,8,16
+localparam wbm_burst_width = (wbm_burst_size==4) ? 2 : (wbm_burst_size==8) ? 3 : (wbm_burst_size==16) ? 4 : (wbm_burst_size==32) ? 5 : (wbm_burst_size==64) ? 6 : (wbm_burst_size==128) ? 7 : 8;
+localparam nr_of_wbm_burst = ((1<<aw_offset)/wbm_burst_size) * dw_s / dw_m; 
+localparam nr_of_wbm_burst_width = (nr_of_wbm_burst==4) ? 2 : (nr_of_wbm_burst==8) ? 3 : (nr_of_wbm_burst==16) ? 4 : (nr_of_wbm_burst==32) ? 5 : (nr_of_wbm_burst==64) ? 6 : (nr_of_wbm_burst==128) ? 7 : 8;
+input [dw_s-1:0] wbs_dat_i;
+input [aw_s-1:0] wbs_adr_i; // dont include a1,a0
+input [dw_s/8-1:0] wbs-sel_i;
+input [2:0] wbs_cti_i;
+input [1:0] wbs_bte_i;
+input wbs_we_i;
+output [dw_s-1:0] wbs_dat_o;
+output wbs_ack_o;
+input wbs_clk, wbs_rst;
+output [dw_m-1:0] wbm_dat_o;
+output [aw_m-1:0] wbm_adr_o;
+output [dw_m/8-1:0] wbm_sel_o;
+output [2:0] wbm_cti_o;
+output [1:0] wbm_bte_o;
+input [dw_m-1:0] wbm_dat_i;
+input wbm_ack_i;
+input wbm_stall_i;
+input wbm_clk, wbm_rst;
+wire dirty, valid;
+wire [aw_tag-1:0] tag;
+wire tag_mem_we;
+wire [aw_tag-1:0] wbs_adr_tag;
+wire [aw_slot-1:0] wbs_adr_slot;
+wire [aw_offset_1:0] wbs_adr_word;
+wire [aw-1:0] wbs_adr;
+reg [1:0] state;
+localparam idle = 2'h0;
+localparam rdwr = 2'h1;
+localparam push = 2'h2;
+localparam pull = 2'h3;
+wire eoc;
+// cdc
+wire done, mem_alert, mem_done;
+assign {wbs_adr_tag, wbs_adr_slot, wbs_adr_word} = wbs_adr_i;
+assign eoc = (wbs_cti_i==3'b000 | wbs_cti_i==3'b111) & wbs_ack_o;
+vl_ram
+    # ( .data_width(aw_tag), .addr_Width(aw_slot))
+    tag_mem ( .d(wbs_adr_slot), .adr(wbs_adr_tag), .we(done), .q(tag), .clk(wbs_clk));
+assign valid = wbs_adr_tag == tag;
+vl_wb_adr_inc # ( .adr_width(aw_slot+aw_offset), .max_burst_width(max_burst_width)) adr_inc0 (
+    .cyc_i(wbs_cyc_i),
+    .stb_i(wbs_stb_i & (state==idle | (state==rw & valid))), // throttle depending on valid
+    .cti_i(wbs_cti_i),
+    .bte_i(wbs_bte_i),
+    .adr_i(wbs_adr_i),
+    .we_i (wbs_we_i),
+    .ack_o(wbs_ack_o),
+    .adr_o(wbs_adr),
+    .clk(wbsa_clk),
+    .rst(wbsa_rst));
+vl_dpram_be_2r2w
+    # ( .data_width(aw_tag), .addr_Width(aw_slot+aw_offset))
+    cache_mem ( .d_a(wbs_dat_i), .adr_a(wbs_adr), be_a(wbs_sel_i), .we_a(wbs_cyc_i &  wbs_we_i & wbs_ack_o), .q_a(wbs_dat_o), .clk_a(wbs_clk),
+                .d_b(wbm_dat_i), .adr_b(wbm_adr), be_b(wbm_sel_o), .we_b(wbm_cyc_o & !wbm_we_o & wbs_ack_i), .q_b(wbm_dat_o), .clk_b(wbm_clk));
+always @ (posedge wbs_clk or posedge wbs_rst)
+if (wbs_rst)
+    case <= idle;
+else
+    case (state)
+    idle:
+        if (wbs_cyc_i)
+            state <= rdwr;
+    rdwr:
+        if (wbs_we_i & valid & eoc)
+            state <= idle;
+        else if (wbs_we_i & !valid)
+            state <= pull;
+        else if (!wbs_we_i & valid & eoc)
+            state <= idle;
+        else if (!wbs_we_i & !valid & !dirty)
+            state <= pull;
+        else if (!wbs_we_i & !valid & dirty)
+            state <= push;
+    push:
+        if (done)
+            state <= rdwr;
+    pull:
+        if (done)
+            state <= rdwr;
+    default: state <= idle;
+    endcase
+// cdc
+generate
+if (async==1) begin : cdc0
+vl_cdc cdc0 ( .start_pl(state==rdwr & !valid), .take_it_pl(mem_alert), .take_it_grant_pl(mem_done), .got_it_pl(done), .clk_src(wbs_clk), .rst_src(wbs_rst), .clk_dst(wbm_clk), .rst_dst(wbm_rst));
+end
+else begin : nocdc
+    assign mem_alert = state==rdwr & !valid;
+    assign done = mem_done;
+end
+endgenerate
+always @ (posedge wbm_clk or posedge wbm_rst)
+if (rst)
+    wbm_burst_adr <= {aw_wbm_burst{1'b0}};
+else
+    if (wbm_cyc_o & wbm_stb_o & !wbm_stall_i))
+        wbm_burst_adr <= wbm_burst_adr + (aw_wbm_burst)'d1
+// FSM generating a number of burts 4 cycles
+// actual number depends on data width ratio
+// nr_of_wbm_burst
+reg [wbm_burst_width-1:0] cnt0;
+reg [nr_of_wbm_burst_width-1:0] cnt1;
+always @ (posedge wbm_clk or posedge wbm_rst)
+if (wbm_rst)
+    {cnt1,cnt0} <= {nr_of_wbm_burst_width+wbm_burst_width{1'b0}};
+else
+    if (wbm_cyc_o & wbm_stb_o & !wbm_stall_i)
+        {cnt1,cnt0} <= (nr_of_wbm_burst_width+wbm_burst_width)1'd1;
 endmodule
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////

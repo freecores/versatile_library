@@ -494,6 +494,7 @@ endmodule
 `ifdef TOGGLE2PULSE
 `define MODULE toggle2pulse;
 module `BASE`MODULE (d, pl, clk, rst);
+`undef MODULE
 input d;
 output pl;
 input clk, rst;
@@ -525,7 +526,7 @@ endmodule
 
 `ifdef CDC
 `define MODULE cdc
-module `BASE`MODULE ( start_pl, take_it_pl, take_it_grant_pl, got_it_pl, clk_src, rst_src, clk_dst, rst_dst)
+module `BASE`MODULE ( start_pl, take_it_pl, take_it_grant_pl, got_it_pl, clk_src, rst_src, clk_dst, rst_dst);
 `undef MODULE
 input start_pl;
 output take_it_pl;

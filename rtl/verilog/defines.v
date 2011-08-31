@@ -77,6 +77,7 @@
 `define WB_B4_ROM
 `define WB_BOOT_ROM
 `define WB_DPRAM
+`define WBB3_WBB4_CACHE
 
 `define IO_DFF_OE
 `define O_DFF
@@ -158,6 +159,18 @@
 `endif
 `endif
 
+ `ifdef WBB3_WBB4_CACHE
+ `ifndef RAM
+ `define RAM
+ `endif
+ `ifndef WB_ADR_INC
+ `define WB_ADR_INC
+ `endif
+ `ifndef dpram_be_2r2w
+ `define DPRAM_BE_2R2W
+ `endif
+ `endif
+ 
 `ifdef MULTS18X18
 `ifndef MULTS
 `define MULTS
@@ -268,3 +281,6 @@
 `define DPRAM_1R1W
 `endif
 `endif
+
+// size to width
+`define SIZE2WIDTH_EXPR = (`SIZE2WIDTH==4) ? 2 : (`SIZE2WIDTH==8) ? 3 : (`SIZE2WIDTH==16) ? 4 : (`SIZE2WIDTH==32) ? 5 : (`SIZE2WIDTH==64) ? 6 : (`SIZE2WIDTH==128) ? 7 : 8;
