@@ -10,6 +10,13 @@
 `define SYN_KEEP /*synthesis syn_keep = 1*/
 `endif
 
+`ifdef ACTEL
+    // ACTEL FPGA should not use logic to handle rw collision
+    `define SYN_NO_RW_CHECK /*synthesis syn_ramstyle = "no_rw_check"*/
+`else
+    `define SYN_NO_RW_CHECK 
+`endif
+
 `ifdef ALL
 
 `define GBUF
@@ -96,18 +103,6 @@
 `endif
 `endif
 
-`ifdef CDC
-`ifndef PULSE2TOGGLE
-`define PULSE2TOGGLE
-`endif
-`ifndef TOGGLE2PULSE
-`define TOGGLE2PULSE
-`endif
-`ifndef SYNCHRONIZER
-`define SYNCHRONIZER
-`endif
-`endif
-
 `ifdef WB_B3_DPRAM
 `ifndef WB_ADR_INC
 `define WB_ADR_INC
@@ -168,6 +163,9 @@
  `endif
  `ifndef dpram_be_2r2w
  `define DPRAM_BE_2R2W
+ `endif
+ `ifndef CDC
+ `define CDC
  `endif
  `endif
  
@@ -279,6 +277,18 @@
 `ifdef REG_FILE
 `ifndef DPRAM_1R1W
 `define DPRAM_1R1W
+`endif
+`endif
+
+`ifdef CDC
+`ifndef PULSE2TOGGLE
+`define PULSE2TOGGLE
+`endif
+`ifndef TOGGLE2PULSE
+`define TOGGLE2PULSE
+`endif
+`ifndef SYNCHRONIZER
+`define SYNCHRONIZER
 `endif
 `endif
 

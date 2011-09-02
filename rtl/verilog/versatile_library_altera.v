@@ -503,18 +503,17 @@ else
 assign q = dffs[depth];
 assign emptyflag = !(|dffs);
 endmodule
-module vl_pules2toggle ( pl, q, clk, rst)
+module vl_pulse2toggle ( pl, q, clk, rst);
 input pl;
-output q;
+output reg q;
 input clk, rst;
-input
 always @ (posedge clk or posedge rst)
 if (rst)
     q <= 1'b0;
 else
     q <= pl ^ q;
 endmodule
-module vl_toggle2pulse; (d, pl, clk, rst);
+module vl_toggle2pulse (d, pl, clk, rst);
 input d;
 output pl;
 input clk, rst;
@@ -524,7 +523,7 @@ if (rst)
     dff <= 1'b0;
 else
     dff <= d;
-assign d ^ dff;
+assign pl = d ^ dff;
 endmodule
 module vl_synchronizer (d, q, clk, rst);
 input d;
@@ -563,7 +562,7 @@ vl_toggle2pulse t2p0 (
     .clk(clk_dst),
     .rst(rst_dst));
 // dst -> src
-vl_pulse2toggle p2t0 (
+vl_pulse2toggle p2t1 (
     .pl(take_it_grant_pl),
     .q(got_it_tg),
     .clk(clk_dst),
@@ -1403,7 +1402,7 @@ module vl_ram ( d, adr, we, q, clk);
    input 			 we;
    output reg [(data_width-1):0] q;
    input 			 clk;
-   reg [data_width-1:0] ram [mem_szie-1:0];
+   reg [data_width-1:0] ram [mem_size-1:0];
    parameter init = 0;
    parameter memory_file = "vl_ram.vmem";
    generate if (init) begin : init_mem
@@ -1607,7 +1606,7 @@ module vl_dpram_be_2r2w ( d_a, q_a, adr_a, be_a, we_a, clk_a, d_b, q_b, adr_b, b
 //to model individual bytes within the word
 generate
 if (a_data_width==32 & b_data_width==32) begin : dpram_3232
-    logic [0:3][7:0] ram [0:mem_size-1];
+    logic [0:3][7:0] ram [0:mem_size-1] ;
     initial
         if (init)
             $readmemh(memory_file, ram);
@@ -1637,7 +1636,7 @@ end
 endgenerate
 generate
 if (a_data_width==64 & b_data_width==64) begin : dpram_6464
-    logic [0:7][7:0] ram [0:mem_size-1];
+    logic [0:7][7:0] ram [0:mem_size-1] ;
     initial
         if (init)
             $readmemh(memory_file, ram);
@@ -1725,6 +1724,7 @@ end
 endgenerate
 `else
     // This modules requires SystemVerilog
+    // at this point anyway
 `endif
 endmodule
 // FIFO
@@ -2899,8 +2899,8 @@ assign wb_dat_o = wb_dat & {32{wb_ack}};
 assign wb_ack_o = wb_ack;
 endmodule
 module vl_wbb3_wbb4_cache (
-    wbs_dat_i, wbs_adr_i, wbs_sel_i, wbs_cti_i, wbs_bte_i, wbs_we_i, wbs_dat_o, wbs_ack_o, wbs_clk, wbs_rst,
-    wbm_dat_o, wbm_adr_o, wbm_sel_o, wbm_cti_o, wbm_bte_o, wbm_we_o, wbm_dat_i, wbm_ack_i, wbm_stall_i, wbm_clk, wbm_rst
+    wbs_dat_i, wbs_adr_i, wbs_sel_i, wbs_cti_i, wbs_bte_i, wbs_we_i, wbs_stb_i, wbs_cyc_i, wbs_dat_o, wbs_ack_o, wbs_clk, wbs_rst,
+    wbm_dat_o, wbm_adr_o, wbm_sel_o, wbm_cti_o, wbm_bte_o, wbm_we_o, wbm_stb_o, wbm_cyc_o, wbm_dat_i, wbm_ack_i, wbm_stall_i, wbm_clk, wbm_rst
 );
 parameter dw_s = 32;
 parameter aw_s = 24;
@@ -2911,17 +2911,18 @@ parameter async = 1; // wbs_clk != wbm_clk
 parameter nr_of_ways = 1;
 parameter aw_offset = 4; // 4 => 16 words per cache line
 parameter aw_slot = 10;
-localparam aw_tag = aw_s - aw_tag_mem - aw_offset;
+localparam aw_tag = aw_s - aw_slot - aw_offset;
 parameter wbm_burst_size = 4; // valid options 4,8,16
+localparam bte = (wbm_burst_size==4) ? 2'b01 : (wbm_burst_size==8) ? 2'b10 : 2'b11;
 localparam wbm_burst_width = (wbm_burst_size==4) ? 2 : (wbm_burst_size==8) ? 3 : (wbm_burst_size==16) ? 4 : (wbm_burst_size==32) ? 5 : (wbm_burst_size==64) ? 6 : (wbm_burst_size==128) ? 7 : 8;
 localparam nr_of_wbm_burst = ((1<<aw_offset)/wbm_burst_size) * dw_s / dw_m; 
 localparam nr_of_wbm_burst_width = (nr_of_wbm_burst==4) ? 2 : (nr_of_wbm_burst==8) ? 3 : (nr_of_wbm_burst==16) ? 4 : (nr_of_wbm_burst==32) ? 5 : (nr_of_wbm_burst==64) ? 6 : (nr_of_wbm_burst==128) ? 7 : 8;
 input [dw_s-1:0] wbs_dat_i;
 input [aw_s-1:0] wbs_adr_i; // dont include a1,a0
-input [dw_s/8-1:0] wbs-sel_i;
+input [dw_s/8-1:0] wbs_sel_i;
 input [2:0] wbs_cti_i;
 input [1:0] wbs_bte_i;
-input wbs_we_i;
+input wbs_we_i, wbs_stb_i, wbs_cyc_i;
 output [dw_s-1:0] wbs_dat_o;
 output wbs_ack_o;
 input wbs_clk, wbs_rst;
@@ -2930,6 +2931,7 @@ output [aw_m-1:0] wbm_adr_o;
 output [dw_m/8-1:0] wbm_sel_o;
 output [2:0] wbm_cti_o;
 output [1:0] wbm_bte_o;
+output wbm_stb_o, wbm_cyc_o, wbm_we_o;
 input [dw_m-1:0] wbm_dat_i;
 input wbm_ack_i;
 input wbm_stall_i;
@@ -2939,8 +2941,8 @@ wire [aw_tag-1:0] tag;
 wire tag_mem_we;
 wire [aw_tag-1:0] wbs_adr_tag;
 wire [aw_slot-1:0] wbs_adr_slot;
-wire [aw_offset_1:0] wbs_adr_word;
-wire [aw-1:0] wbs_adr;
+wire [aw_offset-1:0] wbs_adr_word;
+wire [aw_s-1:0] wbs_adr;
 reg [1:0] state;
 localparam idle = 2'h0;
 localparam rdwr = 2'h1;
@@ -2949,13 +2951,22 @@ localparam pull = 2'h3;
 wire eoc;
 // cdc
 wire done, mem_alert, mem_done;
+// wbm side
+reg [aw_m-1:0] wbm_radr;
+reg [aw_m-1:0] wbm_wadr;
+wire [aw_slot+-1:0] wbm_adr;
+wire wbm_radr_cke, wbm_wadr_cke;
+reg [1:0] phase;
+localparam wbm_wait = 2'b00;
+localparam wbm_rd = 2'b10;
+localparam wbm_wr = 2'b11;
 assign {wbs_adr_tag, wbs_adr_slot, wbs_adr_word} = wbs_adr_i;
 assign eoc = (wbs_cti_i==3'b000 | wbs_cti_i==3'b111) & wbs_ack_o;
 vl_ram
-    # ( .data_width(aw_tag), .addr_Width(aw_slot))
+    # ( .data_width(aw_tag), .addr_width(aw_slot))
     tag_mem ( .d(wbs_adr_slot), .adr(wbs_adr_tag), .we(done), .q(tag), .clk(wbs_clk));
 assign valid = wbs_adr_tag == tag;
-vl_wb_adr_inc # ( .adr_width(aw_slot+aw_offset), .max_burst_width(max_burst_width)) adr_inc0 (
+vl_wb_adr_inc # ( .adr_width(aw_s), .max_burst_width(max_burst_width)) adr_inc0 (
     .cyc_i(wbs_cyc_i),
     .stb_i(wbs_stb_i & (state==idle | (state==rw & valid))), // throttle depending on valid
     .cti_i(wbs_cti_i),
@@ -2967,12 +2978,12 @@ vl_wb_adr_inc # ( .adr_width(aw_slot+aw_offset), .max_burst_width(max_burst_widt
     .clk(wbsa_clk),
     .rst(wbsa_rst));
 vl_dpram_be_2r2w
-    # ( .data_width(aw_tag), .addr_Width(aw_slot+aw_offset))
-    cache_mem ( .d_a(wbs_dat_i), .adr_a(wbs_adr), be_a(wbs_sel_i), .we_a(wbs_cyc_i &  wbs_we_i & wbs_ack_o), .q_a(wbs_dat_o), .clk_a(wbs_clk),
-                .d_b(wbm_dat_i), .adr_b(wbm_adr), be_b(wbm_sel_o), .we_b(wbm_cyc_o & !wbm_we_o & wbs_ack_i), .q_b(wbm_dat_o), .clk_b(wbm_clk));
+    # ( .a_data_width(dw_s), .a_addr_width(aw_slot+aw_offset), .b_data_width(dw_m) )
+    cache_mem ( .d_a(wbs_dat_i), .adr_a(wbs_adr[aw_slot+aw_offset-1:0]), .be_a(wbs_sel_i), .we_a(wbs_cyc_i &  wbs_we_i & wbs_ack_o), .q_a(wbs_dat_o), .clk_a(wbs_clk),
+                .d_b(wbm_dat_i), .adr_b(wbm_adr), .be_b(wbm_sel_o), .we_b(wbm_cyc_o & !wbm_we_o & wbs_ack_i), .q_b(wbm_dat_o), .clk_b(wbm_clk));
 always @ (posedge wbs_clk or posedge wbs_rst)
 if (wbs_rst)
-    case <= idle;
+    state <= idle;
 else
     case (state)
     idle:
@@ -3007,23 +3018,48 @@ else begin : nocdc
     assign done = mem_done;
 end
 endgenerate
-always @ (posedge wbm_clk or posedge wbm_rst)
-if (rst)
-    wbm_burst_adr <= {aw_wbm_burst{1'b0}};
-else
-    if (wbm_cyc_o & wbm_stb_o & !wbm_stall_i))
-        wbm_burst_adr <= wbm_burst_adr + (aw_wbm_burst)'d1
 // FSM generating a number of burts 4 cycles
 // actual number depends on data width ratio
 // nr_of_wbm_burst
-reg [wbm_burst_width-1:0] cnt0;
-reg [nr_of_wbm_burst_width-1:0] cnt1;
+reg [nr_of_wbm_burst_width+wbm_burst_width-1:0] cnt0;
+reg [nr_of_wbm_burst_width+wbm_burst_width-1:0] cnt1;
 always @ (posedge wbm_clk or posedge wbm_rst)
 if (wbm_rst)
-    {cnt1,cnt0} <= {nr_of_wbm_burst_width+wbm_burst_width{1'b0}};
+    cnt0 <= {nr_of_wbm_burst_width+wbm_burst_width{1'b0}};
 else
-    if (wbm_cyc_o & wbm_stb_o & !wbm_stall_i)
-        {cnt1,cnt0} <= (nr_of_wbm_burst_width+wbm_burst_width)1'd1;
+    if (wbm_radr_cke)
+        cnt0 <= cnt0 + 1;//(nr_of_wbm_burst_width+wbm_burst_width)1'd1;
+assign wbm_radr_cke = wbm_cyc_o & wbm_stb_o & !wbm_stall_i;
+assign wbm_radr = {wbs_adr_tag, tag, cnt0};
+always @ (posedge wbm_clk or posedge wbm_rst)
+if (wbm_rst)
+    cnt1 <= {nr_of_wbm_burst_width+wbm_burst_width{1'b0}};
+else
+    if (wbm_wadr_cke)
+        cnt1 <= cnt1 + 1;//(nr_of_wbm_burst_width+wbm_burst_width)1'd1;
+assign wbm_wadr_cke = wbm_ack_i;
+assign wbm_wadr = {wbs_adr_tag, wbs_adr_slot, cnt1};
+always @ (posedge wbm_clk or posedge wbm_rst)
+if (wbm_rst)
+    phase <= wbm_wait;
+else
+    case (phase)
+    wbm_wait:
+        if (mem_alert)
+            phase <= state;
+    wbm_wr:
+        if (&cnt1 & wbm_ack_i)
+            phase <= wbm_rd;
+    wbm_rd:
+        if (&cnt0 & wbm_ack_i)
+            phase <= idle;
+    default: phase <= wbm_wait;
+    endcase
+assign wbm_adr_o = (phase==wbm_wr) ? {tag, wbs_adr_slot, cnt1} : {wbs_adr_tag, wbs_adr_slot, cnt1};
+assign wbm_adr   = (phase==wbm_wr) ? {wbs_adr_slot, cnt1} : {wbs_adr_slot, cnt1};
+assign wbm_cti_o = (&cnt0 | &cnt1) ? 3'b111 : 3'b010;
+assign wbm_bte_o = bte;
+assign wbm_we_o  = phase==wbm_wr;
 endmodule
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////

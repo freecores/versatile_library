@@ -476,13 +476,12 @@ endmodule
 `endif
 
 `ifdef PULSE2TOGGLE
-`define MODULE pules2toggle
-module `BASE`MODULE ( pl, q, clk, rst)
+`define MODULE pulse2toggle
+module `BASE`MODULE ( pl, q, clk, rst);
 `undef MODULE
 input pl;
-output q;
+output reg q;
 input clk, rst;
-input
 always @ (posedge clk or posedge rst)
 if (rst)
     q <= 1'b0;
@@ -492,7 +491,7 @@ endmodule
 `endif
 
 `ifdef TOGGLE2PULSE
-`define MODULE toggle2pulse;
+`define MODULE toggle2pulse
 module `BASE`MODULE (d, pl, clk, rst);
 `undef MODULE
 input d;
@@ -504,7 +503,7 @@ if (rst)
     dff <= 1'b0;
 else
     dff <= d;
-assign d ^ dff;
+assign pl = d ^ dff;
 endmodule
 `endif
 
@@ -563,7 +562,7 @@ wire got_it_tg, got_it_tg_sync;
 
 // dst -> src
 `define MODULE pulse2toggle
-`BASE`MODULE p2t0 (
+`BASE`MODULE p2t1 (
 `undef MODULE
     .pl(take_it_grant_pl),
     .q(got_it_tg),

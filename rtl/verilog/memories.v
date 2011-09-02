@@ -79,7 +79,7 @@ module `BASE`MODULE ( d, adr, we, q, clk);
    input 			 we;
    output reg [(data_width-1):0] q;
    input 			 clk;
-   reg [data_width-1:0] ram [mem_szie-1:0];
+   reg [data_width-1:0] ram [mem_size-1:0];
    parameter init = 0;
    parameter memory_file = "vl_ram.vmem";
    generate if (init) begin : init_mem
@@ -184,13 +184,6 @@ assign cke = {data_width/8{we}} & be;
 endmodule
 `endif
 
-`ifdef ACTEL
-        // ACTEL FPGA should not use logic to handle rw collision
-	`define SYN /*synthesis syn_ramstyle = "no_rw_check"*/
-`else
-        `define SYN 
-`endif
-
 `ifdef DPRAM_1R1W
 `define MODULE dpram_1r1w
 module `BASE`MODULE ( d_a, adr_a, we_a, clk_a, q_b, adr_b, clk_b );
@@ -205,7 +198,7 @@ module `BASE`MODULE ( d_a, adr_a, we_a, clk_a, q_b, adr_b, clk_b );
    output [(data_width-1):0] 	 q_b;
    input 			 clk_a, clk_b;
    reg [(addr_width-1):0] 	 adr_b_reg;
-   reg [data_width-1:0] ram [mem_szie-1:0] `SYN;
+   reg [data_width-1:0] ram [mem_szie-1:0] `SYN_NO_RW_CHECK;
 
    parameter init = 0;
    parameter memory_file = "vl_ram.vmem";
@@ -243,7 +236,7 @@ module `BASE`MODULE ( d_a, q_a, adr_a, we_a, clk_a, q_b, adr_b, clk_b );
    output reg [(data_width-1):0] q_a;
    input 			 clk_a, clk_b;
    reg [(data_width-1):0] 	 q_b;   
-   reg [data_width-1:0] ram [mem_szie-1:0] `SYN;
+   reg [data_width-1:0] ram [mem_szie-1:0] `SYN_NO_RW_CHECK;
 
    parameter init = 0;
    parameter memory_file = "vl_ram.vmem";
@@ -284,7 +277,7 @@ module `BASE`MODULE ( d_a, q_a, adr_a, we_a, clk_a, d_b, q_b, adr_b, we_b, clk_b
    input 			 we_b;
    input 			 clk_a, clk_b;
    reg [(data_width-1):0] 	 q_b;   
-   reg [data_width-1:0] ram [mem_size-1:0] `SYN;
+   reg [data_width-1:0] ram [mem_size-1:0] `SYN_NO_RW_CHECK;
 
    parameter init = 0;
    parameter memory_file = "vl_ram.vmem";
@@ -346,7 +339,7 @@ module `BASE`MODULE ( d_a, q_a, adr_a, be_a, we_a, clk_a, d_b, q_b, adr_b, be_b,
 generate
 if (a_data_width==32 & b_data_width==32) begin : dpram_3232
 
-    logic [0:3][7:0] ram [0:mem_size-1];
+    logic [0:3][7:0] ram [0:mem_size-1] `SYN_NO_RW_CHECK;
     
     initial
         if (init)
@@ -384,7 +377,7 @@ endgenerate
 generate
 if (a_data_width==64 & b_data_width==64) begin : dpram_6464
 
-    logic [0:7][7:0] ram [0:mem_size-1];
+    logic [0:7][7:0] ram [0:mem_size-1] `SYN_NO_RW_CHECK;
     
     initial
         if (init)
@@ -489,6 +482,7 @@ endgenerate
 
 //E2_else
     // This modules requires SystemVerilog
+    // at this point anyway
 //E2_endif
 endmodule
 `endif
@@ -944,8 +938,8 @@ input clk;
 reg [data_width-1:0] wd3_reg;
 reg [addr_width-1:0] a1_reg, a2_reg, a3_reg;
 reg we3_reg;
-reg [data_width-1:0] ram1 [(1<<addr_width)-1:0] `SYN;
-reg [data_width-1:0] ram2 [(1<<addr_width)-1:0] `SYN;
+reg [data_width-1:0] ram1 [(1<<addr_width)-1:0] `SYN_NO_RW_CHECK;
+reg [data_width-1:0] ram2 [(1<<addr_width)-1:0] `SYN_NO_RW_CHECK;
 always @ (posedge clk or posedge rst)
 if (rst)
     {wd3_reg, a3_reg, we3_reg} <= {(data_width+addr_width+1){1'b0}};
