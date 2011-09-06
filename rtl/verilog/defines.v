@@ -80,12 +80,11 @@
 `define WB3WB3_BRIDGE
 `define WB3_ARBITER_TYPE1
 `define WB_ADR_INC
-`define WB_B3_RAM_BE
-`define WB_B4_RAM_BE
+`define WB_RAM
 `define WB_B4_ROM
 `define WB_BOOT_ROM
 `define WB_DPRAM
-`define WBB3_WBB4_CACHE
+`define WB_CACHE
 
 `define IO_DFF_OE
 `define O_DFF
@@ -113,7 +112,7 @@
 `endif
 `endif
 
-`ifdef WB_B3_RAM_BE
+`ifdef WB_RAM
 `ifndef WB_ADR_INC
 `define WB_ADR_INC
 `endif
@@ -155,7 +154,7 @@
 `endif
 `endif
 
-`ifdef WBB3_WBB4_CACHE
+`ifdef WB_CACHE
 `ifndef RAM
 `define RAM
 `endif

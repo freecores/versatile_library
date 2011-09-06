@@ -2116,7 +2116,6 @@ endmodule
 //// from http://www.opencores.org/lgpl.shtml                     ////
 ////                                                              ////
 //////////////////////////////////////////////////////////////////////
-// async wb3 - wb3 bridge
 `timescale 1ns/1ns
 module vl_wb_adr_inc ( cyc_i, stb_i, cti_i, bte_i, adr_i, we_i, ack_o, adr_o, clk, rst);
 parameter adr_width = 10;
@@ -2729,45 +2728,31 @@ endgenerate
     assign wbm_rty_i = {nr_of_ports{wbs_rty_o}} & sel;
 endmodule
 // WB RAM with byte enable
-module vl_wb_b3_ram_be (
+module vl_wb_ram (
     wbs_dat_i, wbs_adr_i, wbs_cti_i, wbs_bte_i, wbs_sel_i, wbs_we_i, wbs_stb_i, wbs_cyc_i, 
-    wbs_dat_o, wbs_ack_o, wb_clk, wb_rst);
-parameter adr_size = 16;
-parameter mem_size = 1<<adr_size;
-parameter dat_size = 32;
-parameter max_burst_width = 4;
+    wbs_dat_o, wbs_ack_o, wbs_stall_o, wb_clk, wb_rst);
+parameter adr_width = 16;
+parameter mem_size = 1<<adr_width;
+parameter dat_width = 32;
+parameter max_burst_width = 4; // only used for B3
+parameter mode = "B3"; // valid options: B3, B4
 parameter memory_init = 1;
 parameter memory_file = "vl_ram.vmem";
-localparam aw = (adr_size);
-localparam dw = dat_size;
-localparam sw = dat_size/8;
-localparam cw = 3;
-localparam bw = 2;
-input [dw-1:0] wbs_dat_i;
-input [aw-1:0] wbs_adr_i;
-input [cw-1:0] wbs_cti_i;
-input [bw-1:0] wbs_bte_i;
-input [sw-1:0] wbs_sel_i;
+input [dat_width-1:0] wbs_dat_i;
+input [adr_width-1:0] wbs_adr_i;
+input [2:0] wbs_cti_i;
+input [1:0] wbs_bte_i;
+input [dat_width/8-1:0] wbs_sel_i;
 input wbs_we_i, wbs_stb_i, wbs_cyc_i;
-output [dw-1:0] wbs_dat_o;
+output [dat_width-1:0] wbs_dat_o;
 output wbs_ack_o;
+output wbs_stall_o;
 input wb_clk, wb_rst;
-wire [aw-1:0] adr;
-vl_ram_be # (
-    .data_width(dat_size),
-    .addr_width(aw),
-    .mem_size(mem_size),
-    .memory_init(memory_init),
-    .memory_file(memory_file))
-ram0(
-    .d(wbs_dat_i),
-    .adr(adr),
-    .be(wbs_sel_i),
-    .we(wbs_we_i & wbs_ack_o),
-    .q(wbs_dat_o),
-    .clk(wb_clk)
-);
-vl_wb_adr_inc # ( .adr_width(aw), .max_burst_width(max_burst_width)) adr_inc0 (
+wire [adr_width-1:0] adr;
+wire we;
+generate
+if (mode=="B3") begin : B3_inst
+vl_wb_adr_inc # ( .adr_width(adr_width), .max_burst_width(max_burst_width)) adr_inc0 (
     .cyc_i(wbs_cyc_i),
     .stb_i(wbs_stb_i),
     .cti_i(wbs_cti_i),
@@ -2778,27 +2763,20 @@ vl_wb_adr_inc # ( .adr_width(aw), .max_burst_width(max_burst_width)) adr_inc0 (
     .adr_o(adr),
     .clk(wb_clk),
     .rst(wb_rst));
-endmodule
-// WB RAM with byte enable
-module vl_wb_b4_ram_be (
-    wb_dat_i, wb_adr_i, wb_sel_i, wb_we_i, wb_stb_i, wb_cyc_i, 
-    wb_dat_o, wb_stall_o, wb_ack_o, wb_clk, wb_rst);
-parameter dat_width = 32;
-parameter adr_width = 8;
-parameter mem_size = 1<<adr_width;
-parameter memory_init = 0;
-parameter memory_file = "vl_ram.v";
-parameter debug = 0;
-input [dat_width-1:0] wb_dat_i;
-input [adr_width-1:0] wb_adr_i;
-input [dat_width/8-1:0] wb_sel_i;
-input wb_we_i, wb_stb_i, wb_cyc_i;
-output [dat_width-1:0] wb_dat_o;
-output wb_stall_o;
-output wb_ack_o;
-reg wb_ack_o;
-input wb_clk, wb_rst;
-wire [dat_width/8-1:0] cke;
+assign we = wbs_we_i & wbs_ack_o;
+end else if (mode=="B4") begin : B4_inst
+reg wbs_ack_o_reg;
+always @ (posedge wb_clk or posedge wb_rst)
+    if (wb_rst)
+        wbs_ack_o_reg <= 1'b0;
+    else
+        wbs_ack_o_reg <= wbs_stb_i & wbs_cyc_i;
+assign wbs_ack_o = wbs_ack_o_reg;
+assign wbs_stall_o = 1'b0;
+assign adr = wbs_adr_i;
+assign we = wbs_we_i & wbs_cyc_i & wbs_stb_i;
+end
+endgenerate
 vl_ram_be # (
     .data_width(dat_width),
     .addr_width(adr_width),
@@ -2806,19 +2784,13 @@ vl_ram_be # (
     .memory_init(memory_init),
     .memory_file(memory_file))
 ram0(
-    .d(wb_dat_i),
-    .adr(wb_adr_i),
-    .be(wb_sel_i),
-    .we(wb_we_i & wb_stb_i & wb_cyc_i),
-    .q(wb_dat_o),
+    .d(wbs_dat_i),
+    .adr(adr),
+    .be(wbs_sel_i),
+    .we(we),
+    .q(wbs_dat_o),
     .clk(wb_clk)
 );
-always @ (posedge wb_clk or posedge wb_rst)
-if (wb_rst)
-    wb_ack_o <= 1'b0;
-else
-    wb_ack_o <= wb_stb_i & wb_cyc_i;
-assign wb_stall_o = 1'b0;
 endmodule
 // WB ROM
 module vl_wb_b4_rom (
@@ -2913,7 +2885,7 @@ assign hit_o = hit;
 assign wb_dat_o = wb_dat & {32{wb_ack}};
 assign wb_ack_o = wb_ack;
 endmodule
-module vl_wbb3_wbb4_cache (
+module vl_wb_cache (
     wbs_dat_i, wbs_adr_i, wbs_sel_i, wbs_cti_i, wbs_bte_i, wbs_we_i, wbs_stb_i, wbs_cyc_i, wbs_dat_o, wbs_ack_o, wbs_clk, wbs_rst,
     wbm_dat_o, wbm_adr_o, wbm_sel_o, wbm_cti_o, wbm_bte_o, wbm_we_o, wbm_stb_o, wbm_cyc_o, wbm_dat_i, wbm_ack_i, wbm_stall_i, wbm_clk, wbm_rst
 );
@@ -3055,7 +3027,7 @@ endgenerate
 // FSM generating a number of burts 4 cycles
 // actual number depends on data width ratio
 // nr_of_wbm_burst
-reg [wbm_burst_width-1:0]       cnt_rw, cnt_ack;
+reg [nr_of_wbm_burst_width+wbm_burst_width-1:0]       cnt_rw, cnt_ack;
 always @ (posedge wbm_clk or posedge wbm_rst)
 if (wbm_rst)
     cnt_rw <= {wbm_burst_width{1'b0}};
@@ -3069,7 +3041,7 @@ else
     if (wbm_ack_i)
         cnt_ack <= cnt_ack + 1;
 generate
-if (nr_of_wbm_burst_width==0) begin : one_burst
+if (nr_of_wbm_burst==1) begin : one_burst
 always @ (posedge wbm_clk or posedge wbm_rst)
 if (wbm_rst)
     phase <= wbm_wait;
@@ -3095,11 +3067,39 @@ else
             phase <= wbm_wait;
     default: phase <= wbm_wait;
     endcase
-    assign mem_done = phase==wbm_rd_drain & (&cnt_ack) & wbm_ack_i;
 end else begin : multiple_burst
-reg [nr_of_wbm_burst_width-1:0] cnt_burst;
+always @ (posedge wbm_clk or posedge wbm_rst)
+if (wbm_rst)
+    phase <= wbm_wait;
+else
+    case (phase)
+    wbm_wait:
+        if (mem_alert)
+            if (state==push)
+                phase <= wbm_wr;
+            else
+                phase <= wbm_rd;
+    wbm_wr:
+        if (&cnt_rw[wbm_burst_width-1:0])
+            phase <= wbm_wr_drain;
+    wbm_wr_drain:
+        if (&cnt_ack)
+            phase <= wbm_rd;
+        else if (&cnt_ack[wbm_burst_width-1:0])
+            phase <= wbm_wr;
+    wbm_rd:
+        if (&cnt_rw[wbm_burst_width-1:0])
+            phase <= wbm_rd_drain;
+    wbm_rd_drain:
+        if (&cnt_ack)
+            phase <= wbm_wait;
+        else if (&cnt_ack[wbm_burst_width-1:0])
+            phase <= wbm_rd;
+    default: phase <= wbm_wait;
+    endcase
 end
 endgenerate
+assign mem_done = phase==wbm_rd_drain & (&cnt_ack) & wbm_ack_i;
 assign wbm_adr_o = (phase[2]) ? {tag, wbs_adr_slot, cnt_rw} : {wbs_adr_tag, wbs_adr_slot, cnt_rw};
 assign wbm_adr   = (phase[2]) ? {wbs_adr_slot, cnt_rw} : {wbs_adr_slot, cnt_rw};
 assign wbm_sel_o = {dw_m/8{1'b1}};
