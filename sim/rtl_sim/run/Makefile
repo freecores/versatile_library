@@ -12,3 +12,9 @@ tb_wb_b3_dpram:
 	vlog -reportprogress 300 -work work ./wb_b3_dpram.v
 	vlog -reportprogress 300 -work work ./../../../bench/wbm.v
 	vlog -reportprogress 300 -work work ./../../../bench/tb_wb_b3_dpram.v
+
+tb_wb_cache:
+	vppreproc --noline --noblank +define+SYSTEMVERILOG +define+WB_CACHE +define+WB_RAM +define+RAM_BE $(VERILOG_FILES) > wb_cache.v
+	vlog -reportprogress 300 -work work ./wb_cache.v
+	vlog -reportprogress 300 -work work ./../../../bench/wbm.v
+	vlog -reportprogress 300 -work work ./../../../bench/tb_wb_cache.v
