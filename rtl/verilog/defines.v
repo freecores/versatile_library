@@ -47,6 +47,7 @@
 `define RAM_BE
 `define DPRAM_1R1W
 `define DPRAM_2R1W
+`define DPRAM_1R2W
 `define DPRAM_2R2W
 `define DPRAM_BE_2R2W
 `define FIFO_1R1W_FILL_LEVEL_SYNC
@@ -154,20 +155,26 @@
 `endif
 `endif
 
- `ifdef WBB3_WBB4_CACHE
- `ifndef RAM
- `define RAM
- `endif
- `ifndef WB_ADR_INC
- `define WB_ADR_INC
- `endif
- `ifndef dpram_be_2r2w
- `define DPRAM_BE_2R2W
- `endif
- `ifndef CDC
- `define CDC
- `endif
- `endif
+`ifdef WBB3_WBB4_CACHE
+`ifndef RAM
+`define RAM
+`endif
+`ifndef WB_ADR_INC
+`define WB_ADR_INC
+`endif
+`ifndef DPRAM_1R1W
+`define DPRAM_1R1W
+`endif
+`ifndef DPRAM_1R2W
+`define DPRAM_1R2W
+`endif
+`ifndef DPRAM_BE_2R2W
+`define DPRAM_BE_2R2W
+`endif
+`ifndef CDC
+`define CDC
+`endif
+`endif
  
 `ifdef MULTS18X18
 `ifndef MULTS
@@ -293,4 +300,4 @@
 `endif
 
 // size to width
-`define SIZE2WIDTH_EXPR = (`SIZE2WIDTH==4) ? 2 : (`SIZE2WIDTH==8) ? 3 : (`SIZE2WIDTH==16) ? 4 : (`SIZE2WIDTH==32) ? 5 : (`SIZE2WIDTH==64) ? 6 : (`SIZE2WIDTH==128) ? 7 : 8;
+`define SIZE2WIDTH_EXPR = (`SIZE2WIDTH==1) ? 0 : (`SIZE2WIDTH==2) ? 1 : (`SIZE2WIDTH==4) ? 2 : (`SIZE2WIDTH==8) ? 3 : (`SIZE2WIDTH==16) ? 4 : (`SIZE2WIDTH==32) ? 5 : (`SIZE2WIDTH==64) ? 6 : (`SIZE2WIDTH==128) ? 7 : 8;

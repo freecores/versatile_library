@@ -74,22 +74,37 @@ module `BASE`MODULE ( d, adr, we, q, clk);
    parameter data_width = 32;
    parameter addr_width = 8;
    parameter mem_size = 1<<addr_width;
+   parameter debug = 0;
    input [(data_width-1):0]      d;
    input [(addr_width-1):0] 	 adr;
    input 			 we;
    output reg [(data_width-1):0] q;
    input 			 clk;
    reg [data_width-1:0] ram [mem_size-1:0];
-   parameter init = 0;
-   parameter memory_file = "vl_ram.vmem";
-   generate if (init) begin : init_mem
-   initial
-     begin
-	$readmemh(memory_file, ram);
-     end
+   
+    parameter memory_init = 0;
+    parameter memory_file = "vl_ram.vmem";
+    generate
+    if (memory_init == 1) begin : init_mem
+        initial
+            $readmemh(memory_file, ram);
+   end else if (memory_init == 2) begin : init_zero
+        integer k;
+        initial
+            for (k = 0; k < mem_size; k = k + 1)
+                ram[k] = 0;
    end
    endgenerate 
    
+    generate
+    if (debug==1) begin : debug_we
+        always @ (posedge clk)
+        if (we)
+            $display ("Value %h written at address %h : time %t", d, adr, $time);
+        
+    end
+    endgenerate
+    
    always @ (posedge clk)
    begin
    if (we)
@@ -125,14 +140,18 @@ module `BASE`MODULE ( d, adr, be, we, q, clk);
     wire [data_width/8-1:0] cke;
 //E2_endif
 
-   parameter memory_init = 0;
-   parameter memory_file = "vl_ram.vmem";
-   generate if (memory_init) begin : init_mem
-   initial
-     begin
-	$readmemh(memory_file, ram);
-     end
-   end
+    parameter memory_init = 0;
+    parameter memory_file = "vl_ram.vmem";
+    generate
+    if (memory_init == 1) begin : init_mem
+        initial
+            $readmemh(memory_file, ram);
+    end else if (memory_init == 2) begin : init_zero
+        integer k;
+        initial
+            for (k = 0; k < mem_size; k = k + 1)
+                ram[k] = 0;
+    end
    endgenerate 
 
 //E2_ifdef SYSTEMVERILOG
@@ -198,17 +217,32 @@ module `BASE`MODULE ( d_a, adr_a, we_a, clk_a, q_b, adr_b, clk_b );
    output [(data_width-1):0] 	 q_b;
    input 			 clk_a, clk_b;
    reg [(addr_width-1):0] 	 adr_b_reg;
-   reg [data_width-1:0] ram [mem_szie-1:0] `SYN_NO_RW_CHECK;
+   reg [data_width-1:0] ram [mem_size-1:0] `SYN_NO_RW_CHECK;
 
-   parameter init = 0;
-   parameter memory_file = "vl_ram.vmem";
-   generate if (init) begin : init_mem
-   initial
-     begin
-	$readmemh(memory_file, ram);
-     end
-   end
+    parameter memory_init = 0;
+    parameter memory_file = "vl_ram.vmem";
+    parameter debug = 0;
+    
+    generate
+    if (memory_init == 1) begin : init_mem
+        initial
+            $readmemh(memory_file, ram);
+    end else if (memory_init == 2) begin : init_zero
+        integer k;
+        initial
+            for (k = 0; k < mem_size; k = k + 1)
+                ram[k] = 0;
+    end
    endgenerate 
+
+    generate
+    if (debug==1) begin : debug_we
+        always @ (posedge clk_a)
+        if (we_a)
+            $display ("Debug: Value %h written at address %h : time %t", d_a, adr_a, $time);
+        
+    end
+    endgenerate
 
    always @ (posedge clk_a)
    if (we_a)
@@ -238,15 +272,30 @@ module `BASE`MODULE ( d_a, q_a, adr_a, we_a, clk_a, q_b, adr_b, clk_b );
    reg [(data_width-1):0] 	 q_b;   
    reg [data_width-1:0] ram [mem_szie-1:0] `SYN_NO_RW_CHECK;
 
-   parameter init = 0;
-   parameter memory_file = "vl_ram.vmem";
-   generate if (init) begin : init_mem
-   initial
-     begin
-	$readmemh(memory_file, ram);
-     end
-   end
+    parameter memory_init = 0;
+    parameter memory_file = "vl_ram.vmem";
+    parameter debug = 0;
+    
+    generate
+    if (memory_init == 1) begin : init_mem
+        initial
+            $readmemh(memory_file, ram);
+    end else if (memory_init == 2) begin : init_zero
+        integer k;
+        initial
+            for (k = 0; k < mem_size; k = k + 1)
+                ram[k] = 0;
+    end
    endgenerate 
+
+    generate
+    if (debug==1) begin : debug_we
+        always @ (posedge clk_a)
+        if (we_a)
+            $display ("Debug: Value %h written at address %h : time %t", d_a, adr_a, $time);
+        
+    end
+    endgenerate
 
    always @ (posedge clk_a)
      begin 
@@ -256,6 +305,66 @@ module `BASE`MODULE ( d_a, q_a, adr_a, we_a, clk_a, q_b, adr_b, clk_b );
      end 
    always @ (posedge clk_b)
 	  q_b <= ram[adr_b];
+endmodule
+`endif
+
+`ifdef DPRAM_1R2W
+`define MODULE dpram_1r2w
+module `BASE`MODULE ( d_a, q_a, adr_a, we_a, clk_a, d_b, adr_b, we_b, clk_b );
+`undef MODULE
+
+   parameter data_width = 32;
+   parameter addr_width = 8;
+   parameter mem_size = 1<<addr_width;
+   input [(data_width-1):0]      d_a;
+   input [(addr_width-1):0] 	 adr_a;
+   input [(addr_width-1):0] 	 adr_b;
+   input 			 we_a;
+   input [(data_width-1):0] 	 d_b;
+   output reg [(data_width-1):0] q_a;
+   input 			 we_b;
+   input 			 clk_a, clk_b;
+   reg [(data_width-1):0] 	 q_b;   
+   reg [data_width-1:0] ram [mem_size-1:0] `SYN_NO_RW_CHECK;
+
+    parameter memory_init = 0;
+    parameter memory_file = "vl_ram.vmem";
+    parameter debug = 0;
+    
+    generate
+    if (memory_init == 1) begin : init_mem
+        initial
+            $readmemh(memory_file, ram);
+    end else if (memory_init == 2) begin : init_zero
+        integer k;
+        initial
+            for (k = 0; k < mem_size; k = k + 1)
+                ram[k] = 0;
+    end
+   endgenerate 
+
+    generate
+    if (debug==1) begin : debug_we
+        always @ (posedge clk_a)
+        if (we_a)
+            $display ("Debug: Value %h written at address %h : time %t", d_a, adr_a, $time);
+        always @ (posedge clk_b)
+        if (we_b)
+            $display ("Debug: Value %h written at address %h : time %t", d_b, adr_b, $time);        
+    end
+    endgenerate
+
+   always @ (posedge clk_a)
+     begin 
+	q_a <= ram[adr_a];
+	if (we_a)
+	     ram[adr_a] <= d_a;
+     end 
+   always @ (posedge clk_b)
+     begin 
+	if (we_b)
+	  ram[adr_b] <= d_b;
+     end
 endmodule
 `endif
 
@@ -279,15 +388,32 @@ module `BASE`MODULE ( d_a, q_a, adr_a, we_a, clk_a, d_b, q_b, adr_b, we_b, clk_b
    reg [(data_width-1):0] 	 q_b;   
    reg [data_width-1:0] ram [mem_size-1:0] `SYN_NO_RW_CHECK;
 
-   parameter init = 0;
-   parameter memory_file = "vl_ram.vmem";
-   generate if (init) begin : init_mem
-   initial
-     begin
-	$readmemh(memory_file, ram);
-     end
-   end
+    parameter memory_init = 0;
+    parameter memory_file = "vl_ram.vmem";
+    parameter debug = 0;
+    
+    generate
+    if (memory_init) begin : init_mem
+        initial
+            $readmemh(memory_file, ram);
+    end else if (memory_init == 2) begin : init_zero
+        integer k;
+        initial
+            for (k = 0; k < mem_size; k = k + 1)
+                ram[k] = 0;
+    end
    endgenerate 
+
+    generate
+    if (debug==1) begin : debug_we
+        always @ (posedge clk_a)
+        if (we_a)
+            $display ("Debug: Value %h written at address %h : time %t", d_a, adr_a, $time);
+        always @ (posedge clk_b)
+        if (we_b)
+            $display ("Debug: Value %h written at address %h : time %t", d_b, adr_b, $time);        
+    end
+    endgenerate
 
    always @ (posedge clk_a)
      begin 
@@ -317,8 +443,9 @@ module `BASE`MODULE ( d_a, q_a, adr_a, be_a, we_a, clk_a, d_b, q_b, adr_b, be_b,
    localparam ratio = (a_addr_width>b_addr_width) ? (a_addr_width/b_addr_width) : (b_addr_width/a_addr_width);
    parameter mem_size = (a_addr_width>b_addr_width) ? (1<<b_addr_width) : (1<<a_addr_width);
 
-   parameter init = 0;
+   parameter memory_init = 0;
    parameter memory_file = "vl_ram.vmem";
+   parameter debug = 0;
    
    input [(a_data_width-1):0]      d_a;
    input [(a_addr_width-1):0] 	   adr_a;
@@ -332,6 +459,18 @@ module `BASE`MODULE ( d_a, q_a, adr_a, be_a, we_a, clk_a, d_b, q_b, adr_b, be_b,
    output reg [(b_data_width-1):0] 	   q_b;
    input 			   clk_a, clk_b;
 
+    generate
+    if (debug==1) begin : debug_we
+        always @ (posedge clk_a)
+        if (we_a)
+            $display ("Debug: Value %h written at address %h : time %t", d_a, adr_a, $time);
+        always @ (posedge clk_b)
+        if (we_b)
+            $display ("Debug: Value %h written at address %h : time %t", d_b, adr_b, $time);        
+    end
+    endgenerate
+
+
 //E2_ifdef SYSTEMVERILOG
 // use a multi-dimensional packed array
 //to model individual bytes within the word
@@ -342,16 +481,22 @@ if (a_data_width==32 & b_data_width==32) begin : dpram_3232
     logic [0:3][7:0] ram [0:mem_size-1] `SYN_NO_RW_CHECK;
     
     initial
-        if (init)
+        if (memory_init==1)
             $readmemh(memory_file, ram);
+            
+    integer k;
+    initial
+        if (memory_init==2)
+            for (k = 0; k < mem_size; k = k + 1)
+                ram[k] = 0;
 
     always_ff@(posedge clk_a)
     begin
         if(we_a) begin
-            if(be_a[3]) ram[adr_a][3] <= d_a[31:24];
-            if(be_a[2]) ram[adr_a][2] <= d_a[23:16];
-            if(be_a[1]) ram[adr_a][1] <= d_a[15:8];
-            if(be_a[0]) ram[adr_a][0] <= d_a[7:0];
+            if(be_a[3]) ram[adr_a][0] <= d_a[31:24];
+            if(be_a[2]) ram[adr_a][1] <= d_a[23:16];
+            if(be_a[1]) ram[adr_a][2] <= d_a[15:8];
+            if(be_a[0]) ram[adr_a][3] <= d_a[7:0];
         end
     end
     
@@ -361,10 +506,10 @@ if (a_data_width==32 & b_data_width==32) begin : dpram_3232
     always_ff@(posedge clk_b)
     begin
         if(we_b) begin
-            if(be_b[3]) ram[adr_b][3] <= d_b[31:24];
-            if(be_b[2]) ram[adr_b][2] <= d_b[23:16];
-            if(be_b[1]) ram[adr_b][1] <= d_b[15:8];
-            if(be_b[0]) ram[adr_b][0] <= d_b[7:0];
+            if(be_b[3]) ram[adr_b][0] <= d_b[31:24];
+            if(be_b[2]) ram[adr_b][1] <= d_b[23:16];
+            if(be_b[1]) ram[adr_b][2] <= d_b[15:8];
+            if(be_b[0]) ram[adr_b][3] <= d_b[7:0];
         end
     end
     
@@ -380,8 +525,14 @@ if (a_data_width==64 & b_data_width==64) begin : dpram_6464
     logic [0:7][7:0] ram [0:mem_size-1] `SYN_NO_RW_CHECK;
     
     initial
-        if (init)
+        if (memory_init==1)
             $readmemh(memory_file, ram);
+            
+    integer k;
+    initial
+        if (memory_init==2)
+            for (k = 0; k < mem_size; k = k + 1)
+                ram[k] = 0;
 
     always_ff@(posedge clk_a)
     begin
@@ -424,7 +575,7 @@ generate
 if (a_data_width==32 & b_data_width==16) begin : dpram_3216
 logic [31:0] temp;
 `define MODULE dpram_be_2r2w
-`BASE`MODULE # (.a_data_width(64), .b_data_width(64), .a_addr_width(a_addr_width), .mem_size(mem_size), .init(init), .memory_file(memory_file))
+`BASE`MODULE # (.a_data_width(64), .b_data_width(64), .a_addr_width(a_addr_width), .mem_size(mem_size), .init(memory_init), .memory_file(memory_file))
 `undef MODULE
 dpram6464 (
     .d_a(d_a),
@@ -441,7 +592,7 @@ dpram6464 (
     .clk_b(clk_b)
 );
 
-always_comb
+always @ (adr_b[0] or temp)
     if (adr_b[0])
         q_b = temp[31:16];
     else
@@ -454,7 +605,7 @@ generate
 if (a_data_width==32 & b_data_width==64) begin : dpram_3264
 logic [63:0] temp;
 `define MODULE dpram_be_2r2w
-`BASE`MODULE # (.a_data_width(64), .b_data_width(64), .a_addr_width(a_addr_width), .mem_size(mem_size), .init(init), .memory_file(memory_file))
+`BASE`MODULE # (.a_data_width(64), .b_data_width(64), .a_addr_width(a_addr_width), .mem_size(mem_size), .init(memory_init), .memory_file(memory_file))
 `undef MODULE
 dpram6464 (
     .d_a({d_a,d_a}),
@@ -471,7 +622,7 @@ dpram6464 (
     .clk_b(clk_b)
 );
 
-always_comb
+always @ (adr_a[0] or temp)
     if (adr_a[0])
         q_a = temp[63:32];
     else

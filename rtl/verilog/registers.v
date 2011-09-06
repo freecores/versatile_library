@@ -517,9 +517,9 @@ output clk, rst;
 reg dff;
 always @ (posedge clk or posedge rst)
 if (rst)
-    {dff,q} <= 2'b00;
+    {q,dff} <= 2'b00;
 else
-    {dff,q} <= {d,dff};
+    {q,dff} <= {dff,d};
 endmodule
 `endif
 
@@ -555,7 +555,7 @@ wire got_it_tg, got_it_tg_sync;
 `define MODULE toggle2pulse
 `BASE`MODULE t2p0 (
 `undef MODULE
-    .d(take_it_sync),
+    .d(take_it_tg_sync),
     .pl(take_it_pl),
     .clk(clk_dst),
     .rst(rst_dst));
@@ -580,7 +580,7 @@ wire got_it_tg, got_it_tg_sync;
 `define MODULE toggle2pulse
 `BASE`MODULE t2p1 (
 `undef MODULE
-    .d(take_it_grant_tg_sync),
+    .d(got_it_tg_sync),
     .pl(got_it_pl),
     .clk(clk_src),
     .rst(rst_src));
