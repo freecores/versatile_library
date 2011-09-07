@@ -81,10 +81,13 @@
 `define WB3_ARBITER_TYPE1
 `define WB_ADR_INC
 `define WB_RAM
+`define WB_SHADOW_RAM
 `define WB_B4_ROM
 `define WB_BOOT_ROM
 `define WB_DPRAM
 `define WB_CACHE
+`define WB_AVALON_BRIDGE
+`define WB_AVALON_MEM_CACHE
 
 `define IO_DFF_OE
 `define O_DFF
@@ -154,6 +157,19 @@
 `endif
 `endif
 
+
+`ifdef WB_AVALON_MEM_CACHE
+`ifndef WB_SHADOW_RAM
+`define WB_SHADOW_RAM
+`endif
+`ifndef WB_CACHE
+`define WB_CACHE
+`endif
+`ifndef WB_AVALON_BRIDGE
+`define WB_AVALON_BRIDGE
+`endif
+`endif
+
 `ifdef WB_CACHE
 `ifndef RAM
 `define RAM
@@ -172,6 +188,18 @@
 `endif
 `ifndef CDC
 `define CDC
+`endif
+`endif
+
+`ifdef WB_SHADOW_RAM
+`ifndef WB_RAM
+`define WB_RAM
+`endif
+`endif
+
+`ifdef WB_RAM
+`ifndef WB_ADR_INC
+`define WB_ADR_INC
 `endif
 `endif
  

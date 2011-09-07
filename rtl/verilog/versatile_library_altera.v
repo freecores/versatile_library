@@ -2897,6 +2897,78 @@ ram0(
     .clk(wb_clk)
 );
 endmodule
+// A wishbone compliant RAM module that can be placed in front of other memory controllers
+module vl_wb_shadow_ram (
+    wbs_dat_i, wbs_adr_i, wbs_cti_i, wbs_bte_i, wbs_sel_i, wbs_we_i, wbs_stb_i, wbs_cyc_i, 
+    wbs_dat_o, wbs_ack_o, wbs_stall_o,
+    wbm_dat_o, wbm_adr_o, wbm_cti_o, wbm_bte_o, wbm_sel_o, wbm_we_o, wbm_stb_o, wbm_cyc_o, 
+    wbm_dat_i, wbm_ack_i, wbm_stall_i,
+    wb_clk, wb_rst);
+parameter dat_width = 32;
+parameter mode = "B4";
+parameter max_burst_width = 4; // only used for B3
+parameter shadow_mem_adr_width = 10;
+parameter shadow_mem_size = 1024;
+parameter shadow_mem_init = 2;
+parameter shadow_mem_file = "vl_ram.v";
+parameter main_mem_adr_width = 24;
+input [dat_width-1:0] wbs_dat_i;
+input [main_mem_adr_width-1:0] wbs_adr_i;
+input [2:0] wbs_cti_i;
+input [1:0] wbs_bte_i;
+input [dat_width/8-1:0] wbs_sel_i;
+input wbs_we_i, wbs_stb_i, wbs_cyc_i;
+output [dat_width-1:0] wbs_dat_o;
+output wbs_ack_o;
+output wbs_stall_o;
+output [dat_width-1:0] wbm_dat_o;
+output [main_mem_adr_width-1:0] wbm_adr_o;
+output [2:0] wbm_cti_o;
+output [1:0] wbm_bte_o;
+output [dat_width/8-1:0] wbm_sel_o;
+output wbm_we_o, wbm_stb_o, wbm_cyc_o;
+input [dat_width-1:0] wbm_dat_i;
+input wbm_ack_i, wbm_stall_i;
+input wb_clk, wb_rst;
+generate
+if (shadow_mem_size>0) begin : shadow_ram_inst
+wire cyc;
+wire [dat_width-1:0] dat;
+wire stall, ack;
+assign cyc = wbs_cyc_i & (wbs_adr_i<=shadow_mem_size);
+vl_wb_ram # (
+    .dat_width(dat_width),
+    .adr_width(shadow_mem_adr_width),
+    .mem_size(shadow_mem_size),
+    .memory_init(shadow_mem_init),
+    .mode(mode))
+shadow_mem0 (
+    .wbs_dat_i(wbs_dat_i),
+    .wbs_adr_i(wbs_adr_i[shadow_mem_adr_width-1:0]),
+    .wbs_sel_i(wbs_sel_i),
+    .wbs_we_i (wbs_we_i),
+    .wbs_bte_i(wbs_bte_i),
+    .wbs_cti_i(wbs_cti_i),
+    .wbs_stb_i(wbs_stb_i),
+    .wbs_cyc_i(cyc), 
+    .wbs_dat_o(dat),
+    .wbs_stall_o(stall),
+    .wbs_ack_o(ack),
+    .wb_clk(wb_clk),
+    .wb_rst(wb_rst));
+assign {wbm_dat_o, wbm_adr_o, wbm_cti_o, wbm_bte_o, wbm_sel_o, wbm_we_o, wbm_stb_o} =
+       {wbs_dat_i, wbs_adr_i, wbs_cti_i, wbs_bte_i, wbs_sel_i, wbs_we_i, wbs_stb_i};
+assign wbm_cyc_o = wbs_cyc_i & (wbs_adr_i>shadow_mem_size);
+assign wbs_dat_o = (dat & {dat_width{cyc}}) | (wbm_dat_i & {dat_width{wbm_cyc_o}});
+assign wbs_ack_o = (ack & cyc) | (wbm_ack_i & wbm_cyc_o);
+assign wbs_stall_o = (stall & cyc) | (wbm_stall_i & wbm_cyc_o);
+end else begin : no_shadow_ram_inst
+assign {wbm_dat_o, wbm_adr_o, wbm_cti_o, wbm_bte_o, wbm_sel_o, wbm_we_o, wbm_stb_o, wbm_cyc_o} =
+       {wbs_dat_i, wbs_adr_i, wbs_cti_i, wbs_bte_i, wbs_sel_i, wbs_we_i, wbs_stb_i, wbs_cyc_i};
+assign {wbs_dat_o, wbs_ack_o, wbs_stall_o} = {wbm_dat_i, wbm_ack_i, wbm_stall_i};
+end
+endgenerate
+endmodule
 // WB ROM
 module vl_wb_b4_rom (
     wb_adr_i, wb_stb_i, wb_cyc_i, 
@@ -2991,7 +3063,7 @@ assign wb_dat_o = wb_dat & {32{wb_ack}};
 assign wb_ack_o = wb_ack;
 endmodule
 module vl_wb_cache (
-    wbs_dat_i, wbs_adr_i, wbs_sel_i, wbs_cti_i, wbs_bte_i, wbs_we_i, wbs_stb_i, wbs_cyc_i, wbs_dat_o, wbs_ack_o, wbs_clk, wbs_rst,
+    wbs_dat_i, wbs_adr_i, wbs_sel_i, wbs_cti_i, wbs_bte_i, wbs_we_i, wbs_stb_i, wbs_cyc_i, wbs_dat_o, wbs_ack_o, wbs_stall_o, wbs_clk, wbs_rst,
     wbm_dat_o, wbm_adr_o, wbm_sel_o, wbm_cti_o, wbm_bte_o, wbm_we_o, wbm_stb_o, wbm_cyc_o, wbm_dat_i, wbm_ack_i, wbm_stall_i, wbm_clk, wbm_rst
 );
 parameter dw_s = 32;
@@ -2999,6 +3071,7 @@ parameter aw_s = 24;
 parameter dw_m = dw_s;
 localparam aw_m = dw_s * aw_s / dw_m;
 parameter wbs_max_burst_width = 4;
+parameter wbs_mode = "B3";
 parameter async = 1; // wbs_clk != wbm_clk
 parameter nr_of_ways = 1;
 parameter aw_offset = 4; // 4 => 16 words per cache line
@@ -3020,6 +3093,7 @@ input [1:0] wbs_bte_i;
 input wbs_we_i, wbs_stb_i, wbs_cyc_i;
 output [dw_s-1:0] wbs_dat_o;
 output wbs_ack_o;
+output wbs_stall_o;
 input wbs_clk, wbs_rst;
 output [dw_m-1:0] wbm_dat_o;
 output [aw_m-1:0] wbm_adr_o;
@@ -3044,6 +3118,7 @@ localparam rdwr = 2'h1;
 localparam push = 2'h2;
 localparam pull = 2'h3;
 wire eoc;
+wire we;
 // cdc
 wire done, mem_alert, mem_done;
 // wbm side
@@ -3059,7 +3134,6 @@ localparam wbm_wr_drain = 3'b101;
 localparam wbm_rd       = 3'b011;
 localparam wbm_rd_drain = 3'b001;
 assign {wbs_adr_tag, wbs_adr_slot, wbs_adr_word} = wbs_adr_i;
-assign eoc = (wbs_cti_i==3'b000 | wbs_cti_i==3'b111) & wbs_ack_o;
 generate
 if (valid_mem==0) begin : no_valid_mem
 assign valid = 1'b1;
@@ -3080,6 +3154,8 @@ vl_dpram_1r2w
     dirty_mem (
         .d_a(1'b1), .q_a(dirty), .adr_a(wbs_adr_slot), .we_a(wbs_cyc_i & wbs_we_i & wbs_ack_o), .clk_a(wbs_clk),
         .d_b(1'b0), .adr_b(wbs_adr_slot), .we_b(mem_done), .clk_b(wbm_clk));
+generate
+if (wbs_mode=="B3") begin : inst_b3
 vl_wb_adr_inc # ( .adr_width(aw_s), .max_burst_width(wbs_max_burst_width)) adr_inc0 (
     .cyc_i(wbs_cyc_i & (state==rdwr) & hit & valid),
     .stb_i(wbs_stb_i & (state==rdwr) & hit & valid), // throttle depending on valid
@@ -3091,11 +3167,15 @@ vl_wb_adr_inc # ( .adr_width(aw_s), .max_burst_width(wbs_max_burst_width)) adr_i
     .adr_o(wbs_adr),
     .clk(wbs_clk),
     .rst(wbs_rst));
+assign eoc = (wbs_cti_i==3'b000 | wbs_cti_i==3'b111) & wbs_ack_o;
+assign we = wbs_cyc_i &  wbs_we_i & wbs_ack_o;
+end else if (wbs_mode=="B4") begin : inst_b4
+end
+endgenerate
 vl_dpram_be_2r2w
     # ( .a_data_width(dw_s), .a_addr_width(aw_slot+aw_offset), .b_data_width(dw_m), .debug(debug))
-    cache_mem ( .d_a(wbs_dat_i), .adr_a(wbs_adr[aw_slot+aw_offset-1:0]),   .be_a(wbs_sel_i), .we_a(wbs_cyc_i &  wbs_we_i & wbs_ack_o), .q_a(wbs_dat_o), .clk_a(wbs_clk),
+    cache_mem ( .d_a(wbs_dat_i), .adr_a(wbs_adr[aw_slot+aw_offset-1:0]),   .be_a(wbs_sel_i), .we_a(we), .q_a(wbs_dat_o), .clk_a(wbs_clk),
                 .d_b(wbm_dat_i), .adr_b(wbm_adr_o[aw_slot+aw_offset-1:0]), .be_b(wbm_sel_o), .we_b(wbm_cyc_o & !wbm_we_o & wbs_ack_i), .q_b(wbm_dat_o), .clk_b(wbm_clk));
-//                .d_b(wbm_dat_i), .adr_b(wbm_adr), .be_b(wbm_sel_o), .we_b(wbm_cyc_o & !wbm_we_o & wbs_ack_i), .q_b(wbm_dat_o), .clk_b(wbm_clk));
 always @ (posedge wbs_clk or posedge wbs_rst)
 if (wbs_rst)
     state <= idle;
@@ -3211,6 +3291,166 @@ assign wbm_sel_o = {dw_m/8{1'b1}};
 assign wbm_cti_o = (&cnt_rw | !wbm_stb_o) ? 3'b111 : 3'b010;
 assign wbm_bte_o = bte;
 assign {wbm_we_o, wbm_stb_o, wbm_cyc_o}  = phase;
+endmodule
+// Wishbone to avalon bridge supporting one type of burst transfer only
+// intended use is together with cache above
+// WB B4 -> pipelined avalon
+module vl_wb_avalon_bridge ( 
+	// wishbone slave side
+	wbs_dat_i, wbs_adr_i, wbs_sel_i, wbs_bte_i, wbs_cti_i, wbs_we_i, wbs_cyc_i, wbs_stb_i, wbs_dat_o, wbs_ack_o, wbs_stall_o,
+	// avalon master side
+	readdata, readdatavalid, address, read, be, write, burstcount, writedata, waitrequest, beginbursttransfer,
+        // common
+        clk, rst);
+parameter adr_width = 30;
+parameter dat_width = 32;
+parameter burst_size = 4;
+input [dat_width-1:0] wbs_dat_i;
+input [adr_width-1:0] wbs_adr_i;
+input [dat_width/8-1:0]  wbs_sel_i;
+input [1:0]  wbs_bte_i;
+input [2:0]  wbs_cti_i;
+input wbs_we_i;
+input wbs_cyc_i;
+input wbs_stb_i;
+output [dat_width:0] wbs_dat_o;
+output wbs_ack_o;
+output wbs_stall_o;
+input [dat_width-1:0] readdata;
+input readdatavalid;
+output [dat_width-1:0] writedata;
+output [adr_width-1:0] address;
+output [dat_width/8-1:0]  be;
+output write;
+output read;
+output beginbursttransfer;
+output [3:0] burstcount;
+input waitrequest;
+input clk, rst;
+reg last_cyc_idle_or_eoc;
+reg [3:0] cnt;
+always @ (posedge clk or posedge rst)
+if (rst)
+    cnt <= 4'h0;
+else
+    if (beginbursttransfer & waitrequest)
+        cnt <= burst_size - 1;
+    else if (beginbursttransfer & !waitrequest)
+        cnt <= burst_size - 2;
+    else if (wbs_ack_o)
+        cnt <= cnt - 1;
+reg wr_ack;
+always @ (posedge clk or posedge rst)
+if (rst)
+    wr_ack <= 1'b0;
+else
+    wr_ack <=  (wbs_we_i & wbs_cyc_i & wbs_stb_i & !wbs_stall_o);
+// to avalon
+assign writedata = wbs_dat_i;
+assign address = wbs_adr_i;
+assign be = wbs_sel_i;
+assign write = cnt==(burst_size-1) & wbs_cyc_i &  wbs_we_i;
+assign read  = cnt==(burst_size-1) & wbs_cyc_i & !wbs_we_i;
+assign beginbursttransfer = cnt==4'h0 & wbs_cyc_i;
+assign burstcount = burst_size;
+// to wishbone
+assign wbs_dat_o = readdata;
+assign wbs_ack_o = wr_ack | readdatavalid;
+assign wbs_stall_o = waitrequest;
+endmodule
+module vl_wb_avalon_mem_cache (
+    wbs_dat_i, wbs_adr_i, wbs_sel_i, wbs_cti_i, wbs_bte_i, wbs_we_i, wbs_stb_i, wbs_cyc_i, wbs_dat_o, wbs_ack_o, wbs_stall_o, wbs_clk, wbs_rst,
+    readdata, readdatavalid, address, read, be, write, burstcount, writedata, waitrequest, beginbursttransfer, clk, rst
+);
+// wishbone
+parameter wb_dat_width = 32;
+parameter wb_adr_width = 22;
+parameter wb_max_burst_width = 4;
+parameter wb_mode = "B4";
+// avalon
+parameter avalon_dat_width = 32;
+localparam avalon_adr_width = wb_dat_width * wb_adr_width / avalon_dat_width;
+parameter avalon_burst_size = 4;
+// cache
+parameter async = 1;
+parameter nr_of_ways = 1;
+parameter aw_offset = 4;
+parameter aw_slot = 10;
+parameter valid_mem = 1;
+// shadow RAM
+parameter shadow_ram = 0;
+parameter shadow_ram_adr_width = 10;
+parameter shadow_ram_size = 1024;
+parameter shadow_ram_init = 2; // 0: no init, 1: from file, 2: with zero
+parameter shadow_ram_file = "vl_ram.v";
+input [wb_dat_width-1:0] wbs_dat_i;
+input [wb_adr_width-1:0] wbs_adr_i; // dont include a1,a0
+input [wb_dat_width/8-1:0] wbs_sel_i;
+input [2:0] wbs_cti_i;
+input [1:0] wbs_bte_i;
+input wbs_we_i, wbs_stb_i, wbs_cyc_i;
+output [wb_dat_width-1:0] wbs_dat_o;
+output wbs_ack_o;
+output wbs_stall_o;
+input wbs_clk, wbs_rst;
+input [avalon_dat_width-1:0] readdata;
+input readdatavalid;
+output [avalon_dat_width-1:0] writedata;
+output [avalon_adr_width-1:0] address;
+output [avalon_dat_width/8-1:0]  be;
+output write;
+output read;
+output beginbursttransfer;
+output [3:0] burstcount;
+input waitrequest;
+input clk, rst;
+wire [wb_dat_width-1:0] wb1_dat_o;
+wire [wb_adr_width-1:0] wb1_adr_o;
+wire [wb_dat_width/8-1:0] wb1_sel_o;
+wire [2:0] wb1_cti_o;
+wire [1:0] wb1_bte_o;
+wire wb1_we_o;
+wire wb1_stb_o;
+wire wb1_cyc_o;
+wire wb1_stall_i;
+wire [wb_dat_width-1:0] wb1_dat_i;
+wire wb1_ack_i;
+wire [wb_dat_width-1:0] wb2_dat_o;
+wire [wb_adr_width-1:0] wb2_adr_o;
+wire [wb_dat_width/8-1:0] wb2_sel_o;
+wire [2:0] wb2_cti_o;
+wire [1:0] wb2_bte_o;
+wire wb2_we_o;
+wire wb2_stb_o;
+wire wb2_cyc_o;
+wire wb2_stall_i;
+wire [wb_dat_width-1:0] wb2_dat_i;
+wire wb2_ack_i;
+vl_wb_shadow_ram # ( .dat_width(wb_dat_width), .mode(wb_mode), .max_burst_width(wb_max_burst_width),
+                 .shadow_mem_adr_width(shadow_ram_adr_width), .shadow_mem_size(shadow_ram_adr_width), .shadow_mem_init(shadow_ram_init), .shadow_mem_file(shadow_ram_file),
+                 .main_mem_adr_width(wb_adr_width))
+shadow_ram0 (
+    .wbs_dat_i(wbs_dat_i), .wbs_adr_i(wbs_adr_i), .wbs_cti_i(wbs_cti_i), .wbs_bte_i(wbs_bte_i), .wbs_sel_i(wbs_sel_i), .wbs_we_i(wbs_we_i), .wbs_stb_i(wbs_stb_i), .wbs_cyc_i(wbs_cyc_i), 
+    .wbs_dat_o(wbs_dat_o), .wbs_ack_o(wbs_ack_o), .wbs_stall_o(wbs_stall_o),
+    .wbm_dat_o(wb1_dat_o), .wbm_adr_o(wb1_adr_o), .wbm_cti_o(wb1_cti_o), .wbm_bte_o(wb1_bte_o), .wbm_sel_o(wb1_sel_o), .wbm_we_o(wb1_we_o), .wbm_stb_o(wb1_stb_o), .wbm_cyc_o(wb1_cyc_o), 
+    .wbm_dat_i(wb1_dat_i), .wbm_ack_i(wb1_ack_i), .wbm_stall_i(wb1_stall_i),
+    .wb_clk(wbs_clk), .wb_rst(wbs_rst));
+vl_wb_cache
+# ( .dw_s(wb_dat_width), .aw_s(wb_adr_width), .dw_m(avalon_dat_width), .wbs_mode(wb_mode), .wbs_max_burst_width(wb_max_burst_width), .async(async), .nr_of_ways(nr_of_ways), .aw_offset(aw_offset), .aw_slot(aw_slot), .valid_mem(valid_mem))
+cache0 (
+    .wbs_dat_i(wb1_dat_o), .wbs_adr_i(wb1_adr_o), .wbs_sel_i(wb1_sel_o), .wbs_cti_i(wb1_cti_o), .wbs_bte_i(wb1_bte_o), .wbs_we_i(wb1_we_o), .wbs_stb_i(wb1_stb_o), .wbs_cyc_i(wb1_cyc_o),
+    .wbs_dat_o(wb1_dat_i), .wbs_ack_o(wb1_ack_i), .wbs_stall_o(wb1_stall_i), .wbs_clk(wbs_clk), .wbs_rst(wbs_rst),
+    .wbm_dat_o(wb2_dat_o), .wbm_adr_o(wb2_adr_o), .wbm_sel_o(wb2_sel_o), .wbm_cti_o(wb2_cti_o), .wbm_bte_o(wb2_bte_o), .wbm_we_o(wb2_we_o), .wbm_stb_o(wb2_stb_o), .wbm_cyc_o(wb2_cyc_o),
+    .wbm_dat_i(wb2_dat_i), .wbm_ack_i(wb2_ack_i), .wbm_stall_i(wb2_stall_i), .wbm_clk(clk), .wbm_rst(rst));
+vl_wb_avalon_bridge # ( .adr_width(avalon_adr_width), .dat_width(avalon_dat_width), .burst_size(avalon_burst_size))
+bridge0 ( 
+	// wishbone slave side
+	.wbs_dat_i(wb2_dat_o), .wbs_adr_i(wb2_adr_o), .wbs_sel_i(wb2_sel_o), .wbs_bte_i(wb2_bte_o), .wbs_cti_i(wb2_cti_o), .wbs_we_i(wb2_we_o), .wbs_cyc_i(wb2_cyc_o), .wbs_stb_i(wb2_stb_o),
+        .wbs_dat_o(wb2_dat_i), .wbs_ack_o(wb2_ack_i), .wbs_stall_o(wb2_stall_i),
+	// avalon master side
+	.readdata(readdata), .readdatavalid(readdatavalid), .address(address), .read(read), .be(be), .write(write), .burstcount(burstcount), .writedata(writedata), .waitrequest(waitrequest), .beginbursttransfer(beginbursttransfer),
+        // common
+        .clk(clk), .rst(rst));
 endmodule
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
