@@ -31,6 +31,7 @@
 
 `define CNT_SHREG_WRAP
 `define CNT_SHREG_CE_WRAP
+`define CNT_SHREG_CLEAR
 `define CNT_SHREG_CE_CLEAR
 `define CNT_SHREG_CE_CLEAR_WRAP
 

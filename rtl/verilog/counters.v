@@ -80,6 +80,29 @@ module `BASE`MODULE ( cke, q, rst, clk);
 endmodule
 `endif
 
+`ifdef CNT_SHREG_CLEAR
+`define MODULE cnt_shreg_clear
+module `BASE`MODULE ( clear, q, rst, clk);
+`undef MODULE
+
+   parameter length = 4;
+   input clear;
+   output reg [0:length-1] q;
+   input rst;
+   input clk;
+
+    always @ (posedge clk or posedge rst)
+    if (rst)
+        q <= {1'b1,{length-1{1'b0}}};
+    else
+        if (clear)
+            q <= {1'b1,{length-1{1'b0}}};
+        else
+            q <= q >> 1;
+            
+endmodule
+`endif
+
 `ifdef CNT_SHREG_CE_CLEAR
 `define MODULE cnt_shreg_ce_clear
 module `BASE`MODULE ( cke, clear, q, rst, clk);
