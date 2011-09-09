@@ -522,14 +522,14 @@ assign write = wbm_cyc_o & wbm_stb_o & wbm_we_o & counter!=4'd0;
 endmodule
 `endif
 
-`ifdef WB3_ARBITER_TYPE1
-`define MODULE wb3_arbiter_type1
+`ifdef WB_ARBITER
+`define MODULE wb_arbiter
 module `BASE`MODULE (
 `undef MODULE
     wbm_dat_o, wbm_adr_o, wbm_sel_o, wbm_cti_o, wbm_bte_o, wbm_we_o, wbm_stb_o, wbm_cyc_o,
-    wbm_dat_i, wbm_ack_i, wbm_err_i, wbm_rty_i,
+    wbm_dat_i, wbm_stall_i, wbm_ack_i, wbm_err_i, wbm_rty_i,
     wbs_dat_i, wbs_adr_i, wbs_sel_i, wbs_cti_i, wbs_bte_i, wbs_we_i, wbs_stb_i, wbs_cyc_i,
-    wbs_dat_o, wbs_ack_o, wbs_err_o, wbs_rty_o,
+    wbs_dat_o, wbs_stall_o, wbs_ack_o, wbs_err_o, wbs_rty_o,
     wb_clk, wb_rst
 );
 
@@ -552,7 +552,7 @@ input  [cw-1:0] wbm_cti_o;
 input  [bw-1:0] wbm_bte_o;
 input  [nr_of_ports-1:0] wbm_we_o, wbm_stb_o, wbm_cyc_o;
 output [dw-1:0] wbm_dat_i;
-output [nr_of_ports-1:0] wbm_ack_i, wbm_err_i, wbm_rty_i;
+output [nr_of_ports-1:0] wbm_stall_o, wbm_ack_i, wbm_err_i, wbm_rty_i;
 
 output [dat_size-1:0] wbs_dat_i;
 output [adr_size-1:adr_lo] wbs_adr_i;
@@ -561,7 +561,7 @@ output [2:0] wbs_cti_i;
 output [1:0] wbs_bte_i;
 output wbs_we_i, wbs_stb_i, wbs_cyc_i;
 input  [dat_size-1:0] wbs_dat_o;
-input  wbs_ack_o, wbs_err_o, wbs_rty_o;
+input  wbs_stall_o, wbs_ack_o, wbs_err_o, wbs_rty_o;
 
 input wb_clk, wb_rst;
 
