@@ -2744,6 +2744,102 @@ assign hit_o = hit;
 assign wb_dat_o = wb_dat & {32{wb_ack}};
 assign wb_ack_o = wb_ack;
 endmodule
+module vl_wb_dpram ( 
+	// wishbone slave side a
+	wbsa_dat_i, wbsa_adr_i, wbsa_sel_i, wbsa_cti_i, wbsa_bte_i, wbsa_we_i, wbsa_cyc_i, wbsa_stb_i, wbsa_dat_o, wbsa_ack_o, wbsa_stall_o,
+        wbsa_clk, wbsa_rst,
+	// wishbone slave side b
+	wbsb_dat_i, wbsb_adr_i, wbsb_sel_i, wbsb_cti_i, wbsb_bte_i, wbsb_we_i, wbsb_cyc_i, wbsb_stb_i, wbsb_dat_o, wbsb_ack_o, wbsb_stall_o,
+        wbsb_clk, wbsb_rst);
+parameter data_width_a = 32;
+parameter data_width_b = data_width_a;
+parameter addr_width_a = 8;
+localparam addr_width_b = data_width_a * addr_width_a / data_width_b;
+parameter mem_size = (addr_width_a>addr_width_b) ? (1<<addr_width_a) : (1<<addr_width_b);
+parameter max_burst_width_a = 4;
+parameter max_burst_width_b = max_burst_width_a;
+parameter mode = "B3";
+input [data_width_a-1:0] wbsa_dat_i;
+input [addr_width_a-1:0] wbsa_adr_i;
+input [data_width_a/8-1:0] wbsa_sel_i;
+input [2:0] wbsa_cti_i;
+input [1:0] wbsa_bte_i;
+input wbsa_we_i, wbsa_cyc_i, wbsa_stb_i;
+output [data_width_a-1:0] wbsa_dat_o;
+output wbsa_ack_o;
+output wbsa_stall_o;
+input wbsa_clk, wbsa_rst;
+input [data_width_b-1:0] wbsb_dat_i;
+input [addr_width_b-1:0] wbsb_adr_i;
+input [data_width_b/8-1:0] wbsb_sel_i;
+input [2:0] wbsb_cti_i;
+input [1:0] wbsb_bte_i;
+input wbsb_we_i, wbsb_cyc_i, wbsb_stb_i;
+output [data_width_b-1:0] wbsb_dat_o;
+output wbsb_ack_o;
+output wbsb_stall_o;
+input wbsb_clk, wbsb_rst;
+wire [addr_width_a-1:0] adr_a;
+wire [addr_width_b-1:0] adr_b;
+wire we_a, we_b;
+generate
+if (mode=="B3") begin : b3_inst
+vl_wb_adr_inc # ( .adr_width(addr_width_a), .max_burst_width(max_burst_width_a)) adr_inc0 (
+    .cyc_i(wbsa_cyc_i),
+    .stb_i(wbsa_stb_i),
+    .cti_i(wbsa_cti_i),
+    .bte_i(wbsa_bte_i),
+    .adr_i(wbsa_adr_i),
+    .we_i(wbsa_we_i),
+    .ack_o(wbsa_ack_o),
+    .adr_o(adr_a),
+    .clk(wbsa_clk),
+    .rst(wbsa_rst));
+assign we_a = wbsa_we_i & wbsa_ack_o;
+vl_wb_adr_inc # ( .adr_width(addr_width_b), .max_burst_width(max_burst_width_b)) adr_inc1 (
+    .cyc_i(wbsb_cyc_i),
+    .stb_i(wbsb_stb_i),
+    .cti_i(wbsb_cti_i),
+    .bte_i(wbsb_bte_i),
+    .adr_i(wbsb_adr_i),
+    .we_i(wbsb_we_i),
+    .ack_o(wbsb_ack_o),
+    .adr_o(adr_b),
+    .clk(wbsb_clk),
+    .rst(wbsb_rst));
+assign we_b = wbsb_we_i & wbsb_ack_o;
+end else if (mode=="B4") begin : b4_inst
+always @ (posedge wbsa_clk or posedge wbsa_rst)
+    if (wbsa_rst)
+        wbsa_ack_o <= 1'b0;
+    else
+        wbsa_ack_o <= wbsa_stb_i & wbsa_cyc_i;
+assign wbsa_stall_o = 1'b0;
+assign we_a = wbsa_we_i & wbsa_cyc_i & wbsa_stb_i;
+always @ (posedge wbsb_clk or posedge wbsb_rst)
+    if (wbsb_rst)
+        wbsb_ack_o <= 1'b0;
+    else
+        wbsb_ack_o <= wbsb_stb_i & wbsb_cyc_i;
+assign wbsb_stall_o = 1'b0;
+assign we_b = wbsb_we_i & wbsb_cyc_i & wbsb_stb_i;
+end
+endgenerate
+vl_dpram_be_2r2w # ( .a_data_width(data_width_a), .a_addr_width(addr_width_a), .mem_size(mem_size))
+ram_i (
+    .d_a(wbsa_dat_i),
+    .q_a(wbsa_dat_o),
+    .adr_a(adr_a),
+    .be_a(wbsa_sel_i),
+    .we_a(we_a),
+    .clk_a(wbsa_clk),
+    .d_b(wbsb_dat_i),
+    .q_b(wbsb_dat_o),
+    .adr_b(adr_b),
+    .be_b(wbsb_sel_i),
+    .we_b(we_b),
+    .clk_b(wbsb_clk) );
+endmodule
 module vl_wb_cache (
     wbs_dat_i, wbs_adr_i, wbs_sel_i, wbs_cti_i, wbs_bte_i, wbs_we_i, wbs_stb_i, wbs_cyc_i, wbs_dat_o, wbs_ack_o, wbs_stall_o, wbs_clk, wbs_rst,
     wbm_dat_o, wbm_adr_o, wbm_sel_o, wbm_cti_o, wbm_bte_o, wbm_we_o, wbm_stb_o, wbm_cyc_o, wbm_dat_i, wbm_ack_i, wbm_stall_i, wbm_clk, wbm_rst

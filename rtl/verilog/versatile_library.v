@@ -6027,15 +6027,15 @@ assign wb_ack_o = wb_ack;
 endmodule
 `endif
 
-`ifdef WB_B3_DPRAM
-`define MODULE wb_b3_dpram
+`ifdef WB_DPRAM
+`define MODULE wb_dpram
 module `BASE`MODULE ( 
 `undef MODULE
 	// wishbone slave side a
-	wbsa_dat_i, wbsa_adr_i, wbsa_sel_i, wbsa_cti_i, wbsa_bte_i, wbsa_we_i, wbsa_cyc_i, wbsa_stb_i, wbsa_dat_o, wbsa_ack_o,
+	wbsa_dat_i, wbsa_adr_i, wbsa_sel_i, wbsa_cti_i, wbsa_bte_i, wbsa_we_i, wbsa_cyc_i, wbsa_stb_i, wbsa_dat_o, wbsa_ack_o, wbsa_stall_o,
         wbsa_clk, wbsa_rst,
 	// wishbone slave side b
-	wbsb_dat_i, wbsb_adr_i, wbsb_sel_i, wbsb_cti_i, wbsb_bte_i, wbsb_we_i, wbsb_cyc_i, wbsb_stb_i, wbsb_dat_o, wbsb_ack_o,
+	wbsb_dat_i, wbsb_adr_i, wbsb_sel_i, wbsb_cti_i, wbsb_bte_i, wbsb_we_i, wbsb_cyc_i, wbsb_stb_i, wbsb_dat_o, wbsb_ack_o, wbsb_stall_o,
         wbsb_clk, wbsb_rst);
 
 parameter data_width_a = 32;
@@ -6054,6 +6054,7 @@ input [1:0] wbsa_bte_i;
 input wbsa_we_i, wbsa_cyc_i, wbsa_stb_i;
 output [data_width_a-1:0] wbsa_dat_o;
 output wbsa_ack_o;
+output wbsa_stall_o;
 input wbsa_clk, wbsa_rst;
 
 input [data_width_b-1:0] wbsb_dat_i;
@@ -6064,6 +6065,7 @@ input [1:0] wbsb_bte_i;
 input wbsb_we_i, wbsb_cyc_i, wbsb_stb_i;
 output [data_width_b-1:0] wbsb_dat_o;
 output wbsb_ack_o;
+output wbsb_stall_o;
 input wbsb_clk, wbsb_rst;
 
 wire [addr_width_a-1:0] adr_a;
