@@ -2925,7 +2925,7 @@ assign we_b = wbsb_we_i & wbsb_cyc_i & wbsb_stb_i;
 end
 endgenerate
 vl_dpram_be_2r2w # ( .a_data_width(data_width_a), .a_addr_width(addr_width_a), .mem_size(mem_size),
-                 .b_data_width(data_width_b), .b_addr_width(addr_width_b),
+                 .b_data_width(data_width_b),
                  .memory_init(memory_init), .memory_file(memory_file))
 ram_i (
     .d_a(wbsa_dat_i),

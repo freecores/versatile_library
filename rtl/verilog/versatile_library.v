@@ -6115,7 +6115,7 @@ endgenerate
 
 `define MODULE dpram_be_2r2w
 `BASE`MODULE # ( .a_data_width(data_width_a), .a_addr_width(addr_width_a), .mem_size(mem_size),
-                 .b_data_width(data_width_b), .b_addr_width(addr_width_b),
+                 .b_data_width(data_width_b),
                  .memory_init(memory_init), .memory_file(memory_file))
 `undef MODULE
 ram_i (
