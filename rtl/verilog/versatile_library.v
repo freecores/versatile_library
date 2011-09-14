@@ -6053,7 +6053,7 @@ input [2:0] wbsa_cti_i;
 input [1:0] wbsa_bte_i;
 input wbsa_we_i, wbsa_cyc_i, wbsa_stb_i;
 output [data_width_a-1:0] wbsa_dat_o;
-output wbsa_ack_o;
+output reg wbsa_ack_o;
 output wbsa_stall_o;
 input wbsa_clk, wbsa_rst;
 
@@ -6064,7 +6064,7 @@ input [2:0] wbsb_cti_i;
 input [1:0] wbsb_bte_i;
 input wbsb_we_i, wbsb_cyc_i, wbsb_stb_i;
 output [data_width_b-1:0] wbsb_dat_o;
-output wbsb_ack_o;
+output reg wbsb_ack_o;
 output wbsb_stall_o;
 input wbsb_clk, wbsb_rst;
 
