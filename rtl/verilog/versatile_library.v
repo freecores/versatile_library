@@ -6046,6 +6046,8 @@ parameter mem_size = (addr_width_a>addr_width_b) ? (1<<addr_width_a) : (1<<addr_
 parameter max_burst_width_a = 4;
 parameter max_burst_width_b = max_burst_width_a;
 parameter mode = "B3";
+parameter memory_init = 0;
+parameter memory_file = "vl_ram.v";
 input [data_width_a-1:0] wbsa_dat_i;
 input [addr_width_a-1:0] wbsa_adr_i;
 input [data_width_a/8-1:0] wbsa_sel_i;
@@ -6053,7 +6055,7 @@ input [2:0] wbsa_cti_i;
 input [1:0] wbsa_bte_i;
 input wbsa_we_i, wbsa_cyc_i, wbsa_stb_i;
 output [data_width_a-1:0] wbsa_dat_o;
-output reg wbsa_ack_o;
+output wbsa_ack_o;
 output wbsa_stall_o;
 input wbsa_clk, wbsa_rst;
 
@@ -6064,7 +6066,7 @@ input [2:0] wbsb_cti_i;
 input [1:0] wbsb_bte_i;
 input wbsb_we_i, wbsb_cyc_i, wbsb_stb_i;
 output [data_width_b-1:0] wbsb_dat_o;
-output reg wbsb_ack_o;
+output wbsb_ack_o;
 output wbsb_stall_o;
 input wbsb_clk, wbsb_rst;
 
@@ -6100,25 +6102,21 @@ assign we_a = wbsa_we_i & wbsa_ack_o;
 `undef MODULE
 assign we_b = wbsb_we_i & wbsb_ack_o;
 end else if (mode=="B4") begin : b4_inst
-always @ (posedge wbsa_clk or posedge wbsa_rst)
-    if (wbsa_rst)
-        wbsa_ack_o <= 1'b0;
-    else
-        wbsa_ack_o <= wbsa_stb_i & wbsa_cyc_i;
+`define MODULE dff
+`BASE`MODULE dffacka ( .d(wbsa_stb_i & wbsa_cyc_i), .q(wbsa_ack_o), .clk(wbsa_clk), .rst(wbsa_rst));
 assign wbsa_stall_o = 1'b0;
 assign we_a = wbsa_we_i & wbsa_cyc_i & wbsa_stb_i;
-always @ (posedge wbsb_clk or posedge wbsb_rst)
-    if (wbsb_rst)
-        wbsb_ack_o <= 1'b0;
-    else
-        wbsb_ack_o <= wbsb_stb_i & wbsb_cyc_i;
+`BASE`MODULE dffackb ( .d(wbsb_stb_i & wbsb_cyc_i), .q(wbsb_ack_o), .clk(wbsb_clk), .rst(wbsb_rst));
+`undef MODULE
 assign wbsb_stall_o = 1'b0;
 assign we_b = wbsb_we_i & wbsb_cyc_i & wbsb_stb_i;
 end
 endgenerate
 
 `define MODULE dpram_be_2r2w
-`BASE`MODULE # ( .a_data_width(data_width_a), .a_addr_width(addr_width_a), .mem_size(mem_size))
+`BASE`MODULE # ( .a_data_width(data_width_a), .a_addr_width(addr_width_a), .mem_size(mem_size),
+                 .b_data_width(data_width_b), .b_addr_width(addr_width_b),
+                 .memory_init(memory_init), .memory_file(memory_file))
 `undef MODULE
 ram_i (
     .d_a(wbsa_dat_i),
