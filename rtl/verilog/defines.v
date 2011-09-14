@@ -107,7 +107,7 @@
 `endif
 `endif
 
-`ifdef WB_B3_DPRAM
+`ifdef WB_DPRAM
 `ifndef WB_ADR_INC
 `define WB_ADR_INC
 `endif
