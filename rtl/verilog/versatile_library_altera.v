@@ -528,7 +528,7 @@ endmodule
 module vl_synchronizer (d, q, clk, rst);
 input d;
 output reg q;
-output clk, rst;
+input clk, rst;
 reg dff;
 always @ (posedge clk or posedge rst)
 if (rst)

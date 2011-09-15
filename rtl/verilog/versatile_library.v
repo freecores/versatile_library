@@ -1257,7 +1257,7 @@ module `BASE`MODULE (d, q, clk, rst);
 `undef MODULE
 input d;
 output reg q;
-output clk, rst;
+input clk, rst;
 reg dff;
 always @ (posedge clk or posedge rst)
 if (rst)
