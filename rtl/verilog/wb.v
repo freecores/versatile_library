@@ -1615,7 +1615,7 @@ localparam avalon_adr_width =
 	(wb_dat_width==avalon_dat_width/4) ? wb_adr_width-2 : 
 	(wb_dat_width==avalon_dat_width/8) ? wb_adr_width-3 : 
 	(wb_dat_width==avalon_dat_width/16) ? wb_adr_width-4 : 
-	(wb_dat_width==avalon_dat_width/32) ? wb_adr_width-5;
+	(wb_dat_width==avalon_dat_width/32) ? wb_adr_width-5 : 0;
 parameter avalon_burst_size = 4;
 // cache
 parameter async = 1;
