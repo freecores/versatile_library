@@ -6588,6 +6588,10 @@ input clk, rst;
 `define ADR_WIDTH wb_adr_width
 `define WB wb1
 `include "wb_wires.v"
+`undef DAT_WIDTH
+`undef ADR_WIDTH
+`define DAT_WIDTH avalon_dat_width
+`define ADR_WIDTH avalon_adr_width
 `define WB wb2
 `include "wb_wires.v"
 `undef DAT_WIDTH

@@ -3224,16 +3224,16 @@ wire wb1_cyc_o;
 wire wb1_stall_i;
 wire [wb_dat_width-1:0] wb1_dat_i;
 wire wb1_ack_i;
-wire [wb_dat_width-1:0] wb2_dat_o;
-wire [wb_adr_width-1:0] wb2_adr_o;
-wire [wb_dat_width/8-1:0] wb2_sel_o;
+wire [avalon_dat_width-1:0] wb2_dat_o;
+wire [avalon_adr_width-1:0] wb2_adr_o;
+wire [avalon_dat_width/8-1:0] wb2_sel_o;
 wire [2:0] wb2_cti_o;
 wire [1:0] wb2_bte_o;
 wire wb2_we_o;
 wire wb2_stb_o;
 wire wb2_cyc_o;
 wire wb2_stall_i;
-wire [wb_dat_width-1:0] wb2_dat_i;
+wire [avalon_dat_width-1:0] wb2_dat_i;
 wire wb2_ack_i;
 vl_wb_shadow_ram # ( .dat_width(wb_dat_width), .mode(wb_mode), .max_burst_width(wb_max_burst_width),
                  .shadow_mem_adr_width(shadow_ram_adr_width), .shadow_mem_size(shadow_ram_size), .shadow_mem_init(shadow_ram_init), .shadow_mem_file(shadow_ram_file),
