@@ -1826,8 +1826,8 @@ endgenerate
 generate
 if (a_data_width==32 & b_data_width==16) begin : dpram_3216
 logic [31:0] temp;
-vl_dpram_be_2r2w # (.a_data_width(64), .b_data_width(64), .a_addr_width(a_addr_width), .mem_size(mem_size), .memory_init(memory_init), .memory_file(memory_file))
-dpram6464 (
+vl_dpram_be_2r2w # (.a_data_width(32), .b_data_width(32), .a_addr_width(a_addr_width), .mem_size(mem_size), .memory_init(memory_init), .memory_file(memory_file))
+dpram3232 (
     .d_a(d_a),
     .q_a(q_a),
     .adr_a(adr_a),
@@ -1836,7 +1836,7 @@ dpram6464 (
     .clk_a(clk_a),
     .d_b({d_b,d_b}),
     .q_b(temp),
-    .adr_b(adr_b),
+    .adr_b(adr_b[b_addr_width-1:1]),
     .be_b({be_b,be_b} & {{2{adr_b[0]}},{2{!adr_b[0]}}}),
     .we_b(we_b),
     .clk_b(clk_b)
@@ -1851,7 +1851,7 @@ endgenerate
 generate
 if (a_data_width==32 & b_data_width==64) begin : dpram_3264
 logic [63:0] temp;
-vl_dpram_be_2r2w # (.a_data_width(64), .b_data_width(64), .a_addr_width(a_addr_width), .mem_size(mem_size), .memory_init(memory_init), .memory_file(memory_file))
+vl_dpram_be_2r2w # (.a_data_width(32), .b_data_width(64), .a_addr_width(a_addr_width), .mem_size(mem_size), .memory_init(memory_init), .memory_file(memory_file))
 dpram6464 (
     .d_a({d_a,d_a}),
     .q_a(temp),
