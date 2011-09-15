@@ -171,6 +171,12 @@
 `endif
 `endif
 
+`ifdef WB_SHADOW_RAM
+`ifndef WB_RAM
+`define WB_RAM
+`endif
+`endif
+
 `ifdef WB_CACHE
 `ifndef RAM
 `define RAM
