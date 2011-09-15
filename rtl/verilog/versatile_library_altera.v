@@ -3087,7 +3087,7 @@ localparam cache_mem_b_aw =
 vl_dpram_be_2r2w
     # ( .a_data_width(dw_s), .a_addr_width(aw_slot+aw_offset), .b_data_width(dw_m), .debug(debug))
     cache_mem ( .d_a(wbs_dat_i), .adr_a(wbs_adr[aw_slot+aw_offset-1:0]),   .be_a(wbs_sel_i), .we_a(we), .q_a(wbs_dat_o), .clk_a(wbs_clk),
-                .d_b(wbm_dat_i), .adr_b(wbm_adr_o[aw_slot+aw_offset-1:0]), .be_b(wbm_sel_o), .we_b(wbm_cyc_o & !wbm_we_o & wbs_ack_i), .q_b(wbm_dat_o), .clk_b(wbm_clk));
+                .d_b(wbm_dat_i), .adr_b(wbm_adr_o[cache_mem_b_aw-1:0]), .be_b(wbm_sel_o), .we_b(wbm_cyc_o & !wbm_we_o & wbs_ack_i), .q_b(wbm_dat_o), .clk_b(wbm_clk));
 always @ (posedge wbs_clk or posedge wbs_rst)
 if (wbs_rst)
     state <= idle;
