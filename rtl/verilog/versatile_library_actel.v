@@ -2623,6 +2623,7 @@ vl_wb_ram # (
     .adr_width(shadow_mem_adr_width),
     .mem_size(shadow_mem_size),
     .memory_init(shadow_mem_init),
+    .memory_file(shadow_mem_file),
     .mode(mode))
 shadow_mem0 (
     .wbs_dat_i(wbs_dat_i),
