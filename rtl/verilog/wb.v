@@ -1235,7 +1235,20 @@ module `BASE`MODULE (
 parameter dw_s = 32;
 parameter aw_s = 24;
 parameter dw_m = dw_s;
-localparam aw_m = dw_s * aw_s / dw_m;
+//localparam aw_m = dw_s * aw_s / dw_m;
+localparam aw_m = 
+	(dw_s==dw_m) ? aw_m : 
+	(dw_s==dw_m*2) ? aw_m+1 : 
+	(dw_s==dw_m*4) ? aw_m+2 : 
+	(dw_s==dw_m*8) ? aw_m+3 : 
+	(dw_s==dw_m*16) ? aw_m+4 : 
+	(dw_s==dw_m*32) ? aw_m+5 : 
+	(dw_s==dw_m/2) ? aw_m-1 : 
+	(dw_s==adw_m/4) ? aw_m-2 : 
+	(dw_s==dw_m/8) ? aw_m-3 : 
+	(dw_s==dw_m/16) ? aw_m-4 : 
+	(dw_s==dw_m/32) ? aw_m-5 : 0;
+
 parameter wbs_max_burst_width = 4;
 parameter wbs_mode = "B3";
 

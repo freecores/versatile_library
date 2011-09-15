@@ -1703,7 +1703,19 @@ module vl_dpram_be_2r2w ( d_a, q_a, adr_a, be_a, we_a, clk_a, d_b, q_b, adr_b, b
    parameter a_data_width = 32;
    parameter a_addr_width = 8;
    parameter b_data_width = 64; //a_data_width;
-   localparam b_addr_width = a_data_width * a_addr_width / b_data_width;
+   //localparam b_addr_width = a_data_width * a_addr_width / b_data_width;
+   localparam b_addr_width = 
+	(a_data_width==b_data_width) ? aw_m : 
+	(a_data_width==b_data_width*2) ? aw_m+1 : 
+	(a_data_width==b_data_width*4) ? aw_m+2 : 
+	(a_data_width==b_data_width*8) ? aw_m+3 : 
+	(a_data_width==b_data_width*16) ? aw_m+4 : 
+	(a_data_width==b_data_width*32) ? aw_m+5 : 
+	(a_data_width==b_data_width/2) ? aw_m-1 : 
+	(a_data_width==b_data_width/4) ? aw_m-2 : 
+	(a_data_width==b_data_width/8) ? aw_m-3 : 
+	(a_data_width==b_data_width/16) ? aw_m-4 : 
+	(a_data_width==b_data_width/32) ? aw_m-5 : 0;
    localparam ratio = (a_addr_width>b_addr_width) ? (a_addr_width/b_addr_width) : (b_addr_width/a_addr_width);
    parameter mem_size = (a_addr_width>b_addr_width) ? (1<<b_addr_width) : (1<<a_addr_width);
    parameter memory_init = 0;
@@ -2947,7 +2959,19 @@ module vl_wb_cache (
 parameter dw_s = 32;
 parameter aw_s = 24;
 parameter dw_m = dw_s;
-localparam aw_m = dw_s * aw_s / dw_m;
+//localparam aw_m = dw_s * aw_s / dw_m;
+localparam aw_m = 
+	(dw_s==dw_m) ? aw_m : 
+	(dw_s==dw_m*2) ? aw_m+1 : 
+	(dw_s==dw_m*4) ? aw_m+2 : 
+	(dw_s==dw_m*8) ? aw_m+3 : 
+	(dw_s==dw_m*16) ? aw_m+4 : 
+	(dw_s==dw_m*32) ? aw_m+5 : 
+	(dw_s==dw_m/2) ? aw_m-1 : 
+	(dw_s==adw_m/4) ? aw_m-2 : 
+	(dw_s==dw_m/8) ? aw_m-3 : 
+	(dw_s==dw_m/16) ? aw_m-4 : 
+	(dw_s==dw_m/32) ? aw_m-5 : 0;
 parameter wbs_max_burst_width = 4;
 parameter wbs_mode = "B3";
 parameter async = 1; // wbs_clk != wbm_clk

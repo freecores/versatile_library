@@ -438,7 +438,20 @@ module `BASE`MODULE ( d_a, q_a, adr_a, be_a, we_a, clk_a, d_b, q_b, adr_b, be_b,
    parameter a_data_width = 32;
    parameter a_addr_width = 8;
    parameter b_data_width = 64; //a_data_width;
-   localparam b_addr_width = a_data_width * a_addr_width / b_data_width;
+   //localparam b_addr_width = a_data_width * a_addr_width / b_data_width;
+   localparam b_addr_width = 
+	(a_data_width==b_data_width) ? aw_m : 
+	(a_data_width==b_data_width*2) ? aw_m+1 : 
+	(a_data_width==b_data_width*4) ? aw_m+2 : 
+	(a_data_width==b_data_width*8) ? aw_m+3 : 
+	(a_data_width==b_data_width*16) ? aw_m+4 : 
+	(a_data_width==b_data_width*32) ? aw_m+5 : 
+	(a_data_width==b_data_width/2) ? aw_m-1 : 
+	(a_data_width==b_data_width/4) ? aw_m-2 : 
+	(a_data_width==b_data_width/8) ? aw_m-3 : 
+	(a_data_width==b_data_width/16) ? aw_m-4 : 
+	(a_data_width==b_data_width/32) ? aw_m-5 : 0;
+
    localparam ratio = (a_addr_width>b_addr_width) ? (a_addr_width/b_addr_width) : (b_addr_width/a_addr_width);
    parameter mem_size = (a_addr_width>b_addr_width) ? (1<<b_addr_width) : (1<<a_addr_width);
 
