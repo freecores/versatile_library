@@ -3200,7 +3200,7 @@ wire wb2_stall_i;
 wire [wb_dat_width-1:0] wb2_dat_i;
 wire wb2_ack_i;
 vl_wb_shadow_ram # ( .dat_width(wb_dat_width), .mode(wb_mode), .max_burst_width(wb_max_burst_width),
-                 .shadow_mem_adr_width(shadow_ram_adr_width), .shadow_mem_size(shadow_ram_adr_width), .shadow_mem_init(shadow_ram_init), .shadow_mem_file(shadow_ram_file),
+                 .shadow_mem_adr_width(shadow_ram_adr_width), .shadow_mem_size(shadow_ram_size), .shadow_mem_init(shadow_ram_init), .shadow_mem_file(shadow_ram_file),
                  .main_mem_adr_width(wb_adr_width))
 shadow_ram0 (
     .wbs_dat_i(wbs_dat_i), .wbs_adr_i(wbs_adr_i), .wbs_cti_i(wbs_cti_i), .wbs_bte_i(wbs_bte_i), .wbs_sel_i(wbs_sel_i), .wbs_we_i(wbs_we_i), .wbs_stb_i(wbs_stb_i), .wbs_cyc_i(wbs_cyc_i), 
