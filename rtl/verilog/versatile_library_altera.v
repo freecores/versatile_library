@@ -1524,9 +1524,8 @@ module vl_dpram_1r1w ( d_a, adr_a, we_a, clk_a, q_b, adr_b, clk_b );
    input [(addr_width-1):0] 	 adr_a;
    input [(addr_width-1):0] 	 adr_b;
    input 			 we_a;
-   output [(data_width-1):0] 	 q_b;
+   output reg [(data_width-1):0] 	 q_b;
    input 			 clk_a, clk_b;
-   reg [(addr_width-1):0] 	 adr_b_reg;
    reg [data_width-1:0] ram [mem_size-1:0] ;
     parameter memory_init = 0;
     parameter memory_file = "vl_ram.vmem";
@@ -1553,8 +1552,7 @@ module vl_dpram_1r1w ( d_a, adr_a, we_a, clk_a, q_b, adr_b, clk_b );
    if (we_a)
      ram[adr_a] <= d_a;
    always @ (posedge clk_b)
-   adr_b_reg <= adr_b;   
-   assign q_b = ram[adr_b_reg];
+      q_b = ram[adr_b];
 endmodule
 module vl_dpram_2r1w ( d_a, q_a, adr_a, we_a, clk_a, q_b, adr_b, clk_b );
    parameter data_width = 32;
@@ -1568,7 +1566,7 @@ module vl_dpram_2r1w ( d_a, q_a, adr_a, we_a, clk_a, q_b, adr_b, clk_b );
    output reg [(data_width-1):0] q_a;
    input 			 clk_a, clk_b;
    reg [(data_width-1):0] 	 q_b;   
-   reg [data_width-1:0] ram [mem_szie-1:0] ;
+   reg [data_width-1:0] ram [mem_size-1:0] ;
     parameter memory_init = 0;
     parameter memory_file = "vl_ram.vmem";
     parameter debug = 0;
