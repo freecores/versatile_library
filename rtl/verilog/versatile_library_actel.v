@@ -2863,7 +2863,7 @@ localparam aw_m =
 	(dw_s==dw_m*16) ? aw_s+4 : 
 	(dw_s==dw_m*32) ? aw_s+5 : 
 	(dw_s==dw_m/2) ? aw_s-1 : 
-	(dw_s==adw_m/4) ? aw_s-2 : 
+	(dw_s==dw_m/4) ? aw_s-2 : 
 	(dw_s==dw_m/8) ? aw_s-3 : 
 	(dw_s==dw_m/16) ? aw_s-4 : 
 	(dw_s==dw_m/32) ? aw_s-5 : 0;
