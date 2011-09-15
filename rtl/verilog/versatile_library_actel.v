@@ -1709,7 +1709,7 @@ endgenerate
 generate
 if (a_data_width==32 & b_data_width==16) begin : dpram_3216
 logic [31:0] temp;
-vl_dpram_be_2r2w # (.a_data_width(64), .b_data_width(64), .a_addr_width(a_addr_width), .mem_size(mem_size), .init(memory_init), .memory_file(memory_file))
+vl_dpram_be_2r2w # (.a_data_width(64), .b_data_width(64), .a_addr_width(a_addr_width), .mem_size(mem_size), .memory_init(memory_init), .memory_file(memory_file))
 dpram6464 (
     .d_a(d_a),
     .q_a(q_a),
@@ -1734,7 +1734,7 @@ endgenerate
 generate
 if (a_data_width==32 & b_data_width==64) begin : dpram_3264
 logic [63:0] temp;
-vl_dpram_be_2r2w # (.a_data_width(64), .b_data_width(64), .a_addr_width(a_addr_width), .mem_size(mem_size), .init(memory_init), .memory_file(memory_file))
+vl_dpram_be_2r2w # (.a_data_width(64), .b_data_width(64), .a_addr_width(a_addr_width), .mem_size(mem_size), .memory_init(memory_init), .memory_file(memory_file))
 dpram6464 (
     .d_a({d_a,d_a}),
     .q_a(temp),

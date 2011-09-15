@@ -4344,7 +4344,7 @@ generate
 if (a_data_width==32 & b_data_width==16) begin : dpram_3216
 logic [31:0] temp;
 `define MODULE dpram_be_2r2w
-`BASE`MODULE # (.a_data_width(64), .b_data_width(64), .a_addr_width(a_addr_width), .mem_size(mem_size), .init(memory_init), .memory_file(memory_file))
+`BASE`MODULE # (.a_data_width(64), .b_data_width(64), .a_addr_width(a_addr_width), .mem_size(mem_size), .memory_init(memory_init), .memory_file(memory_file))
 `undef MODULE
 dpram6464 (
     .d_a(d_a),
@@ -4374,7 +4374,7 @@ generate
 if (a_data_width==32 & b_data_width==64) begin : dpram_3264
 logic [63:0] temp;
 `define MODULE dpram_be_2r2w
-`BASE`MODULE # (.a_data_width(64), .b_data_width(64), .a_addr_width(a_addr_width), .mem_size(mem_size), .init(memory_init), .memory_file(memory_file))
+`BASE`MODULE # (.a_data_width(64), .b_data_width(64), .a_addr_width(a_addr_width), .mem_size(mem_size), .memory_init(memory_init), .memory_file(memory_file))
 `undef MODULE
 dpram6464 (
     .d_a({d_a,d_a}),
