@@ -6298,6 +6298,16 @@ end else if (wbs_mode=="B4") begin : inst_b4
 end
 
 endgenerate
+localparam cache_mem_b_aw =
+    (dw_s==dw_m) ? aw_slot+aw_offset :
+    (dw_s==dw_m/2) ? aw_slot+aw_offset+1 :
+    (dw_s==dw_m/4) ? aw_slot+aw_offset+2 :
+    (dw_s==dw_m/8) ? aw_slot+aw_offset+3 :
+    (dw_s==dw_m/16) ? aw_slot+aw_offset+4 :
+    (dw_s==dw_m*2) ? aw_slot+aw_offset-1 :
+    (dw_s==dw_m*4) ? aw_slot+aw_offset-2 :
+    (dw_s==dw_m*8) ? aw_slot+aw_offset-3 :
+    (dw_s==dw_m*16) ? aw_slot+aw_offset-4 : 0;
 
 `define MODULE dpram_be_2r2w
 `BASE`MODULE

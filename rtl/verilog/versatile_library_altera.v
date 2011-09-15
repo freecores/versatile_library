@@ -3074,6 +3074,16 @@ assign we = wbs_cyc_i &  wbs_we_i & wbs_ack_o;
 end else if (wbs_mode=="B4") begin : inst_b4
 end
 endgenerate
+localparam cache_mem_b_aw =
+    (dw_s==dw_m) ? aw_slot+aw_offset :
+    (dw_s==dw_m/2) ? aw_slot+aw_offset+1 :
+    (dw_s==dw_m/4) ? aw_slot+aw_offset+2 :
+    (dw_s==dw_m/8) ? aw_slot+aw_offset+3 :
+    (dw_s==dw_m/16) ? aw_slot+aw_offset+4 :
+    (dw_s==dw_m*2) ? aw_slot+aw_offset-1 :
+    (dw_s==dw_m*4) ? aw_slot+aw_offset-2 :
+    (dw_s==dw_m*8) ? aw_slot+aw_offset-3 :
+    (dw_s==dw_m*16) ? aw_slot+aw_offset-4 : 0;
 vl_dpram_be_2r2w
     # ( .a_data_width(dw_s), .a_addr_width(aw_slot+aw_offset), .b_data_width(dw_m), .debug(debug))
     cache_mem ( .d_a(wbs_dat_i), .adr_a(wbs_adr[aw_slot+aw_offset-1:0]),   .be_a(wbs_sel_i), .we_a(we), .q_a(wbs_dat_o), .clk_a(wbs_clk),
