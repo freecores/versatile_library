@@ -116,15 +116,6 @@
 `endif
 `endif
 
-`ifdef WB_RAM
-`ifndef WB_ADR_INC
-`define WB_ADR_INC
-`endif
-`ifndef RAM_BE
-`define RAM_BE
-`endif
-`endif
-
 `ifdef WB3_ARBITER_TYPE1
 `ifndef SPR
 `define SPR
@@ -171,12 +162,6 @@
 `endif
 `endif
 
-`ifdef WB_SHADOW_RAM
-`ifndef WB_RAM_BE
-`define WB_RAM_BE
-`endif
-`endif
-
 `ifdef WB_CACHE
 `ifndef RAM
 `define RAM
@@ -199,8 +184,8 @@
 `endif
 
 `ifdef WB_SHADOW_RAM
-`ifndef WB_RAM
-`define WB_RAM
+`ifndef WB_RAM_BE
+`define WB_RAM_BE
 `endif
 `endif
 
@@ -208,8 +193,11 @@
 `ifndef WB_ADR_INC
 `define WB_ADR_INC
 `endif
+`ifndef RAM_BE
+`define RAM_BE
 `endif
- 
+`endif
+
 `ifdef MULTS18X18
 `ifndef MULTS
 `define MULTS
