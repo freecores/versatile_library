@@ -1705,17 +1705,17 @@ module vl_dpram_be_2r2w ( d_a, q_a, adr_a, be_a, we_a, clk_a, d_b, q_b, adr_b, b
    parameter b_data_width = 64; //a_data_width;
    //localparam b_addr_width = a_data_width * a_addr_width / b_data_width;
    localparam b_addr_width = 
-	(a_data_width==b_data_width) ? aw_m : 
-	(a_data_width==b_data_width*2) ? aw_m+1 : 
-	(a_data_width==b_data_width*4) ? aw_m+2 : 
-	(a_data_width==b_data_width*8) ? aw_m+3 : 
-	(a_data_width==b_data_width*16) ? aw_m+4 : 
-	(a_data_width==b_data_width*32) ? aw_m+5 : 
-	(a_data_width==b_data_width/2) ? aw_m-1 : 
-	(a_data_width==b_data_width/4) ? aw_m-2 : 
-	(a_data_width==b_data_width/8) ? aw_m-3 : 
-	(a_data_width==b_data_width/16) ? aw_m-4 : 
-	(a_data_width==b_data_width/32) ? aw_m-5 : 0;
+	(a_data_width==b_data_width) ? a_addr_width : 
+	(a_data_width==b_data_width*2) ? a_addr_width+1 : 
+	(a_data_width==b_data_width*4) ? a_addr_width+2 : 
+	(a_data_width==b_data_width*8) ? a_addr_width+3 : 
+	(a_data_width==b_data_width*16) ? a_addr_width+4 : 
+	(a_data_width==b_data_width*32) ? a_addr_width+5 : 
+	(a_data_width==b_data_width/2) ? a_addr_width-1 : 
+	(a_data_width==b_data_width/4) ? a_addr_width-2 : 
+	(a_data_width==b_data_width/8) ? a_addr_width-3 : 
+	(a_data_width==b_data_width/16) ? a_addr_width-4 : 
+	(a_data_width==b_data_width/32) ? a_addr_width-5 : 0;
    localparam ratio = (a_addr_width>b_addr_width) ? (a_addr_width/b_addr_width) : (b_addr_width/a_addr_width);
    parameter mem_size = (a_addr_width>b_addr_width) ? (1<<b_addr_width) : (1<<a_addr_width);
    parameter memory_init = 0;
