@@ -1603,7 +1603,8 @@ parameter wb_max_burst_width = 4;
 parameter wb_mode = "B4";
 // avalon
 parameter avalon_dat_width = 32;
-localparam avalon_adr_width = wb_dat_width * wb_adr_width / avalon_dat_width;
+//localparam avalon_adr_width = wb_dat_width * wb_adr_width / avalon_dat_width;
+localparam avalon_adr_width = (wb_dat_width==avalon_dat_width) ? wb_adr_width : (wb_dat_width>avalon_dat_width) ? wb_adr_width+wb_dat_width/avalon_dat_width : wb_adr_width-wb_dat_width/avalon_dat_width;
 parameter avalon_burst_size = 4;
 // cache
 parameter async = 1;
