@@ -6465,7 +6465,7 @@ input [2:0]  wbs_cti_i;
 input wbs_we_i;
 input wbs_cyc_i;
 input wbs_stb_i;
-output [dat_width:0] wbs_dat_o;
+output [dat_width-1:0] wbs_dat_o;
 output wbs_ack_o;
 output wbs_stall_o;
 
