@@ -3979,7 +3979,7 @@ module `BASE`MODULE ( d_a, adr_a, we_a, clk_a, q_b, adr_b, clk_b );
    input 			 we_a;
    output reg [(data_width-1):0] 	 q_b;
    input 			 clk_a, clk_b;
-   reg [data_width-1:0] ram [mem_size-1:0] `SYN_NO_RW_CHECK;
+   reg [data_width-1:0] ram [0:mem_size-1] `SYN_NO_RW_CHECK;
 
     parameter memory_init = 0;
     parameter memory_file = "vl_ram.vmem";
@@ -4032,7 +4032,7 @@ module `BASE`MODULE ( d_a, q_a, adr_a, we_a, clk_a, q_b, adr_b, clk_b );
    output reg [(data_width-1):0] q_a;
    input 			 clk_a, clk_b;
    reg [(data_width-1):0] 	 q_b;   
-   reg [data_width-1:0] ram [mem_size-1:0] `SYN_NO_RW_CHECK;
+   reg [data_width-1:0] ram [0:mem_size-1] `SYN_NO_RW_CHECK;
 
     parameter memory_init = 0;
     parameter memory_file = "vl_ram.vmem";
@@ -4087,7 +4087,7 @@ module `BASE`MODULE ( d_a, q_a, adr_a, we_a, clk_a, d_b, adr_b, we_b, clk_b );
    input 			 we_b;
    input 			 clk_a, clk_b;
    reg [(data_width-1):0] 	 q_b;   
-   reg [data_width-1:0] ram [mem_size-1:0] `SYN_NO_RW_CHECK;
+   reg [data_width-1:0] ram [0:mem_size-1] `SYN_NO_RW_CHECK;
 
     parameter memory_init = 0;
     parameter memory_file = "vl_ram.vmem";
@@ -4148,7 +4148,7 @@ module `BASE`MODULE ( d_a, q_a, adr_a, we_a, clk_a, d_b, q_b, adr_b, we_b, clk_b
    input 			 we_b;
    input 			 clk_a, clk_b;
    reg [(data_width-1):0] 	 q_b;   
-   reg [data_width-1:0] ram [mem_size-1:0] `SYN_NO_RW_CHECK;
+   reg [data_width-1:0] ram [0:mem_size-1] `SYN_NO_RW_CHECK;
 
     parameter memory_init = 0;
     parameter memory_file = "vl_ram.vmem";
