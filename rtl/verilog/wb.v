@@ -1542,6 +1542,7 @@ module `BASE`MODULE (
 	wbs_dat_i, wbs_adr_i, wbs_sel_i, wbs_bte_i, wbs_cti_i, wbs_we_i, wbs_cyc_i, wbs_stb_i, wbs_dat_o, wbs_ack_o, wbs_stall_o,
 	// avalon master side
 	readdata, readdatavalid, address, read, be, write, burstcount, writedata, waitrequest, beginbursttransfer,
+        init_done,
         // common
         clk, rst);
 
@@ -1571,21 +1572,57 @@ output read;
 output beginbursttransfer;
 output [3:0] burstcount;
 input waitrequest;
+input init_done;
 input clk, rst;
 
-reg last_cyc_idle_or_eoc;
+// cnt1 - initiated read or writes
+// cnt2 - # of read or writes in pipeline
+reg [3:0] cnt1;
+reg [3:0] cnt1;
 
-reg [3:0] cnt;
+reg next_state, state;
+localparam s0 = 1'b0;
+localparam s1 = 1'b1;
+
+wire eoc;
+
+always @ *
+begin
+    case (state)
+    s0: if (init_done & wbs_cyc_i) next_state <= s1;
+    s1: if (cnt2==4'h1 & )
+    default: next_state <= state;
+    end
+end
+
 always @ (posedge clk or posedge rst)
 if (rst)
-    cnt <= 4'h0;
+    state <= s0;
 else
-    if (beginbursttransfer & waitrequest)
-        cnt <= burst_size - 1;
-    else if (beginbursttransfer & !waitrequest)
-        cnt <= burst_size - 2;
-    else if (wbs_ack_o)
-        cnt <= cnt - 1;
+    state <= next_state;
+
+assign eoc = state==s1 & !(read | write) & (& !waitrequest & cnt2=;
+always @ (posedge clk or posedge rst)
+if (rst)
+    cnt1 <= 4'h0;
+else
+    if (read & !waitrequest & init_done)
+        cnt1 <= burst_size - 1;
+    else if (write & !waitrequest & init_done)
+        cnt1 <= cnt1 + 4'h1;
+    else if (next_state==idle)
+        cnt1 <= 4'h0;
+
+always @ (posedge clk or posedge rst)
+if (rst)
+    cnt2 <= 4'h0;
+else
+    if (read & !waitrequest & init_done)
+        cnt2 <= burst_size - 1;
+    else if (write & !waitrequest & init_done & )
+        cnt2 <= cnt1 + 4'h1;
+    else if (next_state==idle)
+        cnt2 <= 4'h0;
 
 reg wr_ack;
 always @ (posedge clk or posedge rst)
@@ -1598,9 +1635,9 @@ else
 assign writedata = wbs_dat_i;
 assign address = wbs_adr_i;
 assign be = wbs_sel_i;
-assign write = cnt==(burst_size-1) & wbs_cyc_i &  wbs_we_i;
-assign read  = cnt==(burst_size-1) & wbs_cyc_i & !wbs_we_i;
-assign beginbursttransfer = cnt==4'h0 & wbs_cyc_i;
+assign write = cnt!=4'h0 & wbs_cyc_i &  wbs_we_i;
+assign read  = cnt!=4'h0 & wbs_cyc_i & !wbs_we_i;
+assign beginbursttransfer = state==s0 & next_state==s1;
 assign burstcount = burst_size;
 
 // to wishbone
