@@ -89,11 +89,18 @@
 `define WB_CACHE
 `define WB_AVALON_BRIDGE
 `define WB_AVALON_MEM_CACHE
+`define WB_SDR_SDRAM_CTRL
 
 `define IO_DFF_OE
 `define O_DFF
+`define O_DDR
+`define O_CLK
 
 `endif
+
+///////////////////////////////////////
+// dependencies
+///////////////////////////////////////
 
 `ifdef PLL
 `ifndef SYNC_RST
@@ -104,6 +111,39 @@
 `ifdef SYNC_RST
 `ifndef GBUF
 `define GBUF
+`endif
+`endif
+
+`ifdef WB_SDR_SDRAM_CTRL
+`ifndef WB_SHADOW_RAM
+`define WB_SHADOW_RAM
+`endif
+`ifndef WB_CACHE
+`define WB_CACHE
+`endif
+`ifndef WB_SDR_SDRAM
+`define WB_SDR_SDRAM
+`endif
+`ifndef IO_DFF_OE
+`define IO_DFF_OE
+`endif
+`ifndef O_DFF
+`define O_DFF
+`endif
+`ifndef O_CLK
+`define O_CLK
+`endif
+`endif
+
+`ifdef WB_SDR_SDRAM
+`ifndef CNT_SHREG_CLEAR
+`define CNT_SHREG_CLEAR
+`endif
+`ifndef CNT_LFSR_ZQ
+`define CNT_LFSR_ZQ
+`endif
+`ifndef DELAY_EMPTYFLAG
+`define DELAY_EMPTYFLAG
 `endif
 `endif
 
@@ -180,6 +220,12 @@
 `endif
 `ifndef CDC
 `define CDC
+`endif
+`ifndef O_DFF
+`define O_DFF
+`endif
+`ifndef O_CLK
+`define O_CLK
 `endif
 `endif
 
@@ -318,6 +364,12 @@
 `endif
 `ifndef SYNCHRONIZER
 `define SYNCHRONIZER
+`endif
+`endif
+
+`ifdef O_CLK
+`ifndef O_DDR
+`define O_DDR
 `endif
 `endif
 
@@ -1578,8 +1630,8 @@ endmodule
 //// from http://www.opencores.org/lgpl.shtml                     ////
 ////                                                              ////
 //////////////////////////////////////////////////////////////////////
-`timescale 1ns/1ns
 `ifdef O_DFF
+`timescale 1ns/1ns
 `define MODULE o_dff
 module `BASE`MODULE (d_i, o_pad, clk, rst);
 `undef MODULE
@@ -1593,7 +1645,7 @@ reg  [width-1:0] o_pad_int;
 assign d_i_int = d_i;
 genvar i;
 generate
-for (i=0;i<width;i=i+1) begin
+for (i=0;i<width;i=i+1) begin : dffs
     always @ (posedge clk or posedge rst)
     if (rst)
         o_pad_int[i] <= reset_value[i];
@@ -1605,8 +1657,8 @@ endgenerate
 endmodule
 `endif
 
-`timescale 1ns/1ns
 `ifdef IO_DFF_OE
+`timescale 1ns/1ns
 `define MODULE io_dff_oe
 module `BASE`MODULE ( d_i, d_o, oe, io_pad, clk, rst);
 `undef MODULE
@@ -1622,7 +1674,7 @@ reg [width-1:0] d_o_q;
 assign oe_d = {width{oe}};
 genvar i;
 generate
-for (i=0;i<width;i=i+1) begin
+for (i=0;i<width;i=i+1) begin : dffs
     always @ (posedge clk or posedge rst)
     if (rst)
         oe_q[i] <= 1'b0;
@@ -1643,7 +1695,64 @@ end
 endgenerate
 endmodule
 `endif
-`ifdef CNT_BIN
+
+`ifdef O_DDR
+`ifdef ALTERA
+`define MODULE o_ddr
+module `BASE`MODULE (d_h_i, d_l_i, o_pad, clk, rst);
+`undef MODULE
+parameter width = 1;
+input  [width-1:0] d_h_i, d_l_i;
+output [width-1:0] o_pad;
+input clk, rst;
+genvar i;
+generate
+for (i=0;i<width;i=i+1) begin : ddr
+    ddio_out ddio_out0( .aclr(rst), .datain_h(d_h_i[i]), .datain_l(d_l_i[i]), .outclock(clk), .dataout(o_pad[i]) );
+end
+endgenerate
+endmodule
+`else
+`define MODULE o_ddr
+module `BASE`MODULE (d_h_i, d_l_i, o_pad, clk, rst);
+`undef MODULE
+parameter width = 1;
+input  [width-1:0] d_h_i, d_l_i;
+output [width-1:0] o_pad;
+input clk, rst;
+reg [width-1:0] ff1;
+reg [width-1:0] ff2;
+genvar i;
+generate
+for (i=0;i<width;i=i+1) begin : ddr
+    always @ (posedge clk or posedge rst)
+    if (rst)
+        ff1[i] <= 1'b0;
+    else
+        ff1[i] <= d_h_i[i];
+    always @ (posedge clk or posedge rst)
+    if (rst)
+        ff2[i] <= 1'b0;
+    else
+        ff2[i] <= d_l_i[i];
+    assign o_pad = (clk) ? ff1 : ff2;
+end
+endgenerate
+endmodule
+`endif
+`endif
+
+`ifdef O_CLK
+`define MODULE o_clk
+module `BASE`MODULE ( clk_o_pad, clk, rst);
+`undef MODULE
+input clk, rst;
+output clk_o_pad;
+`define MODULE o_ddr
+`BASE`MODULE o_ddr0( .d_h_i(1'b1), .d_l_i(1'b0), .o_pad(clk_o_pad), .clk(clk), .rst(rst));
+`undef MODULE
+endmodule
+`endif`ifdef CNT_BIN
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
 ////  Versatile counter                                           ////
@@ -6313,7 +6422,7 @@ localparam cache_mem_b_aw =
 `BASE`MODULE
     # ( .a_data_width(dw_s), .a_addr_width(aw_slot+aw_offset), .b_data_width(dw_m), .debug(debug))
     cache_mem ( .d_a(wbs_dat_i), .adr_a(wbs_adr[aw_slot+aw_offset-1:0]),   .be_a(wbs_sel_i), .we_a(we), .q_a(wbs_dat_o), .clk_a(wbs_clk),
-                .d_b(wbm_dat_i), .adr_b(wbm_adr_o[cache_mem_b_aw-1:0]), .be_b(wbm_sel_o), .we_b(wbm_cyc_o & !wbm_we_o & wbs_ack_i), .q_b(wbm_dat_o), .clk_b(wbm_clk));
+                .d_b(wbm_dat_i), .adr_b(wbm_adr[cache_mem_b_aw-1:0]), .be_b(wbm_sel_o), .we_b(wbm_cyc_o & !wbm_we_o & wbm_ack_i), .q_b(wbm_dat_o), .clk_b(wbm_clk));
 `undef MODULE    
 
 always @ (posedge wbs_clk or posedge wbs_rst)
@@ -6353,7 +6462,7 @@ else begin : nocdc
 end
 endgenerate
 
-// FSM generating a number of burts 4 cycles
+// FSM generating a number of bursts 4 cycles
 // actual number depends on data width ratio
 // nr_of_wbm_burst
 reg [nr_of_wbm_burst_width+wbm_burst_width-1:0]       cnt_rw, cnt_ack;
@@ -6460,6 +6569,7 @@ module `BASE`MODULE (
 	wbs_dat_i, wbs_adr_i, wbs_sel_i, wbs_bte_i, wbs_cti_i, wbs_we_i, wbs_cyc_i, wbs_stb_i, wbs_dat_o, wbs_ack_o, wbs_stall_o,
 	// avalon master side
 	readdata, readdatavalid, address, read, be, write, burstcount, writedata, waitrequest, beginbursttransfer,
+        init_done,
         // common
         clk, rst);
 
@@ -6489,21 +6599,57 @@ output read;
 output beginbursttransfer;
 output [3:0] burstcount;
 input waitrequest;
+input init_done;
 input clk, rst;
 
-reg last_cyc_idle_or_eoc;
+// cnt1 - initiated read or writes
+// cnt2 - # of read or writes in pipeline
+reg [3:0] cnt1;
+reg [3:0] cnt2;
 
-reg [3:0] cnt;
+reg next_state, state;
+localparam s0 = 1'b0;
+localparam s1 = 1'b1;
+
+wire eoc;
+
+always @ *
+begin
+    case (state)
+    s0: if (init_done & wbs_cyc_i) next_state <= s1;
+    s1: 
+    default: next_state <= state;
+    end
+end
+
 always @ (posedge clk or posedge rst)
 if (rst)
-    cnt <= 4'h0;
+    state <= s0;
 else
-    if (beginbursttransfer & waitrequest)
-        cnt <= burst_size - 1;
-    else if (beginbursttransfer & !waitrequest)
-        cnt <= burst_size - 2;
-    else if (wbs_ack_o)
-        cnt <= cnt - 1;
+    state <= next_state;
+
+assign eoc = state==s1 & !(read | write) & (& !waitrequest & cnt2=;
+always @ (posedge clk or posedge rst)
+if (rst)
+    cnt1 <= 4'h0;
+else
+    if (read & !waitrequest & init_done)
+        cnt1 <= burst_size - 1;
+    else if (write & !waitrequest & init_done)
+        cnt1 <= cnt1 + 4'h1;
+    else if (next_state==idle)
+        cnt1 <= 4'h0;
+
+always @ (posedge clk or posedge rst)
+if (rst)
+    cnt2 <= 4'h0;
+else
+    if (read & !waitrequest & init_done)
+        cnt2 <= burst_size - 1;
+    else if (write & !waitrequest & init_done & )
+        cnt2 <= cnt1 + 4'h1;
+    else if (next_state==idle)
+        cnt2 <= 4'h0;
 
 reg wr_ack;
 always @ (posedge clk or posedge rst)
@@ -6516,9 +6662,9 @@ else
 assign writedata = wbs_dat_i;
 assign address = wbs_adr_i;
 assign be = wbs_sel_i;
-assign write = cnt==(burst_size-1) & wbs_cyc_i &  wbs_we_i;
-assign read  = cnt==(burst_size-1) & wbs_cyc_i & !wbs_we_i;
-assign beginbursttransfer = cnt==4'h0 & wbs_cyc_i;
+assign write = cnt!=4'h0 & wbs_cyc_i &  wbs_we_i;
+assign read  = cnt!=4'h0 & wbs_cyc_i & !wbs_we_i;
+assign beginbursttransfer = state==s0 & next_state==s1;
 assign burstcount = burst_size;
 
 // to wishbone
@@ -6649,7 +6795,7 @@ endmodule
 module `BASE`MODULE (
 `undef MODULE
     // wisbone i/f
-    dat_i, adr_i, sel_i, we_i, cyc_i, stb_i, dat_o, ack_o, stall_o
+    dat_i, adr_i, sel_i, we_i, cyc_i, stb_i, dat_o, ack_o, stall_o,
     // SDR SDRAM
     ba, a, cmd, cke, cs_n, dqm, dq_i, dq_o, dq_oe,
     // system
@@ -6658,9 +6804,9 @@ module `BASE`MODULE (
     // external data bus size
     parameter dat_size = 16;
     // memory geometry parameters
-    parameter ba_size  = `SDR_BA_SIZE;   
-    parameter row_size = `SDR_ROW_SIZE;
-    parameter col_size = `SDR_COL_SIZE;
+    parameter ba_size  = 2;   
+    parameter row_size = 13;
+    parameter col_size = 9;
     parameter cl = 2;
     // memory timing parameters
     parameter tRFC = 9;
@@ -6680,7 +6826,7 @@ module `BASE`MODULE (
     localparam init_bt = 1'b0;
     localparam init_bl = 3'b000;
 	
-    input [dat_size:0] dat_i;
+    input [dat_size-1:0] dat_i;
     input [ba_size+col_size+row_size-1:0] adr_i;
     input [dat_size/8-1:0] sel_i;
     input we_i, cyc_i, stb_i;
@@ -6793,8 +6939,8 @@ module `BASE`MODULE (
     end
 
     // counter
-`define MODULE cnt_shreg_ce_clear 
-    `VLBASE`MODULE # ( .length(32))
+`define MODULE cnt_shreg_clear 
+    `BASE`MODULE # ( .length(32))
 `undef MODULE
         cnt0 (
             .clear(state!=next),
@@ -6842,7 +6988,7 @@ module `BASE`MODULE (
                     if (we_i)
                         dq_oe = 1'b1;
                     a = a10_fix(col);
-                    stall_o = 1'b1;
+                    stall_o = 1'b0;
                 end
             endcase
         end
@@ -6853,7 +6999,7 @@ module `BASE`MODULE (
     // precharge all bank A10=1
     genvar i;
     generate
-    for (i=0;i<2<<ba_size-1;i=i+1) begin
+    for (i=0;i<2<<ba_size-1;i=i+1) begin : open_ba_logic
     
         always @ (posedge clk or posedge rst)
         if (rst)
@@ -6876,7 +7022,7 @@ module `BASE`MODULE (
 
     // refresh counter
 `define MODULE cnt_lfsr_zq  
-    `VLBASE`MODULE # ( .length(rfr_length), .wrap_value (rfr_wrap_value)) ref_counter0( .zq(ref_cnt_zero), .rst(rst), .clk(clk));
+    `BASE`MODULE # ( .length(rfr_length), .wrap_value (rfr_wrap_value)) ref_counter0( .zq(ref_cnt_zero), .rst(rst), .clk(clk));
 `undef MODULE
 
     always @ (posedge clk or posedge rst)
@@ -6890,13 +7036,192 @@ module `BASE`MODULE (
 
     assign dat_o = dq_i;
     
-    assign ack_wr = (state==`FSM_RW & count0 & we_i);
+    assign ack_wr = (state==`FSM_RW & we_i);
 `define MODULE delay_emptyflag  
-    `VLBASE`MODULE # ( .depth(cl+2)) delay0 ( .d(state==`FSM_RW & stb_i & !we_i), .q(ack_rd), .emptyflag(rd_ack_emptyflag), .clk(clk), .rst(rst));
+    `BASE`MODULE # ( .depth(cl+2)) delay0 ( .d(state==`FSM_RW & stb_i & !we_i), .q(ack_rd), .emptyflag(rd_ack_emptyflag), .clk(clk), .rst(rst));
 `undef MODULE
     assign ack_o = ack_rd | ack_wr;
 
     assign dq_o = dat_i;
+
+endmodule
+`endif
+
+`ifdef WB_SDR_SDRAM_CTRL
+`define MODULE wb_sdr_sdram_ctrl
+module `BASE`MODULE (
+    // WB i/f
+    wbs_dat_i, wbs_adr_i, wbs_cti_i, wbs_bte_i, wbs_sel_i, wbs_we_i, wbs_stb_i, wbs_cyc_i, 
+    wbs_dat_o, wbs_ack_o, wbs_stall_o,
+    // SDR SDRAM
+    mem_ba, mem_a, mem_cmd, mem_cke, mem_cs_n, mem_dqm, mem_dq_i, mem_dq_o, mem_dq_oe,
+    // system
+    wb_clk, wb_rst, mem_clk, mem_rst);
+`undef MODULE
+
+    // WB slave
+    parameter wbs_dat_width = 32;
+    parameter wbs_adr_width = 24;
+    parameter wbs_mode = "B3";
+    parameter wbs_max_burst_width = 4;
+
+    // Shadow RAM
+    parameter shadow_mem_adr_width = 10;
+    parameter shadow_mem_size = 1024;
+    parameter shadow_mem_init = 2;
+    parameter shadow_mem_file = "vl_ram.v";
+
+    // Cache
+    parameter cache_async = 1; // wbs_clk != wbm_clk
+    parameter cache_nr_of_ways = 1;
+    parameter cache_aw_offset = 4; // 4 => 16 words per cache line
+    parameter cache_aw_slot = 10;
+    parameter cache_valid_mem = 0;
+    parameter cache_debug = 0;
+    
+    // SDRAM parameters
+    parameter mem_dat_size = 16;
+    parameter mem_ba_size  = 2;   
+    parameter mem_row_size = 13;
+    parameter mem_col_size = 9;
+    parameter mem_cl = 2;
+    parameter mem_tRFC = 9;
+    parameter mem_tRP  = 2;
+    parameter mem_tRCD = 2;
+    parameter mem_tMRD = 2;
+    parameter mem_rfr_length = 10;
+    parameter mem_rfr_wrap_value = 1010;
+
+    input [wbs_dat_width-1:0] wbs_dat_i;
+    input [wbs_adr_width-1:0] wbs_adr_i;
+    input [2:0] wbs_cti_i;
+    input [1:0] wbs_bte_i;
+    input [wbs_dat_width/8-1:0] wbs_sel_i;
+    input wbs_we_i, wbs_stb_i, wbs_cyc_i;
+    output [wbs_dat_width-1:0] wbs_dat_o;
+    output wbs_ack_o;
+    output wbs_stall_o;
+    
+    output [mem_ba_size-1:0]    mem_ba;
+    output reg [12:0]           mem_a;
+    output reg [2:0]            mem_cmd; // {ras,cas,we}
+    output                      mem_cke, mem_cs_n;
+    output reg [mem_dat_size/8-1:0] mem_dqm;
+    output [mem_dat_size-1:0]       mem_dq_o;
+    output reg                  mem_dq_oe;
+    input  [mem_dat_size-1:0]       mem_dq_i;
+
+    input wb_clk, wb_rst, mem_clk, mem_rst;
+
+    // wbm1
+    wire [wbs_dat_width-1:0] wbm1_dat_o;
+    wire [wbs_adr_width-1:0] wbm1_adr_o;
+    wire [2:0] wbm1_cti_o;
+    wire [1:0] wbm1_bte_o;
+    wire [wbs_dat_width/8-1:0] wbm1_sel_o;
+    wire wbm1_we_o, wbm1_stb_o, wbm1_cyc_o;
+    wire [wbs_dat_width-1:0] wbm1_dat_i;
+    wire wbm1_ack_i, wbm1_stall_i;
+    // wbm2
+    wire [mem_dat_size-1:0] wbm2_dat_o;
+    wire [mem_ba_size+mem_row_size+mem_col_size-1:0] wbm2_adr_o;
+    wire [2:0] wbm2_cti_o;
+    wire [1:0] wbm2_bte_o;
+    wire [mem_dat_size/8-1:0] wbm2_sel_o;
+    wire wbm2_we_o, wbm2_stb_o, wbm2_cyc_o;
+    wire [mem_dat_size-1:0] wbm2_dat_i;
+    wire wbm2_ack_i, wbm2_stall_i;
+
+`define MODULE wb_shadow_ram
+`BASE`MODULE # (
+    .shadow_mem_adr_width(shadow_mem_adr_width), .shadow_mem_size(shadow_mem_size), .shadow_mem_init(shadow_mem_init), .shadow_mem_file(shadow_mem_file), .main_mem_adr_width(wbs_adr_width), .dat_width(wbs_dat_width), .mode(wbs_mode), .max_burst_width(wbs_max_burst_width) )
+shadow_ram0 (
+    .wbs_dat_i(wbs_dat_i),
+    .wbs_adr_i(wbs_adr_i),
+    .wbs_cti_i(wbs_cti_i),
+    .wbs_bte_i(wbs_bte_i),
+    .wbs_sel_i(wbs_sel_i),
+    .wbs_we_i (wbs_we_i),
+    .wbs_stb_i(wbs_stb_i),
+    .wbs_cyc_i(wbs_cyc_i), 
+    .wbs_dat_o(wbs_dat_o),
+    .wbs_ack_o(wbs_ack_o),
+    .wbs_stall_o(wbs_stall_o),
+    .wbm_dat_o(wbm1_dat_o),
+    .wbm_adr_o(wbm1_adr_o),
+    .wbm_cti_o(wbm1_cti_o),
+    .wbm_bte_o(wbm1_bte_o),
+    .wbm_sel_o(wbm1_sel_o),
+    .wbm_we_o(wbm1_we_o),
+    .wbm_stb_o(wbm1_stb_o),
+    .wbm_cyc_o(wbm1_cyc_o), 
+    .wbm_dat_i(wbm1_dat_i),
+    .wbm_ack_i(wbm1_ack_i),
+    .wbm_stall_i(wbm1_stall_i),
+    .wb_clk(wb_clk),
+    .wb_rst(wb_rst) );
+`undef MODULE
+
+`define MODULE wb_cache
+`BASE`MODULE # (
+    .dw_s(wbs_dat_width), .aw_s(wbs_adr_width), .dw_m(mem_dat_size), .wbs_max_burst_width(cache_aw_offset), .wbs_mode(wbs_mode), .async(cache_async), .nr_of_ways(cache_nr_of_ways), .aw_offset(cache_aw_offset), .aw_slot(cache_aw_slot), .valid_mem(cache_valid_mem) )
+cache0 (
+    .wbs_dat_i(wbm1_dat_o),
+    .wbs_adr_i(wbm1_adr_o),
+    .wbs_sel_i(wbm1_sel_o),
+    .wbs_cti_i(wbm1_cti_o),
+    .wbs_bte_i(wbm1_bte_o),
+    .wbs_we_i (wbm1_we_o),
+    .wbs_stb_i(wbm1_stb_o),
+    .wbs_cyc_i(wbm1_cyc_o),
+    .wbs_dat_o(wbm1_dat_i),
+    .wbs_ack_o(wbm1_ack_i),
+    .wbs_stall_o(wbm1_stall_i),
+    .wbs_clk(wb_clk),
+    .wbs_rst(wb_rst),
+    .wbm_dat_o(wbm2_dat_o),
+    .wbm_adr_o(wbm2_adr_o),
+    .wbm_sel_o(wbm2_sel_o),
+    .wbm_cti_o(wbm2_cti_o),
+    .wbm_bte_o(wbm2_bte_o),
+    .wbm_we_o (wbm2_we_o),
+    .wbm_stb_o(wbm2_stb_o),
+    .wbm_cyc_o(wbm2_cyc_o),
+    .wbm_dat_i(wbm2_dat_i),
+    .wbm_ack_i(wbm2_ack_i),
+    .wbm_stall_i(wbm2_stall_i),
+    .wbm_clk(mem_clk),
+    .wbm_rst(mem_rst) );
+`undef MODULE
+
+`define MODULE wb_sdr_sdram
+`BASE`MODULE # (
+    .dat_size(mem_dat_size), .ba_size(mem_ba_size), .row_size(mem_row_size), .col_size(mem_col_size), .cl(mem_cl), .tRFC(mem_tRFC), .tRP(mem_tRP), .tRCD(mem_tRCD), .tMRD(mem_tMRD), .rfr_length(mem_rfr_length), .rfr_wrap_value(mem_rfr_wrap_value) )
+ctrl0(
+    // wisbone i/f
+    .dat_i(wbm2_dat_o),
+    .adr_i(wbm2_adr_o),
+    .sel_i(wbm2_sel_o),
+    .we_i (wbm2_we_o),
+    .cyc_i(wbm2_cyc_o),
+    .stb_i(wbm2_stb_o),
+    .dat_o(wbm2_dat_i),
+    .ack_o(wbm2_ack_i),
+    .stall_o(wbm2_stall_i),
+    // SDR SDRAM
+    .ba(mem_ba),
+    .a(mem_a),
+    .cmd(mem_cmd),
+    .cke(mem_cke),
+    .cs_n(mem_cs_n),
+    .dqm(mem_dqm),
+    .dq_i(mem_dq_i),
+    .dq_o(mem_dq_o),
+    .dq_oe(mem_dq_oe),
+    // system
+    .clk(mem_clk),
+    .rst(mem_rst) );
+`undef MODULE
 
 endmodule
 `endif

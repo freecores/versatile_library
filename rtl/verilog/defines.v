@@ -89,11 +89,18 @@
 `define WB_CACHE
 `define WB_AVALON_BRIDGE
 `define WB_AVALON_MEM_CACHE
+`define WB_SDR_SDRAM_CTRL
 
 `define IO_DFF_OE
 `define O_DFF
+`define O_DDR
+`define O_CLK
 
 `endif
+
+///////////////////////////////////////
+// dependencies
+///////////////////////////////////////
 
 `ifdef PLL
 `ifndef SYNC_RST
@@ -104,6 +111,39 @@
 `ifdef SYNC_RST
 `ifndef GBUF
 `define GBUF
+`endif
+`endif
+
+`ifdef WB_SDR_SDRAM_CTRL
+`ifndef WB_SHADOW_RAM
+`define WB_SHADOW_RAM
+`endif
+`ifndef WB_CACHE
+`define WB_CACHE
+`endif
+`ifndef WB_SDR_SDRAM
+`define WB_SDR_SDRAM
+`endif
+`ifndef IO_DFF_OE
+`define IO_DFF_OE
+`endif
+`ifndef O_DFF
+`define O_DFF
+`endif
+`ifndef O_CLK
+`define O_CLK
+`endif
+`endif
+
+`ifdef WB_SDR_SDRAM
+`ifndef CNT_SHREG_CLEAR
+`define CNT_SHREG_CLEAR
+`endif
+`ifndef CNT_LFSR_ZQ
+`define CNT_LFSR_ZQ
+`endif
+`ifndef DELAY_EMPTYFLAG
+`define DELAY_EMPTYFLAG
 `endif
 `endif
 
@@ -180,6 +220,12 @@
 `endif
 `ifndef CDC
 `define CDC
+`endif
+`ifndef O_DFF
+`define O_DFF
+`endif
+`ifndef O_CLK
+`define O_CLK
 `endif
 `endif
 
@@ -318,6 +364,12 @@
 `endif
 `ifndef SYNCHRONIZER
 `define SYNCHRONIZER
+`endif
+`endif
+
+`ifdef O_CLK
+`ifndef O_DDR
+`define O_DDR
 `endif
 `endif
 

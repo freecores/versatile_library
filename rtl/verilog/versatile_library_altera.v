@@ -1,4 +1,7 @@
 // default SYN_KEEP definition
+///////////////////////////////////////
+// dependencies
+///////////////////////////////////////
 // size to width
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
@@ -770,7 +773,7 @@ reg  [width-1:0] o_pad_int;
 assign d_i_int = d_i;
 genvar i;
 generate
-for (i=0;i<width;i=i+1) begin
+for (i=0;i<width;i=i+1) begin : dffs
     always @ (posedge clk or posedge rst)
     if (rst)
         o_pad_int[i] <= reset_value[i];
@@ -794,7 +797,7 @@ reg [width-1:0] d_o_q;
 assign oe_d = {width{oe}};
 genvar i;
 generate
-for (i=0;i<width;i=i+1) begin
+for (i=0;i<width;i=i+1) begin : dffs
     always @ (posedge clk or posedge rst)
     if (rst)
         oe_q[i] <= 1'b0;
@@ -813,6 +816,23 @@ for (i=0;i<width;i=i+1) begin
     assign #1 io_pad[i] = (oe_q[i]) ? d_o_q[i] : 1'bz;
 end
 endgenerate
+endmodule
+module vl_o_ddr (d_h_i, d_l_i, o_pad, clk, rst);
+parameter width = 1;
+input  [width-1:0] d_h_i, d_l_i;
+output [width-1:0] o_pad;
+input clk, rst;
+genvar i;
+generate
+for (i=0;i<width;i=i+1) begin : ddr
+    ddio_out ddio_out0( .aclr(rst), .datain_h(d_h_i[i]), .datain_l(d_l_i[i]), .outclock(clk), .dataout(o_pad[i]) );
+end
+endgenerate
+endmodule
+module vl_o_clk ( clk_o_pad, clk, rst);
+input clk, rst;
+output clk_o_pad;
+vl_o_ddr o_ddr0( .d_h_i(1'b1), .d_l_i(1'b0), .o_pad(clk_o_pad), .clk(clk), .rst(rst));
 endmodule
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
@@ -1051,6 +1071,117 @@ module vl_cnt_bin_ce_rew_q_zq_l1 (
         level1 <= 1'b1;
     else if (qi == level1_value & rew)
         level1 <= 1'b0;
+endmodule
+//////////////////////////////////////////////////////////////////////
+////                                                              ////
+////  Versatile counter                                           ////
+////                                                              ////
+////  Description                                                 ////
+////  Versatile counter, a reconfigurable binary, gray or LFSR    ////
+////  counter                                                     ////
+////                                                              ////
+////  To Do:                                                      ////
+////   - add LFSR with more taps                                  ////
+////                                                              ////
+////  Author(s):                                                  ////
+////      - Michael Unneback, unneback@opencores.org              ////
+////        ORSoC AB                                              ////
+////                                                              ////
+//////////////////////////////////////////////////////////////////////
+////                                                              ////
+//// Copyright (C) 2009 Authors and OPENCORES.ORG                 ////
+////                                                              ////
+//// This source file may be used and distributed without         ////
+//// restriction provided that this copyright statement is not    ////
+//// removed from the file and that any derivative work contains  ////
+//// the original copyright notice and the associated disclaimer. ////
+////                                                              ////
+//// This source file is free software; you can redistribute it   ////
+//// and/or modify it under the terms of the GNU Lesser General   ////
+//// Public License as published by the Free Software Foundation; ////
+//// either version 2.1 of the License, or (at your option) any   ////
+//// later version.                                               ////
+////                                                              ////
+//// This source is distributed in the hope that it will be       ////
+//// useful, but WITHOUT ANY WARRANTY; without even the implied   ////
+//// warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR      ////
+//// PURPOSE.  See the GNU Lesser General Public License for more ////
+//// details.                                                     ////
+////                                                              ////
+//// You should have received a copy of the GNU Lesser General    ////
+//// Public License along with this source; if not, download it   ////
+//// from http://www.opencores.org/lgpl.shtml                     ////
+////                                                              ////
+//////////////////////////////////////////////////////////////////////
+// LFSR counter
+module vl_cnt_lfsr_zq (
+ zq, rst, clk);
+   parameter length = 4;
+   output reg zq;
+   input rst;
+   input clk;
+   parameter clear_value = 0;
+   parameter set_value = 1;
+   parameter wrap_value = 8;
+   parameter level1_value = 15;
+   reg  [length:1] qi;
+   reg lfsr_fb;
+   wire [length:1] q_next;
+   reg [32:1] polynom;
+   integer i;
+   always @ (qi)
+   begin
+        case (length) 
+         2: polynom = 32'b11;                               // 0x3
+         3: polynom = 32'b110;                              // 0x6
+         4: polynom = 32'b1100;                             // 0xC
+         5: polynom = 32'b10100;                            // 0x14
+         6: polynom = 32'b110000;                           // 0x30
+         7: polynom = 32'b1100000;                          // 0x60
+         8: polynom = 32'b10111000;                         // 0xb8
+         9: polynom = 32'b100010000;                        // 0x110
+        10: polynom = 32'b1001000000;                       // 0x240
+        11: polynom = 32'b10100000000;                      // 0x500
+        12: polynom = 32'b100000101001;                     // 0x829
+        13: polynom = 32'b1000000001100;                    // 0x100C
+        14: polynom = 32'b10000000010101;                   // 0x2015
+        15: polynom = 32'b110000000000000;                  // 0x6000
+        16: polynom = 32'b1101000000001000;                 // 0xD008
+        17: polynom = 32'b10010000000000000;                // 0x12000
+        18: polynom = 32'b100000010000000000;               // 0x20400
+        19: polynom = 32'b1000000000000100011;              // 0x40023
+        20: polynom = 32'b10010000000000000000;             // 0x90000
+        21: polynom = 32'b101000000000000000000;            // 0x140000
+        22: polynom = 32'b1100000000000000000000;           // 0x300000
+        23: polynom = 32'b10000100000000000000000;          // 0x420000
+        24: polynom = 32'b111000010000000000000000;         // 0xE10000
+        25: polynom = 32'b1001000000000000000000000;        // 0x1200000
+        26: polynom = 32'b10000000000000000000100011;       // 0x2000023
+        27: polynom = 32'b100000000000000000000010011;      // 0x4000013
+        28: polynom = 32'b1100100000000000000000000000;     // 0xC800000
+        29: polynom = 32'b10100000000000000000000000000;    // 0x14000000
+        30: polynom = 32'b100000000000000000000000101001;   // 0x20000029
+        31: polynom = 32'b1001000000000000000000000000000;  // 0x48000000
+        32: polynom = 32'b10000000001000000000000000000011; // 0x80200003
+        default: polynom = 32'b0;
+        endcase
+        lfsr_fb = qi[length];
+        for (i=length-1; i>=1; i=i-1) begin
+            if (polynom[i])
+                lfsr_fb = lfsr_fb  ~^ qi[i];
+        end
+    end
+   assign q_next = (qi == wrap_value) ? {length{1'b0}} :{qi[length-1:1],lfsr_fb};
+   always @ (posedge clk or posedge rst)
+     if (rst)
+       qi <= {length{1'b0}};
+     else
+       qi <= q_next;
+   always @ (posedge clk or posedge rst)
+     if (rst)
+       zq <= 1'b1;
+     else
+       zq <= q_next == {length{1'b0}};
 endmodule
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////
@@ -3087,7 +3218,7 @@ localparam cache_mem_b_aw =
 vl_dpram_be_2r2w
     # ( .a_data_width(dw_s), .a_addr_width(aw_slot+aw_offset), .b_data_width(dw_m), .debug(debug))
     cache_mem ( .d_a(wbs_dat_i), .adr_a(wbs_adr[aw_slot+aw_offset-1:0]),   .be_a(wbs_sel_i), .we_a(we), .q_a(wbs_dat_o), .clk_a(wbs_clk),
-                .d_b(wbm_dat_i), .adr_b(wbm_adr_o[cache_mem_b_aw-1:0]), .be_b(wbm_sel_o), .we_b(wbm_cyc_o & !wbm_we_o & wbs_ack_i), .q_b(wbm_dat_o), .clk_b(wbm_clk));
+                .d_b(wbm_dat_i), .adr_b(wbm_adr[cache_mem_b_aw-1:0]), .be_b(wbm_sel_o), .we_b(wbm_cyc_o & !wbm_we_o & wbm_ack_i), .q_b(wbm_dat_o), .clk_b(wbm_clk));
 always @ (posedge wbs_clk or posedge wbs_rst)
 if (wbs_rst)
     state <= idle;
@@ -3121,7 +3252,7 @@ else begin : nocdc
     assign done = mem_done;
 end
 endgenerate
-// FSM generating a number of burts 4 cycles
+// FSM generating a number of bursts 4 cycles
 // actual number depends on data width ratio
 // nr_of_wbm_burst
 reg [nr_of_wbm_burst_width+wbm_burst_width-1:0]       cnt_rw, cnt_ack;
@@ -3212,6 +3343,7 @@ module vl_wb_avalon_bridge (
 	wbs_dat_i, wbs_adr_i, wbs_sel_i, wbs_bte_i, wbs_cti_i, wbs_we_i, wbs_cyc_i, wbs_stb_i, wbs_dat_o, wbs_ack_o, wbs_stall_o,
 	// avalon master side
 	readdata, readdatavalid, address, read, be, write, burstcount, writedata, waitrequest, beginbursttransfer,
+        init_done,
         // common
         clk, rst);
 parameter adr_width = 30;
@@ -3238,19 +3370,50 @@ output read;
 output beginbursttransfer;
 output [3:0] burstcount;
 input waitrequest;
+input init_done;
 input clk, rst;
-reg last_cyc_idle_or_eoc;
-reg [3:0] cnt;
+// cnt1 - initiated read or writes
+// cnt2 - # of read or writes in pipeline
+reg [3:0] cnt1;
+reg [3:0] cnt2;
+reg next_state, state;
+localparam s0 = 1'b0;
+localparam s1 = 1'b1;
+wire eoc;
+always @ *
+begin
+    case (state)
+    s0: if (init_done & wbs_cyc_i) next_state <= s1;
+    s1: 
+    default: next_state <= state;
+    end
+end
 always @ (posedge clk or posedge rst)
 if (rst)
-    cnt <= 4'h0;
+    state <= s0;
 else
-    if (beginbursttransfer & waitrequest)
-        cnt <= burst_size - 1;
-    else if (beginbursttransfer & !waitrequest)
-        cnt <= burst_size - 2;
-    else if (wbs_ack_o)
-        cnt <= cnt - 1;
+    state <= next_state;
+assign eoc = state==s1 & !(read | write) & (& !waitrequest & cnt2=;
+always @ (posedge clk or posedge rst)
+if (rst)
+    cnt1 <= 4'h0;
+else
+    if (read & !waitrequest & init_done)
+        cnt1 <= burst_size - 1;
+    else if (write & !waitrequest & init_done)
+        cnt1 <= cnt1 + 4'h1;
+    else if (next_state==idle)
+        cnt1 <= 4'h0;
+always @ (posedge clk or posedge rst)
+if (rst)
+    cnt2 <= 4'h0;
+else
+    if (read & !waitrequest & init_done)
+        cnt2 <= burst_size - 1;
+    else if (write & !waitrequest & init_done & )
+        cnt2 <= cnt1 + 4'h1;
+    else if (next_state==idle)
+        cnt2 <= 4'h0;
 reg wr_ack;
 always @ (posedge clk or posedge rst)
 if (rst)
@@ -3261,9 +3424,9 @@ else
 assign writedata = wbs_dat_i;
 assign address = wbs_adr_i;
 assign be = wbs_sel_i;
-assign write = cnt==(burst_size-1) & wbs_cyc_i &  wbs_we_i;
-assign read  = cnt==(burst_size-1) & wbs_cyc_i & !wbs_we_i;
-assign beginbursttransfer = cnt==4'h0 & wbs_cyc_i;
+assign write = cnt!=4'h0 & wbs_cyc_i &  wbs_we_i;
+assign read  = cnt!=4'h0 & wbs_cyc_i & !wbs_we_i;
+assign beginbursttransfer = state==s0 & next_state==s1;
 assign burstcount = burst_size;
 // to wishbone
 assign wbs_dat_o = readdata;
@@ -3375,6 +3538,371 @@ bridge0 (
 	.readdata(readdata), .readdatavalid(readdatavalid), .address(address), .read(read), .be(be), .write(write), .burstcount(burstcount), .writedata(writedata), .waitrequest(waitrequest), .beginbursttransfer(beginbursttransfer),
         // common
         .clk(clk), .rst(rst));
+endmodule
+module vl_wb_sdr_sdram (
+    // wisbone i/f
+    dat_i, adr_i, sel_i, we_i, cyc_i, stb_i, dat_o, ack_o, stall_o,
+    // SDR SDRAM
+    ba, a, cmd, cke, cs_n, dqm, dq_i, dq_o, dq_oe,
+    // system
+    clk, rst);
+    // external data bus size
+    parameter dat_size = 16;
+    // memory geometry parameters
+    parameter ba_size  = 2;   
+    parameter row_size = 13;
+    parameter col_size = 9;
+    parameter cl = 2;
+    // memory timing parameters
+    parameter tRFC = 9;
+    parameter tRP  = 2;
+    parameter tRCD = 2;
+    parameter tMRD = 2;
+    // LMR
+    // [12:10] reserved
+    // [9]     WB, write burst; 0 - programmed burst length, 1 - single location
+    // [8:7]   OP Mode, 2'b00
+    // [6:4]   CAS Latency; 3'b010 - 2, 3'b011 - 3
+    // [3]     BT, Burst Type; 1'b0 - sequential, 1'b1 - interleaved
+    // [2:0]   Burst length; 3'b000 - 1, 3'b001 - 2, 3'b010 - 4, 3'b011 - 8, 3'b111 - full page
+    localparam init_wb = 1'b1;
+    localparam init_cl = (cl==2) ? 3'b010 : 3'b011;
+    localparam init_bt = 1'b0;
+    localparam init_bl = 3'b000;
+    input [dat_size-1:0] dat_i;
+    input [ba_size+col_size+row_size-1:0] adr_i;
+    input [dat_size/8-1:0] sel_i;
+    input we_i, cyc_i, stb_i;
+    output [dat_size-1:0] dat_o;
+    output ack_o;
+    output reg stall_o;
+    output [ba_size-1:0]    ba;
+    output reg [12:0]   a;
+    output reg [2:0]    cmd; // {ras,cas,we}
+    output cke, cs_n;
+    output reg [dat_size/8-1:0]    dqm;
+    output [dat_size-1:0]       dq_o;
+    output reg          dq_oe;
+    input  [dat_size-1:0]       dq_i;
+    input clk, rst;
+    wire [ba_size-1:0] 	bank;
+    wire [row_size-1:0] row;
+    wire [col_size-1:0] col;
+    wire [0:31] 	shreg; 
+    wire 		ref_cnt_zero;
+    reg                 refresh_req; 
+    wire ack_rd, rd_ack_emptyflag;
+    wire ack_wr;
+    // to keep track of open rows per bank
+    reg [row_size-1:0] 	open_row[0:3];
+    reg [0:3] 		open_ba;
+    reg 		current_bank_closed, current_row_open;  
+    parameter rfr_length = 10;
+    parameter rfr_wrap_value = 1010;
+    parameter [2:0] cmd_nop = 3'b111,
+                    cmd_act = 3'b011,
+                    cmd_rd  = 3'b101,
+                    cmd_wr  = 3'b100,
+                    cmd_pch = 3'b010,
+                    cmd_rfr = 3'b001,
+                    cmd_lmr = 3'b000;
+// ctrl FSM
+    assign cke = 1'b1;
+    assign cs_n = 1'b0;
+    reg [2:0] state, next;
+    function [12:0] a10_fix;
+        input [col_size-1:0] a;
+        integer i;
+    begin
+	for (i=0;i<13;i=i+1) begin
+            if (i<10)
+              if (i<col_size)
+                a10_fix[i] = a[i];
+              else
+                a10_fix[i] = 1'b0;
+            else if (i==10)
+              a10_fix[i] = 1'b0;
+            else
+              if (i<col_size)
+                a10_fix[i] = a[i-1];
+              else
+                a10_fix[i] = 1'b0;
+	end
+    end
+    endfunction
+    assign {bank,row,col} = adr_i;
+    always @ (posedge clk or posedge rst)
+    if (rst)
+       state <= 3'b000;
+    else
+       state <= next;
+    always @*
+    begin
+	next = state;
+	case (state)
+	3'b000:
+            if (shreg[3+tRP+tRFC+tRFC+tMRD]) next = 3'b001;
+        3'b001:   
+	    if (refresh_req) next = 3'b010;
+            else if (cyc_i & stb_i & rd_ack_emptyflag) next = 3'b011;
+        3'b010: 
+            if (shreg[tRP+tRFC-2]) next = 3'b001; // take away two cycles because no cmd will be issued in idle and adr
+	3'b011:
+            if (current_bank_closed) next = 3'b101;
+	    else if (current_row_open) next = 3'b111;
+	    else next = 3'b100;
+	3'b100: 
+            if (shreg[tRP]) next = 3'b101;
+	3'b101:
+            if (shreg[tRCD]) next = 3'b111;
+	3'b111:
+            if (!stb_i) next = 3'b001;
+	endcase
+    end
+    // counter
+    vl_cnt_shreg_clear # ( .length(32))
+        cnt0 (
+            .clear(state!=next),
+            .q(shreg),
+            .rst(rst),
+            .clk(clk));
+    // ba, a, cmd
+    // outputs dependent on state vector
+    always @ (*)
+        begin
+   	    {a,cmd} = {13'd0,cmd_nop};
+            dqm = 2'b11;
+            dq_oe = 1'b0;
+            stall_o = 1'b1;
+            case (state)
+            3'b000:
+                if (shreg[3]) begin
+                    {a,cmd} = {13'b0010000000000, cmd_pch};
+                end else if (shreg[3+tRP] | shreg[3+tRP+tRFC])
+                    {a,cmd} = {13'd0, cmd_rfr};
+                else if (shreg[3+tRP+tRFC+tRFC])
+                    {a,cmd} = {3'b000,init_wb,2'b00,init_cl,init_bt,init_bl,cmd_lmr};
+            3'b010:
+        	if (shreg[0])
+                    {a,cmd} = {13'b0010000000000, cmd_pch};
+        	else if (shreg[tRP])
+                    {a,cmd} = {13'd0, cmd_rfr};
+	    3'b100:
+        	if (shreg[0])
+                    {a,cmd} = {13'd0,cmd_pch};
+            3'b101:
+                if (shreg[0])
+                    {a[row_size-1:0],cmd} = {row,cmd_act};
+            3'b111:
+                begin
+                    if (we_i)
+                        cmd = cmd_wr;
+                    else
+                        cmd = cmd_rd;
+                    if (we_i)
+                        dqm = ~sel_i;
+                    else
+                        dqm = 2'b00;
+                    if (we_i)
+                        dq_oe = 1'b1;
+                    a = a10_fix(col);
+                    stall_o = 1'b0;
+                end
+            endcase
+        end
+    assign ba = bank;
+    // precharge individual bank A10=0
+    // precharge all bank A10=1
+    genvar i;
+    generate
+    for (i=0;i<2<<ba_size-1;i=i+1) begin : open_ba_logic
+        always @ (posedge clk or posedge rst)
+        if (rst)
+            {open_ba[i],open_row[i]} <= {1'b0,{row_size{1'b0}}};
+        else
+            if (cmd==cmd_pch & (a[10] | bank==i))
+                open_ba[i] <= 1'b0;
+            else if (cmd==cmd_act & bank==i)
+                {open_ba[i],open_row[i]} <= {1'b1,row};
+    end
+    endgenerate
+    // bank and row open ?
+    always @ (posedge clk or posedge rst)
+    if (rst)
+       {current_bank_closed, current_row_open} <= {1'b1, 1'b0};
+    else
+       {current_bank_closed, current_row_open} <= {!(open_ba[bank]), open_row[bank]==row};
+    // refresh counter
+    vl_cnt_lfsr_zq # ( .length(rfr_length), .wrap_value (rfr_wrap_value)) ref_counter0( .zq(ref_cnt_zero), .rst(rst), .clk(clk));
+    always @ (posedge clk or posedge rst)
+    if (rst)
+    	refresh_req <= 1'b0;
+    else
+    	if (ref_cnt_zero)
+            refresh_req <= 1'b1;
+       	else if (state==3'b010)
+            refresh_req <= 1'b0;
+    assign dat_o = dq_i;
+    assign ack_wr = (state==3'b111 & we_i);
+    vl_delay_emptyflag # ( .depth(cl+2)) delay0 ( .d(state==3'b111 & stb_i & !we_i), .q(ack_rd), .emptyflag(rd_ack_emptyflag), .clk(clk), .rst(rst));
+    assign ack_o = ack_rd | ack_wr;
+    assign dq_o = dat_i;
+endmodule
+module vl_wb_sdr_sdram_ctrl (
+    // WB i/f
+    wbs_dat_i, wbs_adr_i, wbs_cti_i, wbs_bte_i, wbs_sel_i, wbs_we_i, wbs_stb_i, wbs_cyc_i, 
+    wbs_dat_o, wbs_ack_o, wbs_stall_o,
+    // SDR SDRAM
+    mem_ba, mem_a, mem_cmd, mem_cke, mem_cs_n, mem_dqm, mem_dq_i, mem_dq_o, mem_dq_oe,
+    // system
+    wb_clk, wb_rst, mem_clk, mem_rst);
+    // WB slave
+    parameter wbs_dat_width = 32;
+    parameter wbs_adr_width = 24;
+    parameter wbs_mode = "B3";
+    parameter wbs_max_burst_width = 4;
+    // Shadow RAM
+    parameter shadow_mem_adr_width = 10;
+    parameter shadow_mem_size = 1024;
+    parameter shadow_mem_init = 2;
+    parameter shadow_mem_file = "vl_ram.v";
+    // Cache
+    parameter cache_async = 1; // wbs_clk != wbm_clk
+    parameter cache_nr_of_ways = 1;
+    parameter cache_aw_offset = 4; // 4 => 16 words per cache line
+    parameter cache_aw_slot = 10;
+    parameter cache_valid_mem = 0;
+    parameter cache_debug = 0;
+    // SDRAM parameters
+    parameter mem_dat_size = 16;
+    parameter mem_ba_size  = 2;   
+    parameter mem_row_size = 13;
+    parameter mem_col_size = 9;
+    parameter mem_cl = 2;
+    parameter mem_tRFC = 9;
+    parameter mem_tRP  = 2;
+    parameter mem_tRCD = 2;
+    parameter mem_tMRD = 2;
+    parameter mem_rfr_length = 10;
+    parameter mem_rfr_wrap_value = 1010;
+    input [wbs_dat_width-1:0] wbs_dat_i;
+    input [wbs_adr_width-1:0] wbs_adr_i;
+    input [2:0] wbs_cti_i;
+    input [1:0] wbs_bte_i;
+    input [wbs_dat_width/8-1:0] wbs_sel_i;
+    input wbs_we_i, wbs_stb_i, wbs_cyc_i;
+    output [wbs_dat_width-1:0] wbs_dat_o;
+    output wbs_ack_o;
+    output wbs_stall_o;
+    output [mem_ba_size-1:0]    mem_ba;
+    output reg [12:0]           mem_a;
+    output reg [2:0]            mem_cmd; // {ras,cas,we}
+    output                      mem_cke, mem_cs_n;
+    output reg [mem_dat_size/8-1:0] mem_dqm;
+    output [mem_dat_size-1:0]       mem_dq_o;
+    output reg                  mem_dq_oe;
+    input  [mem_dat_size-1:0]       mem_dq_i;
+    input wb_clk, wb_rst, mem_clk, mem_rst;
+    // wbm1
+    wire [wbs_dat_width-1:0] wbm1_dat_o;
+    wire [wbs_adr_width-1:0] wbm1_adr_o;
+    wire [2:0] wbm1_cti_o;
+    wire [1:0] wbm1_bte_o;
+    wire [wbs_dat_width/8-1:0] wbm1_sel_o;
+    wire wbm1_we_o, wbm1_stb_o, wbm1_cyc_o;
+    wire [wbs_dat_width-1:0] wbm1_dat_i;
+    wire wbm1_ack_i, wbm1_stall_i;
+    // wbm2
+    wire [mem_dat_size-1:0] wbm2_dat_o;
+    wire [mem_ba_size+mem_row_size+mem_col_size-1:0] wbm2_adr_o;
+    wire [2:0] wbm2_cti_o;
+    wire [1:0] wbm2_bte_o;
+    wire [mem_dat_size/8-1:0] wbm2_sel_o;
+    wire wbm2_we_o, wbm2_stb_o, wbm2_cyc_o;
+    wire [mem_dat_size-1:0] wbm2_dat_i;
+    wire wbm2_ack_i, wbm2_stall_i;
+vl_wb_shadow_ram # (
+    .shadow_mem_adr_width(shadow_mem_adr_width), .shadow_mem_size(shadow_mem_size), .shadow_mem_init(shadow_mem_init), .shadow_mem_file(shadow_mem_file), .main_mem_adr_width(wbs_adr_width), .dat_width(wbs_dat_width), .mode(wbs_mode), .max_burst_width(wbs_max_burst_width) )
+shadow_ram0 (
+    .wbs_dat_i(wbs_dat_i),
+    .wbs_adr_i(wbs_adr_i),
+    .wbs_cti_i(wbs_cti_i),
+    .wbs_bte_i(wbs_bte_i),
+    .wbs_sel_i(wbs_sel_i),
+    .wbs_we_i (wbs_we_i),
+    .wbs_stb_i(wbs_stb_i),
+    .wbs_cyc_i(wbs_cyc_i), 
+    .wbs_dat_o(wbs_dat_o),
+    .wbs_ack_o(wbs_ack_o),
+    .wbs_stall_o(wbs_stall_o),
+    .wbm_dat_o(wbm1_dat_o),
+    .wbm_adr_o(wbm1_adr_o),
+    .wbm_cti_o(wbm1_cti_o),
+    .wbm_bte_o(wbm1_bte_o),
+    .wbm_sel_o(wbm1_sel_o),
+    .wbm_we_o(wbm1_we_o),
+    .wbm_stb_o(wbm1_stb_o),
+    .wbm_cyc_o(wbm1_cyc_o), 
+    .wbm_dat_i(wbm1_dat_i),
+    .wbm_ack_i(wbm1_ack_i),
+    .wbm_stall_i(wbm1_stall_i),
+    .wb_clk(wb_clk),
+    .wb_rst(wb_rst) );
+vl_wb_cache # (
+    .dw_s(wbs_dat_width), .aw_s(wbs_adr_width), .dw_m(mem_dat_size), .wbs_max_burst_width(cache_aw_offset), .wbs_mode(wbs_mode), .async(cache_async), .nr_of_ways(cache_nr_of_ways), .aw_offset(cache_aw_offset), .aw_slot(cache_aw_slot), .valid_mem(cache_valid_mem) )
+cache0 (
+    .wbs_dat_i(wbm1_dat_o),
+    .wbs_adr_i(wbm1_adr_o),
+    .wbs_sel_i(wbm1_sel_o),
+    .wbs_cti_i(wbm1_cti_o),
+    .wbs_bte_i(wbm1_bte_o),
+    .wbs_we_i (wbm1_we_o),
+    .wbs_stb_i(wbm1_stb_o),
+    .wbs_cyc_i(wbm1_cyc_o),
+    .wbs_dat_o(wbm1_dat_i),
+    .wbs_ack_o(wbm1_ack_i),
+    .wbs_stall_o(wbm1_stall_i),
+    .wbs_clk(wb_clk),
+    .wbs_rst(wb_rst),
+    .wbm_dat_o(wbm2_dat_o),
+    .wbm_adr_o(wbm2_adr_o),
+    .wbm_sel_o(wbm2_sel_o),
+    .wbm_cti_o(wbm2_cti_o),
+    .wbm_bte_o(wbm2_bte_o),
+    .wbm_we_o (wbm2_we_o),
+    .wbm_stb_o(wbm2_stb_o),
+    .wbm_cyc_o(wbm2_cyc_o),
+    .wbm_dat_i(wbm2_dat_i),
+    .wbm_ack_i(wbm2_ack_i),
+    .wbm_stall_i(wbm2_stall_i),
+    .wbm_clk(mem_clk),
+    .wbm_rst(mem_rst) );
+vl_wb_sdr_sdram # (
+    .dat_size(mem_dat_size), .ba_size(mem_ba_size), .row_size(mem_row_size), .col_size(mem_col_size), .cl(mem_cl), .tRFC(mem_tRFC), .tRP(mem_tRP), .tRCD(mem_tRCD), .tMRD(mem_tMRD), .rfr_length(mem_rfr_length), .rfr_wrap_value(mem_rfr_wrap_value) )
+ctrl0(
+    // wisbone i/f
+    .dat_i(wbm2_dat_o),
+    .adr_i(wbm2_adr_o),
+    .sel_i(wbm2_sel_o),
+    .we_i (wbm2_we_o),
+    .cyc_i(wbm2_cyc_o),
+    .stb_i(wbm2_stb_o),
+    .dat_o(wbm2_dat_i),
+    .ack_o(wbm2_ack_i),
+    .stall_o(wbm2_stall_i),
+    // SDR SDRAM
+    .ba(mem_ba),
+    .a(mem_a),
+    .cmd(mem_cmd),
+    .cke(mem_cke),
+    .cs_n(mem_cs_n),
+    .dqm(mem_dqm),
+    .dq_i(mem_dq_i),
+    .dq_o(mem_dq_o),
+    .dq_oe(mem_dq_oe),
+    // system
+    .clk(mem_clk),
+    .rst(mem_rst) );
 endmodule
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////

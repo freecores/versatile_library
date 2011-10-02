@@ -39,8 +39,8 @@
 //// from http://www.opencores.org/lgpl.shtml                     ////
 ////                                                              ////
 //////////////////////////////////////////////////////////////////////
-`timescale 1ns/1ns
 `ifdef O_DFF
+`timescale 1ns/1ns
 `define MODULE o_dff
 module `BASE`MODULE (d_i, o_pad, clk, rst);
 `undef MODULE
@@ -54,7 +54,7 @@ reg  [width-1:0] o_pad_int;
 assign d_i_int = d_i;
 genvar i;
 generate
-for (i=0;i<width;i=i+1) begin
+for (i=0;i<width;i=i+1) begin : dffs
     always @ (posedge clk or posedge rst)
     if (rst)
         o_pad_int[i] <= reset_value[i];
@@ -66,8 +66,8 @@ endgenerate
 endmodule
 `endif
 
-`timescale 1ns/1ns
 `ifdef IO_DFF_OE
+`timescale 1ns/1ns
 `define MODULE io_dff_oe
 module `BASE`MODULE ( d_i, d_o, oe, io_pad, clk, rst);
 `undef MODULE
@@ -83,7 +83,7 @@ reg [width-1:0] d_o_q;
 assign oe_d = {width{oe}};
 genvar i;
 generate
-for (i=0;i<width;i=i+1) begin
+for (i=0;i<width;i=i+1) begin : dffs
     always @ (posedge clk or posedge rst)
     if (rst)
         oe_q[i] <= 1'b0;
@@ -102,5 +102,63 @@ for (i=0;i<width;i=i+1) begin
     assign #1 io_pad[i] = (oe_q[i]) ? d_o_q[i] : 1'bz;
 end
 endgenerate
+endmodule
+`endif
+
+`ifdef O_DDR
+`ifdef ALTERA
+`define MODULE o_ddr
+module `BASE`MODULE (d_h_i, d_l_i, o_pad, clk, rst);
+`undef MODULE
+parameter width = 1;
+input  [width-1:0] d_h_i, d_l_i;
+output [width-1:0] o_pad;
+input clk, rst;
+genvar i;
+generate
+for (i=0;i<width;i=i+1) begin : ddr
+    ddio_out ddio_out0( .aclr(rst), .datain_h(d_h_i[i]), .datain_l(d_l_i[i]), .outclock(clk), .dataout(o_pad[i]) );
+end
+endgenerate
+endmodule
+`else
+`define MODULE o_ddr
+module `BASE`MODULE (d_h_i, d_l_i, o_pad, clk, rst);
+`undef MODULE
+parameter width = 1;
+input  [width-1:0] d_h_i, d_l_i;
+output [width-1:0] o_pad;
+input clk, rst;
+reg [width-1:0] ff1;
+reg [width-1:0] ff2;
+genvar i;
+generate
+for (i=0;i<width;i=i+1) begin : ddr
+    always @ (posedge clk or posedge rst)
+    if (rst)
+        ff1[i] <= 1'b0;
+    else
+        ff1[i] <= d_h_i[i];
+    always @ (posedge clk or posedge rst)
+    if (rst)
+        ff2[i] <= 1'b0;
+    else
+        ff2[i] <= d_l_i[i];
+    assign o_pad = (clk) ? ff1 : ff2;
+end
+endgenerate
+endmodule
+`endif
+`endif
+
+`ifdef O_CLK
+`define MODULE o_clk
+module `BASE`MODULE ( clk_o_pad, clk, rst);
+`undef MODULE
+input clk, rst;
+output clk_o_pad;
+`define MODULE o_ddr
+`BASE`MODULE o_ddr0( .d_h_i(1'b1), .d_l_i(1'b0), .o_pad(clk_o_pad), .clk(clk), .rst(rst));
+`undef MODULE
 endmodule
 `endif
