@@ -1317,7 +1317,8 @@ wire done, mem_alert, mem_done;
 // wbm side
 reg [aw_m-1:0] wbm_radr;
 reg [aw_m-1:0] wbm_wadr;
-wire [aw_slot-1:0] wbm_adr;
+//wire [aw_slot-1:0] wbm_adr;
+wire [aw_m-1:0] wbm_adr;
 wire wbm_radr_cke, wbm_wadr_cke;
 
 reg [2:0] phase;
@@ -1522,7 +1523,7 @@ endgenerate
 assign mem_done = phase==wbm_rd_drain & (&cnt_ack) & wbm_ack_i;
 
 assign wbm_adr_o = (phase[2]) ? {tag, wbs_adr_slot, cnt_rw} : {wbs_adr_tag, wbs_adr_slot, cnt_rw};
-assign wbm_adr   = (phase[2]) ? {wbs_adr_slot, cnt_rw} : {wbs_adr_slot, cnt_rw};
+assign wbm_adr   = (phase[2]) ? {wbs_adr_slot, cnt_rw} : {wbs_adr_slot, cnt_ack};
 assign wbm_sel_o = {dw_m/8{1'b1}};
 assign wbm_cti_o = (&cnt_rw | !wbm_stb_o) ? 3'b111 : 3'b010;
 assign wbm_bte_o = bte;

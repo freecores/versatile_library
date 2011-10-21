@@ -599,7 +599,7 @@ dpram3232 (
     .d_b({d_b,d_b}),
     .q_b(temp),
     .adr_b(adr_b[b_addr_width-1:1]),
-    .be_b({be_b,be_b} & {{2{adr_b[0]}},{2{!adr_b[0]}}}),
+    .be_b({be_b,be_b} & {{2{!adr_b[0]}},{2{adr_b[0]}}}),
     .we_b(we_b),
     .clk_b(clk_b)
 );
