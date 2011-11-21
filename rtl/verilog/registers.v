@@ -45,7 +45,7 @@
 module `BASE`MODULE ( d, q, clk, rst);
 `undef MODULE
 	parameter width = 1;	
-	parameter reset_value = 0;
+	parameter reset_value = {width{1'b0}};
 
 	input [width-1:0] d; 
 	input clk, rst;
@@ -95,7 +95,7 @@ module `BASE`MODULE ( d, ce, q, clk, rst);
 `undef MODULE
 
 	parameter width = 1;	
-	parameter reset_value = 0;
+	parameter reset_value = {width{1'b0}};
 	
 	input [width-1:0] d; 
 	input ce, clk, rst;
@@ -117,7 +117,7 @@ module `BASE`MODULE ( d, ce, clear, q, clk, rst);
 `undef MODULE
 
 	parameter width = 1;	
-	parameter reset_value = 0;
+	parameter reset_value = {width{1'b0}};
 	
 	input [width-1:0] d; 
 	input ce, clear, clk, rst;
@@ -142,7 +142,7 @@ module `BASE`MODULE ( d, ce, set, q, clk, rst);
 `undef MODULE
 
 	parameter width = 1;	
-	parameter reset_value = 0;
+	parameter reset_value = {width{1'b0}};
 	
 	input [width-1:0] d; 
 	input ce, set, clk, rst;

@@ -72,6 +72,7 @@ endmodule
 module `BASE`MODULE ( d_i, d_o, oe, io_pad, clk, rst);
 `undef MODULE
 parameter width = 1;
+parameter reset_value = 1'b0;
 input  [width-1:0] d_o;
 output reg [width-1:0] d_i;
 input oe;
@@ -91,12 +92,12 @@ for (i=0;i<width;i=i+1) begin : dffs
         oe_q[i] <= oe_d[i];
     always @ (posedge clk or posedge rst)
     if (rst)
-        d_o_q[i] <= 1'b0;
+        d_o_q[i] <= reset_value;
     else
         d_o_q[i] <= d_o[i];
     always @ (posedge clk or posedge rst)
     if (rst)
-        d_i[i] <= 1'b0;
+        d_i[i] <= reset_value;
     else
         d_i[i] <= io_pad[i];
     assign #1 io_pad[i] = (oe_q[i]) ? d_o_q[i] : 1'bz;

@@ -1,84 +1,32 @@
-`ifndef BASE
+//=tab Main
+
+//=comment
+//=comment Defines base part of module names
 `define BASE vl_
-`endif
- 
-// default SYN_KEEP definition
-`define SYN_KEEP /*synthesis syn_keep = 1*/
 
-`ifdef ACTEL
-`undef SYN_KEEP
-`define SYN_KEEP /*synthesis syn_keep = 1*/
-`endif
+//=comment Defines target technology
+//=select
+//`define GENERIC // GENERIC
+`define ALTERA // ALTERA
+//`define ACTEL // ACTEL
+//=end
 
-`ifdef ACTEL
-    // ACTEL FPGA should not use logic to handle rw collision
-    `define SYN_NO_RW_CHECK /*synthesis syn_ramstyle = "no_rw_check"*/
-`else
-    `define SYN_NO_RW_CHECK 
-`endif
+//=comment
+//=comment Generate all modules
+//`define ALL
 
-`ifdef ALL
 
+//=comment System Verilog
+`define SYSTEMVERILOG
+
+//=tab Clk and reset
+
+//=comment Global buffer for high fanout signals
 `define GBUF
 `define SYNC_RST
 `define PLL
 
-`define MULTS
-`define MULTS18X18
-`define MULT
-`define SHIFT_UNIT_32
-`define LOGIC_UNIT
-
-`define CNT_SHREG_WRAP
-`define CNT_SHREG_CE_WRAP
-`define CNT_SHREG_CLEAR
-`define CNT_SHREG_CE_CLEAR
-`define CNT_SHREG_CE_CLEAR_WRAP
-
-`define CNT_BIN
-`define CNT_BIN_CE
-`define CNT_BIN_CLEAR
-`define CNT_BIN_CE_CLEAR
-`define CNT_BIN_CE_CLEAR_L1_L2
-`define CNT_BIN_CE_CLEAR_SET_REW
-`define CNT_BIN_CE_REW_L1
-`define CNT_BIN_CE_REW_ZQ_L1
-`define CNT_BIN_CE_REW_Q_ZQ_L1
-`define CNT_GRAY
-`define CNT_GRAY_CE
-`define CNT_GRAY_CE_BIN
-`define CNT_LFSR_ZQ
-`define CNT_LFSR_CE
-`define CNT_LFSR_CE_CLEAR_Q
-`define CNT_LFSR_CE_Q
-`define CNT_LFSR_CE_ZQ
-`define CNT_LFSR_CE_Q_ZQ
-`define CNT_LFSR_CE_REW_L1
-
-`define MUX_ANDOR
-`define MUX2_ANDOR
-`define MUX3_ANDOR
-`define MUX4_ANDOR
-`define MUX5_ANDOR
-`define MUX6_ANDOR
-`define PARITY
-
-`define ROM_INIT
-`define RAM
-`define RAM_BE
-`define DPRAM_1R1W
-`define DPRAM_2R1W
-`define DPRAM_1R2W
-`define DPRAM_2R2W
-`define DPRAM_BE_2R2W
-`define FIFO_1R1W_FILL_LEVEL_SYNC
-`define FIFO_2R2W_SYNC_SIMPLEX
-`define FIFO_CMP_ASYNC
-`define FIFO_1R1W_ASYNC
-`define FIFO_2R2W_ASYNC
-`define FIFO_2R2W_ASYNC_SIMPLEX
-`define REG_FILE
-
+//=tab registers
 `define DFF
 `define DFF_ARRAY
 `define DFF_CE
@@ -97,6 +45,73 @@
 `define SYNCHRONIZER
 `define CDC
 
+//=tab Logic
+`define MUX_ANDOR
+`define MUX2_ANDOR
+`define MUX3_ANDOR
+`define MUX4_ANDOR
+`define MUX5_ANDOR
+`define MUX6_ANDOR
+`define PARITY
+`define SHIFT_UNIT_32
+`define LOGIC_UNIT
+
+//=tab
+
+//=tab IO
+`define IO_DFF_OE
+`define O_DFF
+`define O_DDR
+`define O_CLK
+
+//=tab Counters
+//=comment Binary counters
+`define CNT_BIN
+`define CNT_BIN_CE
+`define CNT_BIN_CLEAR
+`define CNT_BIN_CE_CLEAR
+`define CNT_BIN_CE_CLEAR_L1_L2
+`define CNT_BIN_CE_CLEAR_SET_REW
+`define CNT_BIN_CE_REW_L1
+`define CNT_BIN_CE_REW_ZQ_L1
+`define CNT_BIN_CE_REW_Q_ZQ_L1
+//=comment Gray counters
+`define CNT_GRAY
+`define CNT_GRAY_CE
+`define CNT_GRAY_CE_BIN
+//=comment LFSR counters
+`define CNT_LFSR_ZQ
+`define CNT_LFSR_CE
+`define CNT_LFSR_CE_CLEAR_Q
+`define CNT_LFSR_CE_Q
+`define CNT_LFSR_CE_ZQ
+`define CNT_LFSR_CE_Q_ZQ
+`define CNT_LFSR_CE_REW_L1
+//=comment Shift register based counters
+`define CNT_SHREG_WRAP
+`define CNT_SHREG_CLEAR
+`define CNT_SHREG_CE_WRAP
+`define CNT_SHREG_CE_CLEAR
+`define CNT_SHREG_CE_CLEAR_WRAP
+
+//=tab Memories
+`define ROM_INIT
+`define RAM
+`define RAM_BE
+`define DPRAM_1R1W
+`define DPRAM_2R1W
+`define DPRAM_1R2W
+`define DPRAM_2R2W
+`define DPRAM_BE_2R2W
+`define FIFO_1R1W_FILL_LEVEL_SYNC
+`define FIFO_2R2W_SYNC_SIMPLEX
+`define FIFO_CMP_ASYNC
+`define FIFO_1R1W_ASYNC
+`define FIFO_2R2W_ASYNC
+`define FIFO_2R2W_ASYNC_SIMPLEX
+`define REG_FILE
+
+//=tab Wishbone
 `define WB3AVALON_BRIDGE
 `define WB3WB3_BRIDGE
 `define WB3_ARBITER_TYPE1
@@ -111,12 +126,10 @@
 `define WB_AVALON_MEM_CACHE
 `define WB_SDR_SDRAM_CTRL
 
-`define IO_DFF_OE
-`define O_DFF
-`define O_DDR
-`define O_CLK
-
-`endif
+//=tab Arithmetic
+`define MULTS
+`define MULTS18X18
+`define MULT
 
 ///////////////////////////////////////
 // dependencies
@@ -394,4 +407,4 @@
 `endif
 
 // size to width
-`define SIZE2WIDTH_EXPR = (`SIZE2WIDTH==1) ? 0 : (`SIZE2WIDTH==2) ? 1 : (`SIZE2WIDTH==4) ? 2 : (`SIZE2WIDTH==8) ? 3 : (`SIZE2WIDTH==16) ? 4 : (`SIZE2WIDTH==32) ? 5 : (`SIZE2WIDTH==64) ? 6 : (`SIZE2WIDTH==128) ? 7 : 8;
+`define SIZE2WIDTH_EXPR

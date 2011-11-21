@@ -70,6 +70,8 @@ versatile_library_altera.v: $(VERILOG_FILES)
 $(OUT_FILE): $(VERILOG_FILES)
 	vppreproc  --noline --noblank $(DEFINE_FILE) $(VERILOG_FILES) | sed -r -e 's/\/\/E2_([a-z]+)/`\1/' > $(OUT_FILE)
 
+config:
+	configurator custom_defines.v
 
 all: $(VERSATILE_LIBRARIES)
 

@@ -35,6 +35,26 @@
 `define CNT_SHREG_CE_CLEAR
 `define CNT_SHREG_CE_CLEAR_WRAP
 
+`define CNT_BIN
+`define CNT_BIN_CE
+`define CNT_BIN_CLEAR
+`define CNT_BIN_CE_CLEAR
+`define CNT_BIN_CE_CLEAR_L1_L2
+`define CNT_BIN_CE_CLEAR_SET_REW
+`define CNT_BIN_CE_REW_L1
+`define CNT_BIN_CE_REW_ZQ_L1
+`define CNT_BIN_CE_REW_Q_ZQ_L1
+`define CNT_GRAY
+`define CNT_GRAY_CE
+`define CNT_GRAY_CE_BIN
+`define CNT_LFSR_ZQ
+`define CNT_LFSR_CE
+`define CNT_LFSR_CE_CLEAR_Q
+`define CNT_LFSR_CE_Q
+`define CNT_LFSR_CE_ZQ
+`define CNT_LFSR_CE_Q_ZQ
+`define CNT_LFSR_CE_REW_L1
+
 `define MUX_ANDOR
 `define MUX2_ANDOR
 `define MUX3_ANDOR
@@ -841,7 +861,7 @@ endmodule
 module `BASE`MODULE ( d, q, clk, rst);
 `undef MODULE
 	parameter width = 1;	
-	parameter reset_value = 0;
+	parameter reset_value = {width{1'b0}};
 
 	input [width-1:0] d; 
 	input clk, rst;
@@ -891,7 +911,7 @@ module `BASE`MODULE ( d, ce, q, clk, rst);
 `undef MODULE
 
 	parameter width = 1;	
-	parameter reset_value = 0;
+	parameter reset_value = {width{1'b0}};
 	
 	input [width-1:0] d; 
 	input ce, clk, rst;
@@ -913,7 +933,7 @@ module `BASE`MODULE ( d, ce, clear, q, clk, rst);
 `undef MODULE
 
 	parameter width = 1;	
-	parameter reset_value = 0;
+	parameter reset_value = {width{1'b0}};
 	
 	input [width-1:0] d; 
 	input ce, clear, clk, rst;
@@ -938,7 +958,7 @@ module `BASE`MODULE ( d, ce, set, q, clk, rst);
 `undef MODULE
 
 	parameter width = 1;	
-	parameter reset_value = 0;
+	parameter reset_value = {width{1'b0}};
 	
 	input [width-1:0] d; 
 	input ce, set, clk, rst;
