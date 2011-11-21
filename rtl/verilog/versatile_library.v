@@ -26,8 +26,11 @@
 `define MULTS
 `define MULTS18X18
 `define MULT
+`define ARITH_UNIT
 `define SHIFT_UNIT_32
 `define LOGIC_UNIT
+`define COUNT_UNIT
+`define EXT_UNIT
 
 `define CNT_SHREG_WRAP
 `define CNT_SHREG_CE_WRAP
@@ -777,34 +780,45 @@ module `BASE`MODULE ( clk_i, rst_n_i, lock, clk_o, rst_o);
 `undef MODULE
 parameter index = 0;
 parameter number_of_clk = 1;
-parameter period_time_0 = 20000;
-parameter period_time_1 = 20000;
-parameter period_time_2 = 20000;
-parameter lock_delay = 2000;
+parameter period_time = 20000;
+parameter clk0_mult_by = 1;
+parameter clk0_div_by  = 1;
+parameter clk1_mult_by = 1;
+parameter clk1_div_by  = 1;
+parameter clk2_mult_by = 1;
+parameter clk3_div_by  = 1;
+parameter clk3_mult_by = 1;
+parameter clk3_div_by  = 1;
+parameter clk4_mult_by = 1;
+parameter clk4_div_by  = 1;
 input clk_i, rst_n_i;
 output lock;
 output reg [0:number_of_clk-1] clk_o;
-output [0:number_of_clk-1] rst_o;
 
+initial
+    clk_o = {number_of_clk{1'b0}};
+    
 always
-     #((period_time_0)/2) clk_o[0] <=  (!rst_n_i) ? 0 : ~clk_o[0];
+    #((period_time*clk0_div_by/clk0_mult_by)/2) clk_o[0] <=  (!rst_n_i) ? 1'b0 : ~clk_o[0];
 
 generate if (number_of_clk > 1)
 always
-     #((period_time_1)/2) clk_o[1] <=  (!rst_n_i) ? 0 : ~clk_o[1];
+    #((period_time*clk1_div_by/clk1_mult_by)/2) clk_o[1] <=  (!rst_n_i) ? 1'b0 : ~clk_o[1];
 endgenerate
 
 generate if (number_of_clk > 2)
 always
-     #((period_time_2)/2) clk_o[2] <=  (!rst_n_i) ? 0 : ~clk_o[2];
+    #((period_time*clk2_div_by/clk2_mult_by)/2) clk_o[2] <=  (!rst_n_i) ? 1'b0 : ~clk_o[2];
 endgenerate
 
-genvar i;
-generate for (i=0;i<number_of_clk;i=i+1) begin: clock
-`define MODULE sync_rst
-     `BASE`MODULE rst_i0 ( .rst_n_i(rst_n_i | lock), .rst_o(rst_o[i]), .clk(clk_o[i]));
-`undef MODULE
-end
+generate if (number_of_clk > 3)
+always
+    #((period_time*clk3_div_by/clk3_mult_by)/2) clk_o[3] <=  (!rst_n_i) ? 1'b0 : ~clk_o[3];
+endgenerate
+
+generate if (number_of_clk > 4)
+always
+    #((period_time*clk4_div_by/clk4_mult_by)/2) clk_o[4] <=  (!rst_n_i) ? 1'b0 : ~clk_o[4];
 endgenerate
 
 assign #lock_delay lock = rst_n_i;
@@ -1683,6 +1697,7 @@ endmodule
 module `BASE`MODULE ( d_i, d_o, oe, io_pad, clk, rst);
 `undef MODULE
 parameter width = 1;
+parameter reset_value = 1'b0;
 input  [width-1:0] d_o;
 output reg [width-1:0] d_i;
 input oe;
@@ -1702,12 +1717,12 @@ for (i=0;i<width;i=i+1) begin : dffs
         oe_q[i] <= oe_d[i];
     always @ (posedge clk or posedge rst)
     if (rst)
-        d_o_q[i] <= 1'b0;
+        d_o_q[i] <= reset_value;
     else
         d_o_q[i] <= d_o[i];
     always @ (posedge clk or posedge rst)
     if (rst)
-        d_i[i] <= 1'b0;
+        d_i[i] <= reset_value;
     else
         d_i[i] <= io_pad[i];
     assign #1 io_pad[i] = (oe_q[i]) ? d_o_q[i] : 1'bz;

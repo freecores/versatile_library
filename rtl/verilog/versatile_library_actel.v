@@ -679,6 +679,7 @@ endmodule
 `timescale 1ns/1ns
 module vl_io_dff_oe ( d_i, d_o, oe, io_pad, clk, rst);
 parameter width = 1;
+parameter reset_value = 1'b0;
 input  [width-1:0] d_o;
 output reg [width-1:0] d_i;
 input oe;
@@ -698,12 +699,12 @@ for (i=0;i<width;i=i+1) begin : dffs
         oe_q[i] <= oe_d[i];
     always @ (posedge clk or posedge rst)
     if (rst)
-        d_o_q[i] <= 1'b0;
+        d_o_q[i] <= reset_value;
     else
         d_o_q[i] <= d_o[i];
     always @ (posedge clk or posedge rst)
     if (rst)
-        d_i[i] <= 1'b0;
+        d_i[i] <= reset_value;
     else
         d_i[i] <= io_pad[i];
     assign #1 io_pad[i] = (oe_q[i]) ? d_o_q[i] : 1'bz;
@@ -5167,4 +5168,156 @@ assign result = (opcode==opcode_and) ? a & b :
                 (opcode==opcode_or)  ? a | b :
                 (opcode==opcode_xor) ? a ^ b :
                 b;
+endmodule
+module vl_arith_unit ( a, b, c_in, add_sub, sign, result, c_out, z, ovfl);
+parameter width = 32;
+parameter opcode_add = 1'b0;
+parameter opcode_sub = 1'b1;
+input [width-1:0] a,b;
+input c_in, add_sub, sign;
+output [width-1:0] result;
+output c_out, z, ovfl;
+assign {c_out,result} = {(a[width-1] & sign),a} + ({a[width-1] & sign,b} ^ {(width+1){(add_sub==opcode_sub)}}) + {{(width-1){1'b0}},(c_in | (add_sub==opcode_sub))};
+assign z = (result=={width{1'b0}});
+assign ovfl = ( a[width-1] &  b[width-1] & ~result[width-1]) |
+               (~a[width-1] & ~b[width-1] &  result[width-1]);
+endmodule
+module vl_count_unit (din, dout, opcode);
+parameter width = 32;
+input [width-1:0] din;
+output [width-1:0] dout;
+input opcode;
+integer i;
+wire [width/32+4:0] ff1, fl1;
+/*
+always @(din) begin
+    ff1 = 0; i = 0;
+    while (din[i] == 0 && i < width) begin // complex condition
+        ff1 = ff1 + 1;
+        i = i + 1;
+    end
+end
+always @(din) begin
+    fl1 = width; i = width-1;
+    while (din[i] == 0 && i >= width) begin // complex condition
+        fl1 = fl1 - 1;
+        i = i - 1;
+    end
+end
+*/
+generate
+if (width==32) begin
+    assign ff1 = din[0] ? 6'd1 :
+                 din[1] ? 6'd2 :
+                 din[2] ? 6'd3 :
+                 din[3] ? 6'd4 :
+                 din[4] ? 6'd5 :
+                 din[5] ? 6'd6 :
+                 din[6] ? 6'd7 :
+                 din[7] ? 6'd8 :
+                 din[8] ? 6'd9 :
+                 din[9] ? 6'd10 :
+                 din[10] ? 6'd11 :
+                 din[11] ? 6'd12 :
+                 din[12] ? 6'd13 :
+                 din[13] ? 6'd14 :
+                 din[14] ? 6'd15 :
+                 din[15] ? 6'd16 :
+                 din[16] ? 6'd17 :
+                 din[17] ? 6'd18 :
+                 din[18] ? 6'd19 :
+                 din[19] ? 6'd20 :
+                 din[20] ? 6'd21 :
+                 din[21] ? 6'd22 :
+                 din[22] ? 6'd23 :
+                 din[23] ? 6'd24 :
+                 din[24] ? 6'd25 :
+                 din[25] ? 6'd26 :
+                 din[26] ? 6'd27 :
+                 din[27] ? 6'd28 :
+                 din[28] ? 6'd29 :
+                 din[29] ? 6'd30 :
+                 din[30] ? 6'd31 :
+                 din[31] ? 6'd32 :
+                 6'd0;
+    assign fl1 = din[31] ? 6'd32 :
+                 din[30] ? 6'd31 :
+                 din[29] ? 6'd30 :
+                 din[28] ? 6'd29 :
+                 din[27] ? 6'd28 :
+                 din[26] ? 6'd27 :
+                 din[25] ? 6'd26 :
+                 din[24] ? 6'd25 :
+                 din[23] ? 6'd24 :
+                 din[22] ? 6'd23 :
+                 din[21] ? 6'd22 :
+                 din[20] ? 6'd21 :
+                 din[19] ? 6'd20 :
+                 din[18] ? 6'd19 :
+                 din[17] ? 6'd18 :
+                 din[16] ? 6'd17 :
+                 din[15] ? 6'd16 :
+                 din[14] ? 6'd15 :
+                 din[13] ? 6'd14 :
+                 din[12] ? 6'd13 :
+                 din[11] ? 6'd12 :
+                 din[10] ? 6'd11 :
+                 din[9] ? 6'd10 :
+                 din[8] ? 6'd9 :
+                 din[7] ? 6'd8 :
+                 din[6] ? 6'd7 :
+                 din[5] ? 6'd6 :
+                 din[4] ? 6'd5 :
+                 din[3] ? 6'd4 :
+                 din[2] ? 6'd3 :
+                 din[1] ? 6'd2 :
+                 din[0] ? 6'd1 :
+                 6'd0;
+    assign dout = (!opcode) ? {{26{1'b0}}, ff1} : {{26{1'b0}}, fl1};
+end
+endgenerate
+generate
+if (width==64) begin
+    assign ff1 = 7'd0;
+    assign fl1 = 7'd0;
+    assign dout = (!opcode) ? {{57{1'b0}}, ff1} : {{57{1'b0}}, fl1};
+end
+endgenerate
+endmodule
+module vl_ext_unit ( a, b, F, result, opcode);
+parameter width = 32;
+input [width-1:0] a, b;
+input F;
+output reg [width-1:0] result;
+input [2:0] opcode;
+generate
+if (width==32) begin
+always @ (a or b or F or opcode)
+begin
+    case (opcode)
+    3'b000: result = {{24{1'b0}},a[7:0]};
+    3'b001: result = {{24{a[7]}},a[7:0]};
+    3'b010: result = {{16{1'b0}},a[7:0]};
+    3'b011: result = {{16{a[15]}},a[15:0]};
+    3'b110: result = (F) ? a : b;
+    default: result = {b[15:0],16'h0000};
+    endcase
+end
+end
+endgenerate
+generate
+if (width==64) begin
+always @ (a or b or F or opcode)
+begin
+    case (opcode)
+    3'b000: result = {{56{1'b0}},a[7:0]};
+    3'b001: result = {{56{a[7]}},a[7:0]};
+    3'b010: result = {{48{1'b0}},a[7:0]};
+    3'b011: result = {{48{a[15]}},a[15:0]};
+    3'b110: result = (F) ? a : b;
+    default: result = {32'h00000000,b[15:0],16'h0000};
+    endcase
+end
+end
+endgenerate
 endmodule

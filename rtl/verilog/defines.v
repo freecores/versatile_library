@@ -26,8 +26,11 @@
 `define MULTS
 `define MULTS18X18
 `define MULT
+`define ARITH_UNIT
 `define SHIFT_UNIT_32
 `define LOGIC_UNIT
+`define COUNT_UNIT
+`define EXT_UNIT
 
 `define CNT_SHREG_WRAP
 `define CNT_SHREG_CE_WRAP

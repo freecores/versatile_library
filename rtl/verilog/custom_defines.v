@@ -13,7 +13,7 @@
 
 //=comment
 //=comment Generate all modules
-//`define ALL
+`define ALL
 
 
 //=comment System Verilog
@@ -22,114 +22,117 @@
 //=tab Clk and reset
 
 //=comment Global buffer for high fanout signals
-`define GBUF
-`define SYNC_RST
-`define PLL
+//`define GBUF
+//`define SYNC_RST
+//`define PLL
 
 //=tab registers
-`define DFF
-`define DFF_ARRAY
-`define DFF_CE
-`define DFF_CE_CLEAR
-`define DF_CE_SET
-`define SPR
-`define SRP
-`define DFF_SR
-`define LATCH
-`define SHREG
-`define SHREG_CE
-`define DELAY
-`define DELAY_EMPTYFLAG
-`define PULSE2TOGGLE
-`define TOGGLE2PULSE
-`define SYNCHRONIZER
-`define CDC
+//`define DFF
+//`define DFF_ARRAY
+//`define DFF_CE
+//`define DFF_CE_CLEAR
+//`define DF_CE_SET
+//`define SPR
+//`define SRP
+//`define DFF_SR
+//`define LATCH
+//`define SHREG
+//`define SHREG_CE
+//`define DELAY
+//`define DELAY_EMPTYFLAG
+//`define PULSE2TOGGLE
+//`define TOGGLE2PULSE
+//`define SYNCHRONIZER
+//`define CDC
 
 //=tab Logic
-`define MUX_ANDOR
-`define MUX2_ANDOR
-`define MUX3_ANDOR
-`define MUX4_ANDOR
-`define MUX5_ANDOR
-`define MUX6_ANDOR
-`define PARITY
-`define SHIFT_UNIT_32
-`define LOGIC_UNIT
+//`define MUX_ANDOR
+//`define MUX2_ANDOR
+//`define MUX3_ANDOR
+//`define MUX4_ANDOR
+//`define MUX5_ANDOR
+//`define MUX6_ANDOR
+//`define PARITY
+//`define SHIFT_UNIT_32
+//`define LOGIC_UNIT
 
 //=tab
 
 //=tab IO
-`define IO_DFF_OE
-`define O_DFF
-`define O_DDR
-`define O_CLK
+//`define IO_DFF_OE
+//`define O_DFF
+//`define O_DDR
+//`define O_CLK
 
 //=tab Counters
 //=comment Binary counters
-`define CNT_BIN
-`define CNT_BIN_CE
-`define CNT_BIN_CLEAR
-`define CNT_BIN_CE_CLEAR
-`define CNT_BIN_CE_CLEAR_L1_L2
-`define CNT_BIN_CE_CLEAR_SET_REW
-`define CNT_BIN_CE_REW_L1
-`define CNT_BIN_CE_REW_ZQ_L1
-`define CNT_BIN_CE_REW_Q_ZQ_L1
+//`define CNT_BIN
+//`define CNT_BIN_CE
+//`define CNT_BIN_CLEAR
+//`define CNT_BIN_CE_CLEAR
+//`define CNT_BIN_CE_CLEAR_L1_L2
+//`define CNT_BIN_CE_CLEAR_SET_REW
+//`define CNT_BIN_CE_REW_L1
+//`define CNT_BIN_CE_REW_ZQ_L1
+//`define CNT_BIN_CE_REW_Q_ZQ_L1
 //=comment Gray counters
-`define CNT_GRAY
-`define CNT_GRAY_CE
-`define CNT_GRAY_CE_BIN
+//`define CNT_GRAY
+//`define CNT_GRAY_CE
+//`define CNT_GRAY_CE_BIN
 //=comment LFSR counters
-`define CNT_LFSR_ZQ
-`define CNT_LFSR_CE
-`define CNT_LFSR_CE_CLEAR_Q
-`define CNT_LFSR_CE_Q
-`define CNT_LFSR_CE_ZQ
-`define CNT_LFSR_CE_Q_ZQ
-`define CNT_LFSR_CE_REW_L1
+//`define CNT_LFSR_ZQ
+//`define CNT_LFSR_CE
+//`define CNT_LFSR_CE_CLEAR_Q
+//`define CNT_LFSR_CE_Q
+//`define CNT_LFSR_CE_ZQ
+//`define CNT_LFSR_CE_Q_ZQ
+//`define CNT_LFSR_CE_REW_L1
 //=comment Shift register based counters
-`define CNT_SHREG_WRAP
-`define CNT_SHREG_CLEAR
-`define CNT_SHREG_CE_WRAP
-`define CNT_SHREG_CE_CLEAR
-`define CNT_SHREG_CE_CLEAR_WRAP
+//`define CNT_SHREG_WRAP
+//`define CNT_SHREG_CLEAR
+//`define CNT_SHREG_CE_WRAP
+//`define CNT_SHREG_CE_CLEAR
+//`define CNT_SHREG_CE_CLEAR_WRAP
 
 //=tab Memories
-`define ROM_INIT
-`define RAM
-`define RAM_BE
-`define DPRAM_1R1W
-`define DPRAM_2R1W
-`define DPRAM_1R2W
-`define DPRAM_2R2W
-`define DPRAM_BE_2R2W
-`define FIFO_1R1W_FILL_LEVEL_SYNC
-`define FIFO_2R2W_SYNC_SIMPLEX
-`define FIFO_CMP_ASYNC
-`define FIFO_1R1W_ASYNC
-`define FIFO_2R2W_ASYNC
-`define FIFO_2R2W_ASYNC_SIMPLEX
-`define REG_FILE
+//`define ROM_INIT
+//`define RAM
+//`define RAM_BE
+//`define DPRAM_1R1W
+//`define DPRAM_2R1W
+//`define DPRAM_1R2W
+//`define DPRAM_2R2W
+//`define DPRAM_BE_2R2W
+//`define FIFO_1R1W_FILL_LEVEL_SYNC
+//`define FIFO_2R2W_SYNC_SIMPLEX
+//`define FIFO_CMP_ASYNC
+//`define FIFO_1R1W_ASYNC
+//`define FIFO_2R2W_ASYNC
+//`define FIFO_2R2W_ASYNC_SIMPLEX
+//`define REG_FILE
 
 //=tab Wishbone
-`define WB3AVALON_BRIDGE
-`define WB3WB3_BRIDGE
-`define WB3_ARBITER_TYPE1
-`define WB_ADR_INC
-`define WB_RAM
-`define WB_SHADOW_RAM
-`define WB_B4_ROM
-`define WB_BOOT_ROM
-`define WB_DPRAM
-`define WB_CACHE
-`define WB_AVALON_BRIDGE
-`define WB_AVALON_MEM_CACHE
-`define WB_SDR_SDRAM_CTRL
+//`define WB3AVALON_BRIDGE
+//`define WB3WB3_BRIDGE
+//`define WB3_ARBITER_TYPE1
+//`define WB_ADR_INC
+//`define WB_RAM
+//`define WB_SHADOW_RAM
+//`define WB_B4_ROM
+//`define WB_BOOT_ROM
+//`define WB_DPRAM
+//`define WB_CACHE
+//`define WB_AVALON_BRIDGE
+//`define WB_AVALON_MEM_CACHE
+//`define WB_SDR_SDRAM_CTRL
 
 //=tab Arithmetic
-`define MULTS
-`define MULTS18X18
-`define MULT
+//`define MULTS
+//`define MULTS18X18
+//`define MULT
+//`define ARITH_UNIT
+//`define COUNT_UNIT
+//`define EXT_UNIT
 
 ///////////////////////////////////////
 // dependencies
@@ -407,4 +410,4 @@
 `endif
 
 // size to width
-`define SIZE2WIDTH_EXPR
+//`define SIZE2WIDTH_EXPR
