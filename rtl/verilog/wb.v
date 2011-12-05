@@ -1137,6 +1137,7 @@ parameter max_burst_width_b = max_burst_width_a;
 parameter mode = "B3";
 parameter memory_init = 0;
 parameter memory_file = "vl_ram.v";
+parameter debug = 0;
 input [data_width_a-1:0] wbsa_dat_i;
 input [addr_width_a-1:0] wbsa_adr_i;
 input [data_width_a/8-1:0] wbsa_sel_i;
@@ -1191,10 +1192,12 @@ assign we_a = wbsa_we_i & wbsa_ack_o;
 `undef MODULE
 assign we_b = wbsb_we_i & wbsb_ack_o;
 end else if (mode=="B4") begin : b4_inst
+assign adr_a = wbsa_adr_i;
 `define MODULE dff
 `BASE`MODULE dffacka ( .d(wbsa_stb_i & wbsa_cyc_i), .q(wbsa_ack_o), .clk(wbsa_clk), .rst(wbsa_rst));
 assign wbsa_stall_o = 1'b0;
 assign we_a = wbsa_we_i & wbsa_cyc_i & wbsa_stb_i;
+assign adr_b = wbsb_adr_i;
 `BASE`MODULE dffackb ( .d(wbsb_stb_i & wbsb_cyc_i), .q(wbsb_ack_o), .clk(wbsb_clk), .rst(wbsb_rst));
 `undef MODULE
 assign wbsb_stall_o = 1'b0;
@@ -1205,7 +1208,8 @@ endgenerate
 `define MODULE dpram_be_2r2w
 `BASE`MODULE # ( .a_data_width(data_width_a), .a_addr_width(addr_width_a), .mem_size(mem_size),
                  .b_data_width(data_width_b),
-                 .memory_init(memory_init), .memory_file(memory_file))
+                 .memory_init(memory_init), .memory_file(memory_file),
+                 .debug(debug))
 `undef MODULE
 ram_i (
     .d_a(wbsa_dat_i),
