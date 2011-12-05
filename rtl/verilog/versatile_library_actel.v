@@ -3410,7 +3410,7 @@ generate
 if (debug==1) begin : debug_we
     always @ (posedge clk)
         if (we3)
-            $display ("Value %h written at register %h : time %t", d, adr, $time);
+            $display ("Value %h written at register %h : time %t", wd3, a3, $time);
 end
 endgenerate
 reg [data_width-1:0] wd3_reg;

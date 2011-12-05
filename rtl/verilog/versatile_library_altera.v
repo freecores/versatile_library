@@ -3505,7 +3505,7 @@ generate
 if (debug==1) begin : debug_we
     always @ (posedge clk)
         if (we3)
-            $display ("Value %h written at register %h : time %t", d, adr, $time);
+            $display ("Value %h written at register %h : time %t", wd3, a3, $time);
 end
 endgenerate
 vl_dpram_1r1w
