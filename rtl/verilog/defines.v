@@ -174,6 +174,9 @@
 `ifndef WB_ADR_INC
 `define WB_ADR_INC
 `endif
+`ifndef DFF
+`define DFF
+`endif
 `ifndef DPRAM_BE_2R2W
 `define DPRAM_BE_2R2W
 `endif

@@ -174,6 +174,9 @@
 `ifndef WB_ADR_INC
 `define WB_ADR_INC
 `endif
+`ifndef DFF
+`define DFF
+`endif
 `ifndef DPRAM_BE_2R2W
 `define DPRAM_BE_2R2W
 `endif
@@ -4382,10 +4385,10 @@ module `BASE`MODULE ( d_a, q_a, adr_a, be_a, we_a, clk_a, d_b, q_b, adr_b, be_b,
     if (debug==1) begin : debug_we
         always @ (posedge clk_a)
         if (we_a)
-            $display ("Debug: Value %h written at address %h : time %t", d_a, adr_a, $time);
+            $display ("Debug: Value %h written on port A at address %h : time %t", d_a, adr_a, $time);
         always @ (posedge clk_b)
         if (we_b)
-            $display ("Debug: Value %h written at address %h : time %t", d_b, adr_b, $time);        
+            $display ("Debug: Value %h written on port B at address %h : time %t", d_b, adr_b, $time);        
     end
     endgenerate
 
