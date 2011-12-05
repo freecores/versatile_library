@@ -3400,11 +3400,19 @@ module vl_reg_file (
 );
 parameter data_width = 32;
 parameter addr_width = 5;
+parameter debug = 0;
 input [addr_width-1:0] a1, a2, a3;
 input [data_width-1:0] wd3;
 input we3;
 output [data_width-1:0] rd1, rd2;
 input clk;
+generate
+if (debug==1) begin : debug_we
+    always @ (posedge clk)
+        if (we)
+            $display ("Value %h written at register %h : time %t", d, adr, $time);
+end
+endgenerate
 reg [data_width-1:0] wd3_reg;
 reg [addr_width-1:0] a1_reg, a2_reg, a3_reg;
 reg we3_reg;
