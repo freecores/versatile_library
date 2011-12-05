@@ -3409,7 +3409,7 @@ input clk;
 generate
 if (debug==1) begin : debug_we
     always @ (posedge clk)
-        if (we)
+        if (we3)
             $display ("Value %h written at register %h : time %t", d, adr, $time);
 end
 endgenerate
