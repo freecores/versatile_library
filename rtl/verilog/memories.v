@@ -1095,7 +1095,7 @@ input [aw-1:0] a1, a2, a3;
 input [dw-1:0] wd3;
 input we3;
 output [dw-1:0] rd1, rd2;
-input clk;
+input clk, rst;
 wire [dw-1:0] rd1mem, rd2mem;
 reg [dw-1:0] wreg;
 reg sel1, sel2;
