@@ -3491,16 +3491,18 @@ vl_fifo_cmp_async
     cmp2 ( .wptr(b_wadr), .rptr(a_radr), .fifo_empty(a_fifo_empty), .fifo_full(b_fifo_full), .wclk(b_clk), .rclk(a_clk), .rst(b_rst) );
 endmodule
 module vl_reg_file (
-    a1, a2, a3, wd3, we3, rd1, rd2, clk
-);
-parameter data_width = 32;
-parameter addr_width = 5;
+    a1, a2, a3, wd3, we3, rd1, rd2, clk, rst );
+parameter dw = 32;
+parameter aw = 5;
 parameter debug = 0;
-input [addr_width-1:0] a1, a2, a3;
-input [data_width-1:0] wd3;
+input [aw-1:0] a1, a2, a3;
+input [dw-1:0] wd3;
 input we3;
-output [data_width-1:0] rd1, rd2;
+output [dw-1:0] rd1, rd2;
 input clk;
+wire [dw-1:0] rd1mem, rd2mem;
+reg [dw-1:0] wreg;
+reg sel1, sel2;
 generate
 if (debug==1) begin : debug_we
     always @ (posedge clk)
@@ -3509,25 +3511,32 @@ if (debug==1) begin : debug_we
 end
 endgenerate
 vl_dpram_1r1w
-    # ( .data_width(data_width), .addr_width(addr_width))
+    # ( .data_width(dw), .addr_width(aw))
     ram1 (
         .d_a(wd3),
         .adr_a(a3),
         .we_a(we3),
         .clk_a(clk),
-        .q_b(rd1),
+        .q_b(rd1mem),
         .adr_b(a1),
         .clk_b(clk) );
 vl_dpram_1r1w
-    # ( .data_width(data_width), .addr_width(addr_width))
+    # ( .data_width(dw), .addr_width(aw))
     ram2 (
         .d_a(wd3),
         .adr_a(a3),
         .we_a(we3),
         .clk_a(clk),
-        .q_b(rd2),
+        .q_b(rd2mem),
         .adr_b(a2),
         .clk_b(clk) );
+always @ (posedge clk or posedge rst)
+if (rst)
+    {sel1, sel2, wreg} <= {1'b0,1'b0,{data_width{1'b0}}};
+else
+    {sel1,sel2,wreg} <= {we3 & a1==a3, we3 & a2==a3,wd3};
+assign rd1 = (sel1) ? wreg : rd1mem;
+assign rd2 = (sel2) ? wreg : rd2mem;
 endmodule
 //////////////////////////////////////////////////////////////////////
 ////                                                              ////

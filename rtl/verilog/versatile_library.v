@@ -4997,16 +4997,18 @@ endmodule
 `define MODULE reg_file
 module `BASE`MODULE (
 `undef MODULE
-    a1, a2, a3, wd3, we3, rd1, rd2, clk
-);
-parameter data_width = 32;
-parameter addr_width = 5;
+    a1, a2, a3, wd3, we3, rd1, rd2, clk, rst );
+parameter dw = 32;
+parameter aw = 5;
 parameter debug = 0;
-input [addr_width-1:0] a1, a2, a3;
-input [data_width-1:0] wd3;
+input [aw-1:0] a1, a2, a3;
+input [dw-1:0] wd3;
 input we3;
-output [data_width-1:0] rd1, rd2;
+output [dw-1:0] rd1, rd2;
 input clk;
+wire [dw-1:0] rd1mem, rd2mem;
+reg [dw-1:0] wreg;
+reg sel1, sel2;
 
 generate
 if (debug==1) begin : debug_we
@@ -5016,59 +5018,37 @@ if (debug==1) begin : debug_we
 end
 endgenerate
 
-`ifdef ACTEL
-reg [data_width-1:0] wd3_reg;
-reg [addr_width-1:0] a1_reg, a2_reg, a3_reg;
-reg we3_reg;
-reg [data_width-1:0] ram1 [(1<<addr_width)-1:0] `SYN_NO_RW_CHECK;
-reg [data_width-1:0] ram2 [(1<<addr_width)-1:0] `SYN_NO_RW_CHECK;
-always @ (posedge clk or posedge rst)
-if (rst)
-    {wd3_reg, a3_reg, we3_reg} <= {(data_width+addr_width+1){1'b0}};
-else
-    {wd3_reg, a3_reg, we3_reg} <= {wd3,a3,wd3};
-
-    always @ (negedge clk)
-    if (we3_reg)
-        ram1[a3_reg] <= wd3;
-    always @ (posedge clk)
-        a1_reg <= a1;   
-    assign rd1 = ram1[a1_reg];
-    
-    always @ (negedge clk)
-    if (we3_reg)
-        ram2[a3_reg] <= wd3;
-    always @ (posedge clk)
-        a2_reg <= a2;   
-    assign rd2 = ram2[a2_reg];
-
-`else
-
 `define MODULE dpram_1r1w
 `BASE`MODULE
-    # ( .data_width(data_width), .addr_width(addr_width))
+    # ( .data_width(dw), .addr_width(aw))
     ram1 (
         .d_a(wd3),
         .adr_a(a3),
         .we_a(we3),
         .clk_a(clk),
-        .q_b(rd1),
+        .q_b(rd1mem),
         .adr_b(a1),
         .clk_b(clk) );
         
 `BASE`MODULE
-    # ( .data_width(data_width), .addr_width(addr_width))
+    # ( .data_width(dw), .addr_width(aw))
     ram2 (
         .d_a(wd3),
         .adr_a(a3),
         .we_a(we3),
         .clk_a(clk),
-        .q_b(rd2),
+        .q_b(rd2mem),
         .adr_b(a2),
         .clk_b(clk) );
 `undef MODULE
 
-`endif
+always @ (posedge clk or posedge rst)
+if (rst)
+    {sel1, sel2, wreg} <= {1'b0,1'b0,{data_width{1'b0}}};
+else
+    {sel1,sel2,wreg} <= {we3 & a1==a3, we3 & a2==a3,wd3};
+assign rd1 = (sel1) ? wreg : rd1mem;
+assign rd2 = (sel2) ? wreg : rd2mem;
 
 endmodule
 `endif
