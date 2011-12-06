@@ -1134,7 +1134,7 @@ endgenerate
 
 always @ (posedge clk or posedge rst)
 if (rst)
-    {sel1, sel2, wreg} <= {1'b0,1'b0,{data_width{1'b0}}};
+    {sel1, sel2, wreg} <= {1'b0,1'b0,{dw{1'b0}}};
 else
     {sel1,sel2,wreg} <= {we3 & a1==a3, we3 & a2==a3,wd3};
 assign rd1 = (sel1) ? wreg : rd1mem;
