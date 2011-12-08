@@ -7371,10 +7371,14 @@ input [1:0] opcode;
 output [31:0] dout;
 
 parameter opcode_sll = 2'b00;
-//parameter opcode_srl = 2'b01;
+parameter opcode_srl = 2'b01;
 parameter opcode_sra = 2'b10;
-//parameter opcode_ror = 2'b11;
+parameter opcode_ror = 2'b11;
 
+parameter mult=0; // if set to 1 implemented based on multipliers which saves LUT
+
+generate
+if (mult==1) begin : impl_mult
 wire sll, sra;
 assign sll = opcode == opcode_sll;
 assign sra = opcode == opcode_sra;
@@ -7444,6 +7448,23 @@ assign dout[7:0]   = (s[4:3]==2'b00) ? tmp[0] :
                      (s[4:3]==2'b01) ? tmp[1] :
                      (s[4:3]==2'b10) ? tmp[2] :
                      tmp[3];
+end else begin : impl_classic
+reg [31:0] dout;
+`ifdef SYSTEMVERILOG
+always_comb
+`else
+always @ (din or s or opcode)
+`endif
+    case (opcode)
+    opcode_sll: dout = din << s;
+    opcode_srl: dout = din >> s;
+    opcode_sra: dout = (din >> s) | ({32,din[31]}} << (6'd32-{1'b0,s}}));
+    //opcode_ror: dout = not yet implemented
+    default: dout = din << s;
+    endcase
+    
+end
+engenerate
 
 endmodule
 `endif
