@@ -7464,7 +7464,7 @@ always @ (din or s or opcode)
     endcase
     
 end
-engenerate
+endgenerate
 
 endmodule
 `endif

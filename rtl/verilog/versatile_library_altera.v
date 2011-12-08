@@ -5281,7 +5281,7 @@ always @ (din or s or opcode)
     default: dout = din << s;
     endcase
 end
-engenerate
+endgenerate
 endmodule
 // logic unit
 // supporting the following logic functions
