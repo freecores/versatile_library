@@ -5172,19 +5172,11 @@ assign dout[7:0]   = (s[4:3]==2'b00) ? tmp[0] :
                      (s[4:3]==2'b10) ? tmp[2] :
                      tmp[3];
 end else begin : impl_classic
-reg [31:0] dout;
-`ifdef SYSTEMVERILOG
-always_comb
-`else
-always @ (din or s or opcode)
-`endif
-    case (opcode)
-    opcode_sll: dout = din << s;
-    opcode_srl: dout = din >> s;
-    opcode_sra: dout = (din >> s) | ({32{din[31]}} << (6'd32-{1'b0,s}));
-    //opcode_ror: dout = not yet implemented
-    default: dout = din << s;
-    endcase
+assign dout =
+    (opcode==opcode_sll) ? din << s :
+    (opcode==opcode_srl) ? din >> s :
+    (opcode==opcode_sra) ? (din >> s) | ({32{din[31]}} << (6'd32-{1'b0,s})) :
+    din << s;
 end
 endgenerate
 endmodule
