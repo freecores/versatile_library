@@ -7458,7 +7458,7 @@ always @ (din or s or opcode)
     case (opcode)
     opcode_sll: dout = din << s;
     opcode_srl: dout = din >> s;
-    opcode_sra: dout = (din >> s) | ({32,din[31]}} << (6'd32-{1'b0,s}}));
+    opcode_sra: dout = (din >> s) | ({32,din[31]}} << (6'd32-{1'b0,s}));
     //opcode_ror: dout = not yet implemented
     default: dout = din << s;
     endcase
